@@ -87,19 +87,19 @@ tasks:
       nodes: 100
       stream_families: [within_problem_size, mixed_problem_size]
 
-  - task_id: cvrp_n20_uniform
-    problem: cvrp
+  - task_id: tsp_n200_uniform
+    problem: tsp
     implemented_in_heuragenix: true
-    size_tier: n20
-    distribution: euclidean_uniform_demand
+    size_tier: n200
+    distribution: euclidean_uniform
     splits:
-      train: cmhh/data/instances/cvrp_n20_uniform/train
-      validation: cmhh/data/instances/cvrp_n20_uniform/validation
-      test: cmhh/data/instances/cvrp_n20_uniform/test
-      smoke: cmhh/data/instances/cvrp_n20_uniform/smoke
+      train: cmhh/data/instances/tsp_n200_uniform/train
+      validation: cmhh/data/instances/tsp_n200_uniform/validation
+      test: cmhh/data/instances/tsp_n200_uniform/test
+      smoke: cmhh/data/instances/tsp_n200_uniform/smoke
     reference:
       type: best_known
-      path: cmhh/data/references/cvrp_n20_uniform/reference.json
+      path: cmhh/data/references/tsp_n200_uniform/reference.json
       status: pending
     metric:
       name: relative_gap
@@ -108,26 +108,26 @@ tasks:
     baseline_pool:
       heuristic_dir: basic_heuristics
       seed_heuristics:
-        - nearest_neighbor_99ba
-        - greedy_f4c4
-        - saving_algorithm_710e
+        - nearest_neighbor_f91d
+        - random_80a0
+        - greedy_algorithm_3ca7
     metadata:
-      customers: 20
+      nodes: 200
       stream_families: [within_problem_size, mixed_problem_size]
 
-  - task_id: cvrp_n50_uniform
-    problem: cvrp
-    implemented_in_heuragenix: true
-    size_tier: n50
-    distribution: euclidean_uniform_demand
+  - task_id: pfsp_n20_uniform
+    problem: pfsp
+    implemented_in_heuragenix: false
+    size_tier: n20
+    distribution: uniform_processing_times
     splits:
-      train: cmhh/data/instances/cvrp_n50_uniform/train
-      validation: cmhh/data/instances/cvrp_n50_uniform/validation
-      test: cmhh/data/instances/cvrp_n50_uniform/test
-      smoke: cmhh/data/instances/cvrp_n50_uniform/smoke
+      train: cmhh/data/instances/pfsp_n20_uniform/train
+      validation: cmhh/data/instances/pfsp_n20_uniform/validation
+      test: cmhh/data/instances/pfsp_n20_uniform/test
+      smoke: cmhh/data/instances/pfsp_n20_uniform/smoke
     reference:
       type: best_known
-      path: cmhh/data/references/cvrp_n50_uniform/reference.json
+      path: cmhh/data/references/pfsp_n20_uniform/reference.json
       status: pending
     metric:
       name: relative_gap
@@ -136,26 +136,56 @@ tasks:
     baseline_pool:
       heuristic_dir: basic_heuristics
       seed_heuristics:
-        - nearest_neighbor_99ba
-        - greedy_f4c4
-        - saving_algorithm_710e
+        - neh
+        - shortest_total_processing_time
+        - longest_total_processing_time
     metadata:
-      customers: 50
+      jobs: 20
+      machines: 5
+      stream_families: [within_problem_size, mixed_problem_size]
+
+  - task_id: pfsp_n50_uniform
+    problem: pfsp
+    implemented_in_heuragenix: false
+    size_tier: n50
+    distribution: uniform_processing_times
+    splits:
+      train: cmhh/data/instances/pfsp_n50_uniform/train
+      validation: cmhh/data/instances/pfsp_n50_uniform/validation
+      test: cmhh/data/instances/pfsp_n50_uniform/test
+      smoke: cmhh/data/instances/pfsp_n50_uniform/smoke
+    reference:
+      type: best_known
+      path: cmhh/data/references/pfsp_n50_uniform/reference.json
+      status: pending
+    metric:
+      name: relative_gap
+      objective: minimize
+      aggregation: mean
+    baseline_pool:
+      heuristic_dir: basic_heuristics
+      seed_heuristics:
+        - neh
+        - shortest_total_processing_time
+        - longest_total_processing_time
+    metadata:
+      jobs: 50
+      machines: 10
       stream_families: [within_problem_size, cross_problem_same_size, mixed_problem_size]
 
-  - task_id: cvrp_n100_uniform
-    problem: cvrp
-    implemented_in_heuragenix: true
+  - task_id: pfsp_n100_uniform
+    problem: pfsp
+    implemented_in_heuragenix: false
     size_tier: n100
-    distribution: euclidean_uniform_demand
+    distribution: uniform_processing_times
     splits:
-      train: cmhh/data/instances/cvrp_n100_uniform/train
-      validation: cmhh/data/instances/cvrp_n100_uniform/validation
-      test: cmhh/data/instances/cvrp_n100_uniform/test
-      smoke: cmhh/data/instances/cvrp_n100_uniform/smoke
+      train: cmhh/data/instances/pfsp_n100_uniform/train
+      validation: cmhh/data/instances/pfsp_n100_uniform/validation
+      test: cmhh/data/instances/pfsp_n100_uniform/test
+      smoke: cmhh/data/instances/pfsp_n100_uniform/smoke
     reference:
       type: best_known
-      path: cmhh/data/references/cvrp_n100_uniform/reference.json
+      path: cmhh/data/references/pfsp_n100_uniform/reference.json
       status: pending
     metric:
       name: relative_gap
@@ -164,11 +194,41 @@ tasks:
     baseline_pool:
       heuristic_dir: basic_heuristics
       seed_heuristics:
-        - nearest_neighbor_99ba
-        - greedy_f4c4
-        - saving_algorithm_710e
+        - neh
+        - shortest_total_processing_time
+        - longest_total_processing_time
     metadata:
-      customers: 100
+      jobs: 100
+      machines: 20
+      stream_families: [within_problem_size, mixed_problem_size]
+
+  - task_id: pfsp_n200_uniform
+    problem: pfsp
+    implemented_in_heuragenix: false
+    size_tier: n200
+    distribution: uniform_processing_times
+    splits:
+      train: cmhh/data/instances/pfsp_n200_uniform/train
+      validation: cmhh/data/instances/pfsp_n200_uniform/validation
+      test: cmhh/data/instances/pfsp_n200_uniform/test
+      smoke: cmhh/data/instances/pfsp_n200_uniform/smoke
+    reference:
+      type: best_known
+      path: cmhh/data/references/pfsp_n200_uniform/reference.json
+      status: pending
+    metric:
+      name: relative_gap
+      objective: minimize
+      aggregation: mean
+    baseline_pool:
+      heuristic_dir: basic_heuristics
+      seed_heuristics:
+        - neh
+        - shortest_total_processing_time
+        - longest_total_processing_time
+    metadata:
+      jobs: 200
+      machines: 20
       stream_families: [within_problem_size, mixed_problem_size]
 
   - task_id: obp_n20_uniform
@@ -250,5 +310,32 @@ tasks:
         - best_fit
     metadata:
       items: 100
+      stream_families: [within_problem_size, mixed_problem_size]
+
+  - task_id: obp_n200_uniform
+    problem: obp
+    implemented_in_heuragenix: false
+    size_tier: n200
+    distribution: uniform_item_sizes
+    splits:
+      train: cmhh/data/instances/obp_n200_uniform/train
+      validation: cmhh/data/instances/obp_n200_uniform/validation
+      test: cmhh/data/instances/obp_n200_uniform/test
+      smoke: cmhh/data/instances/obp_n200_uniform/smoke
+    reference:
+      type: best_known
+      path: cmhh/data/references/obp_n200_uniform/reference.json
+      status: pending
+    metric:
+      name: relative_gap
+      objective: minimize
+      aggregation: mean
+    baseline_pool:
+      heuristic_dir: basic_heuristics
+      seed_heuristics:
+        - first_fit
+        - best_fit
+    metadata:
+      items: 200
       stream_families: [within_problem_size, mixed_problem_size]
 

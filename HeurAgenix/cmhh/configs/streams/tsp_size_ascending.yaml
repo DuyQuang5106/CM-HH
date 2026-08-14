@@ -1,0 +1,9 @@
+version: 1
+stream_id: tsp_size_ascending
+description: Phase 0 within-problem scale stream.
+task_ids:
+  - tsp_n20_uniform
+  - tsp_n50_uniform
+  - tsp_n100_uniform
+  - tsp_n200_uniform
+

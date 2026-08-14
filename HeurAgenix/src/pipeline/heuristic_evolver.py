@@ -17,11 +17,13 @@ class HeuristicEvolver:
         problem: str,
         evolution_dir: str,
         validation_dir: str,
+        output_root: str="output",
     ) -> None:
         self.llm_client = llm_client
         self.problem = problem
         self.evolution_cases = [os.path.join(evolution_dir, f) for f in os.listdir(evolution_dir)]
         self.validation_cases = [os.path.join(validation_dir, f) for f in os.listdir(validation_dir)]
+        self.output_root = output_root
         self.get_instance_problem_state = load_function("problem_state.py", problem=self.problem, function_name="get_instance_problem_state")
         self.get_solution_problem_state = load_function("problem_state.py", problem=self.problem, function_name="get_solution_problem_state")
 
@@ -100,7 +102,7 @@ class HeuristicEvolver:
         try:
             env = Env(data_name=evolution_data)
             basic_heuristic_name = basic_heuristic_file.split(os.sep)[-1].split(".")[0]
-            output_dir = os.path.join("output", self.problem, "evolution_result", f"{basic_heuristic_name}.evolution", env.data_ref_name)
+            output_dir = os.path.join(self.output_root, self.problem, "evolution_result", f"{basic_heuristic_name}.evolution", env.data_ref_name)
             self.llm_client.reset(output_dir)
 
             # Perturb for better solution

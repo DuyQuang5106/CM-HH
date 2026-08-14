@@ -1,0 +1,105 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import tempfile
+import traceback
+from pathlib import Path
+
+from cmhh.llm.budgeted_client import BudgetedLLMClient
+from cmhh.llm.config import load_llm_config
+
+
+def _prompt_hash(repo_root: Path, problem: str) -> str:
+    digest = hashlib.sha256()
+    paths = [repo_root / "src/problems/base/prompt", repo_root / f"src/problems/{problem}/prompt"]
+    for directory in paths:
+        for path in sorted(directory.glob("*.txt")):
+            digest.update(str(path.relative_to(repo_root)).encode())
+            digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def run(args) -> dict:
+    from src.pipeline.heuristic_evolver import HeuristicEvolver
+    from src.util.llm_client.get_llm_client import get_llm_client
+
+    repo_root = Path(args.repo_root).resolve()
+    config = load_llm_config(args.llm_config)
+    config["seed"] = args.seed
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fp:
+        json.dump(config, fp)
+        temporary_config = fp.name
+    try:
+        delegate = get_llm_client(
+            temporary_config,
+            str(repo_root / "src/problems/base/prompt"),
+            None,
+        )
+        client = BudgetedLLMClient(delegate, args.max_llm_calls)
+        evolver = HeuristicEvolver(
+            client,
+            args.problem,
+            args.train_dir,
+            args.validation_dir,
+            output_root=args.output_root,
+        )
+        perturbations = sorted(
+            path for path in (repo_root / f"src/problems/{args.problem}/heuristics/basic_heuristics").glob("random_????.py")
+        )
+        if not perturbations:
+            raise FileNotFoundError(f"No random perturbation heuristic for {args.problem}")
+        evolved = evolver.evolve(
+            args.seed_heuristic,
+            str(perturbations[0]),
+            perturbation_time=args.perturbation_time,
+            filtered_num=args.candidates_per_generation,
+            evolution_round=args.generations,
+            max_refinement_round=max(1, args.candidates_per_generation),
+            smoke_test=False,
+        )
+        candidates = []
+        for item in evolved or []:
+            path = Path(item[0]).resolve()
+            if path.exists():
+                candidates.append({"path": str(path), "evolver_improvement": item[1]})
+        return {
+            "status": "ok",
+            "candidates": candidates,
+            "calls_used": client.calls_used,
+            "model": delegate.name,
+            "prompt_hash": _prompt_hash(repo_root, args.problem),
+        }
+    finally:
+        Path(temporary_config).unlink(missing_ok=True)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo-root", required=True)
+    parser.add_argument("--problem", required=True)
+    parser.add_argument("--train-dir", required=True)
+    parser.add_argument("--validation-dir", required=True)
+    parser.add_argument("--seed-heuristic", required=True)
+    parser.add_argument("--llm-config", required=True)
+    parser.add_argument("--output-root", required=True)
+    parser.add_argument("--result", required=True)
+    parser.add_argument("--seed", required=True, type=int)
+    parser.add_argument("--generations", required=True, type=int)
+    parser.add_argument("--candidates-per-generation", required=True, type=int)
+    parser.add_argument("--max-llm-calls", required=True, type=int)
+    parser.add_argument("--perturbation-time", type=int, default=100)
+    args = parser.parse_args()
+    try:
+        result = run(args)
+    except Exception:
+        result = {"status": "failed", "error": traceback.format_exc(), "candidates": []}
+    Path(args.result).write_text(json.dumps(result, indent=2), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
+

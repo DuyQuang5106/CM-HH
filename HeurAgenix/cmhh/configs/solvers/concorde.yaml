@@ -1,0 +1,13 @@
+version: 1
+solver:
+  name: concorde
+  command_prefix:
+    - tools/concorde/concorde.exe
+  arguments: [-x, -o, "{tour_path}", "{instance_path}"]
+  max_workers: 2
+  timeouts:
+    n20: 60
+    n50: 300
+    n100: 900
+    n200: 1800
+

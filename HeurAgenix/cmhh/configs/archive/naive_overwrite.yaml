@@ -1,0 +1,9 @@
+version: 1
+policy:
+  name: naive_overwrite
+  capacity: 20
+  protected_exemplars: 0
+  eviction:
+    primary: lowest_validation_score
+    tie_breakers: [oldest_created_step, heuristic_id]
+
