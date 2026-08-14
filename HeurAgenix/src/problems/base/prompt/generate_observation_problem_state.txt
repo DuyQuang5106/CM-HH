@@ -1,0 +1,13 @@
+Then, we need to filter some core problem state in solution problem state to record the changes of solution, please select some problem state in solution problem state.
+
+
+In determining the optimal problem states to represent instance, we must adhere to the following criteria:
+1. Must select from solution problem state, not instance problem state
+
+
+ANSWER IN FORMAT:
+***observation_problem_state:
+problem_state_name;
+problem_state_name;
+....
+***

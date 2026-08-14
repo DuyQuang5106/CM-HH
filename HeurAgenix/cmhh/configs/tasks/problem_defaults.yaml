@@ -1,0 +1,28 @@
+version: 1
+problems:
+  tsp:
+    display_name: Traveling Salesman Problem
+    heuragenix_problem: tsp
+    objective: minimize
+    key_item: current_cost
+    default_metric: relative_gap
+    default_distribution: euclidean_uniform
+    default_heuristic_dir: basic_heuristics
+  cvrp:
+    display_name: Capacitated Vehicle Routing Problem
+    heuragenix_problem: cvrp
+    objective: minimize
+    key_item: current_cost
+    default_metric: relative_gap
+    default_distribution: euclidean_uniform_demand
+    default_heuristic_dir: basic_heuristics
+  obp:
+    display_name: Online Bin Packing
+    heuragenix_problem: null
+    objective: minimize
+    key_item: bins_used
+    default_metric: relative_gap
+    default_distribution: uniform_item_sizes
+    default_heuristic_dir: basic_heuristics
+    adapter_status: missing
+

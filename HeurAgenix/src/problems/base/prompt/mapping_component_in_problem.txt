@@ -1,0 +1,13 @@
+Now, try to analysis the similarities between {referenced_problem} and this new problem {problem}
+
+this is introduction for {referenced_problem}:
+{referenced_problem_description}
+
+Now I hope to decompose these 2 problems, find the similarities between {referenced_problem} and this new problem {problem}, and mapping some components.
+
+ANSWER IN FORMAT:
+***similarities:
+components_in_{referenced_problem};similar_components_in_{problem};reason;
+components_in_{referenced_problem};similar_components_in_{problem};reason;
+...
+***

@@ -1,0 +1,32 @@
+Based on previous discuss, we get the heuristic {heuristic_name}:
+{description}
+
+Now please implement it in python function {function_name}.
+
+The comments are crucial for the selection and updating of future algorithms. There's no need to repeat points that are obvious and widely known, such as input and output details, or redundant safety code like returning None; instead, it's important to emphasize aspects that are unique to the algorithm.
+
+ANSWER IN FORMAT:
+***python_code:
+from {components_file} import *
+import other_library (if necessary)
+def {function_name}(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[TargetOperatorType, dict]:
+    """ Description for this heuristic algorithm.
+
+    Args:
+        problem_state (dict): The dictionary contains the problem state.. In this algorithm, the following items are necessary:
+            - necessary_key (value type): description
+            - necessary_key (value type): description
+            ...
+        (Optional and can be omitted if no algorithm data) algorithm_data (dict): The algorithm dictionary for current algorithm only. In this algorithm, the following items are necessary:
+            - necessary_key (value type): description
+            - necessary_key (value type): description
+            ...
+        (Optional and can be omitted if no hyper parameters data) introduction for hyper parameters in kwargs if used.
+
+    Returns:
+        Description of this operator.
+        Description of updated algorithm data.
+
+        ...
+    """
+

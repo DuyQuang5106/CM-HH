@@ -1,0 +1,27 @@
+version: 1
+size_tiers:
+  n20:
+    label: small
+    tsp:
+      nodes: 20
+    cvrp:
+      customers: 20
+    obp:
+      items: 20
+  n50:
+    label: medium
+    tsp:
+      nodes: 50
+    cvrp:
+      customers: 50
+    obp:
+      items: 50
+  n100:
+    label: large
+    tsp:
+      nodes: 100
+    cvrp:
+      customers: 100
+    obp:
+      items: 100
+
