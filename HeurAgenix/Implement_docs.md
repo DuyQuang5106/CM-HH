@@ -213,6 +213,127 @@ The pilot verification is expected to report missing references for non-pilot
 instances; this is coverage information, not solver corruption. Full
 verification must pass before producing the Phase 0 performance matrix.
 
+## 2026-08-15 - Memory architecture decision
+
+### Research decision
+
+CM-HH adopts the memory architecture from *When Continual Learning Moves to
+Memory: A Study of Experience Reuse in LLM Agents* as the main conceptual
+memory model for Phase 1.
+
+In this model, memory is not a loose archive of logs. It is a shared external
+experience pool `M` that grows across tasks. Each memory item is a retrievable
+unit represented as a key-value pair:
+
+- `key`: the retrieval-facing description of when the item should be reused.
+  In CM-HH this may include task identity, problem features, search state
+  signature, bottleneck type, heuristic family, and applicability conditions.
+- `value`: the reusable content. In CM-HH this should usually be a distilled
+  insight, rule, warning, or code-adjustment rationale, with raw trajectories
+  retained only as evidence.
+
+This separates memory representation from memory access:
+
+- Representation axis: raw trajectory versus abstract procedural insight.
+- Organization axis: aggregated task-level bundle versus individual insight
+  entries, plus retrieval timing and top-k policy.
+
+The default research stance is that CM-HH should prefer abstract procedural
+insights over raw run transcripts for cross-task reuse, because raw traces are
+more likely to overfit to a source task and create harmful retrieval pollution.
+
+### Archivist role
+
+The Archivist is the memory writer, curator, and compactor. It does not merely
+append artifacts. Its responsibilities are:
+
+1. convert candidate-generation traces, bottleneck analyses, validation
+   outcomes, selected heuristics, rejected heuristics, and refinement
+   suggestions into structured memory units;
+2. assign retrieval keys that describe applicability rather than only origin;
+3. keep evidence links to raw artifacts, scores, hashes, and task context;
+4. update confidence after later reuse succeeds or fails;
+5. compact or evict memory under the configured capacity policy;
+6. protect experimental isolation by never allowing test results into memory
+   used for generation, retrieval scoring, candidate selection, or stopping.
+
+The existing `naive_overwrite` archive config is therefore only one concrete
+memory policy. It should be interpreted as a baseline policy over the external
+memory pool, not as the definition of memory itself.
+
+### Provisional memory unit schema
+
+The Phase 1 implementation should make memory explicit with a schema equivalent
+to:
+
+```json
+{
+  "id": "stable memory id",
+  "created_at": "run/task/generation step",
+  "scope": {
+    "problem": "tsp",
+    "task_id": "tsp_n50_uniform",
+    "heuristic_family": "nearest_neighbor"
+  },
+  "key": {
+    "task_signature": {},
+    "state_signature": {},
+    "bottleneck_type": "construction_bias | local_optimum | invalid_code | ...",
+    "applicability": "short natural-language retrieval key"
+  },
+  "value": {
+    "type": "insight | rule | warning | code_adjustment | trajectory",
+    "content": "reusable distilled content"
+  },
+  "evidence": {
+    "source_artifacts": [],
+    "validation_before": {},
+    "validation_after": {},
+    "code_hashes": []
+  },
+  "policy": {
+    "confidence": 0.0,
+    "reuse_count": 0,
+    "success_count": 0,
+    "failure_count": 0
+  }
+}
+```
+
+### H1 theory work still required
+
+Before running scientific H1 experiments, the hypothesis must specify the
+memory condition, control condition, and failure modes more sharply.
+
+Required theory definitions:
+
+1. Define the H1 claim in memory terms: external insight memory across a task
+   stream improves sequential heuristic search relative to isolated or
+   memoryless search under the same LLM/evaluation budget.
+2. Define the unit of transfer: memory-assisted improvement should be measured
+   through candidate quality, selected heuristic quality, and final test score,
+   not only by the number of retrieved memories.
+3. Define negative-transfer diagnostics: harmful reuse, ineffective reuse,
+   retrieval pollution, context competition, memory dilution, and retrieval
+   diversity collapse.
+4. Define memory policy variants before experiments:
+   - no-memory isolated baseline;
+   - naive sequential memory with capacity and deterministic eviction;
+   - insight memory with retrieval keys and Archivist distillation;
+   - optionally raw-trajectory memory as an ablation.
+5. Define retrieval metrics that can be audited without test leakage:
+   retrieval coverage, top-k concentration, duplicate-key rate, age/source
+   distribution, and post-reuse validation delta.
+6. Define fairness constraints: same task order, data seed, experiment seeds,
+   LLM model/config, LLM-call budget, candidate budget, timeout, validation
+   split, test split, and archive capacity across compared policies.
+
+The core theoretical risk is that memory can improve adaptation to later tasks
+while degrading earlier-task performance through retrieval-side interference.
+Therefore H1 should be evaluated with both final average performance and
+continual metrics such as FWT/BWT, plus retrieval diagnostics that explain why
+transfer helped or harmed.
+
 ### Status after this increment
 
 - Reference code path: done and tested.
