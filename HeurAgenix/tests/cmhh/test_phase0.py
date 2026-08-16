@@ -384,6 +384,13 @@ class RunnerResumeTests(unittest.TestCase):
             self.assertEqual(0, generator.memory_counts_by_task["tsp_a"])
             self.assertGreater(generator.memory_counts_by_task["tsp_b"], 0)
             self.assertTrue((run_dir / "memory" / "memory.jsonl").exists())
+            diagnostics = json.loads(
+                (run_dir / "memory" / "diagnostics.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(2, diagnostics["retrieval_events"])
+            self.assertEqual(1, diagnostics["retrieval_events_with_results"])
+            self.assertGreater(diagnostics["retrieval_coverage"], 0)
+            self.assertEqual(0.0, diagnostics["post_reuse_validation_delta_mean"])
 
 
 class MemoryModelTests(unittest.TestCase):

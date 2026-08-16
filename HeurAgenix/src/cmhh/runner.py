@@ -22,6 +22,7 @@ from cmhh.memory import (
     create_memory_unit,
     retrieve_naive,
 )
+from cmhh.memory_diagnostics import build_memory_diagnostics
 from cmhh.metrics.continual import average_final_performance, backward_transfer, forward_transfer
 from cmhh.models import HeuristicArtifact
 from cmhh.reporting import write_evaluation
@@ -75,6 +76,10 @@ class StreamRunner:
             task = self.registry.get(self.stream.task_ids[k])
             seeds = self._seed_population(task, carryover_population)
             memory_context = self._retrieve_memory_context(task) if self._uses_naive_memory else []
+            carryover_validation_score = (
+                self._score_seed_population_on_validation(task, seeds, k)
+                if self._uses_naive_memory else None
+            )
             candidates = self.generator.generate(
                 task,
                 seeds,
@@ -88,6 +93,12 @@ class StreamRunner:
                 carryover_population = ranked_population
             if self._uses_naive_memory:
                 self._write_naive_memory(task, ranked_population, validation_summaries)
+                self._log_memory_reuse_outcome(
+                    task,
+                    memory_context,
+                    validation_summaries[best.heuristic_id],
+                    carryover_validation_score,
+                )
             selected[task.task_id] = best.to_dict()
             self._event("candidate_selected", task_id=task.task_id, heuristic_id=best.heuristic_id)
             matrix[k] = {}
@@ -122,6 +133,8 @@ class StreamRunner:
             })
             self._write_matrix(matrix)
         self._write_metrics(matrix)
+        if self._uses_naive_memory:
+            self._write_memory_diagnostics()
         return matrix
 
     def _seed_population(
@@ -245,6 +258,54 @@ class StreamRunner:
         for unit in evicted:
             self._event("memory_evicted", memory_id=unit.id, task_id=unit.scope.task_id)
 
+    def _score_seed_population_on_validation(
+        self,
+        task,
+        seed_population: list[HeuristicArtifact],
+        task_index: int,
+    ) -> float | None:
+        best_score = None
+        for seed in seed_population:
+            smoke = self.evaluator.evaluate(seed, task, "smoke")
+            if smoke.failure_rate > 0:
+                continue
+            validation = self.evaluator.evaluate(seed, task, "validation")
+            write_evaluation(
+                self.run_dir / "evaluations" / f"task_{task_index}_carryover_seed_validation" / f"{seed.heuristic_id}.json",
+                validation,
+            )
+            objectives = [
+                item.objective
+                for item in validation.successful
+                if item.objective is not None
+            ]
+            if validation.failure_rate == 0 and objectives:
+                score = -(sum(objectives) / len(objectives))
+                best_score = score if best_score is None else max(best_score, score)
+        return best_score
+
+    def _log_memory_reuse_outcome(
+        self,
+        task,
+        memory_context: list[MemoryUnit],
+        selected_validation_summary: dict,
+        carryover_validation_score: float | None,
+    ) -> None:
+        selected_score = selected_validation_summary.get("score")
+        delta = (
+            None
+            if not memory_context or carryover_validation_score is None or selected_score is None
+            else float(selected_score) - carryover_validation_score
+        )
+        self._event(
+            "memory_reuse_outcome",
+            task_id=task.task_id,
+            memory_ids=[unit.id for unit in memory_context],
+            selected_validation_score=selected_score,
+            carryover_validation_score=carryover_validation_score,
+            post_reuse_validation_delta=delta,
+        )
+
     def _task_signature(self, task) -> dict:
         signature = {
             "problem": task.problem,
@@ -324,6 +385,10 @@ class StreamRunner:
         if self.cold_start_scores is not None:
             metrics["forward_transfer"] = forward_transfer(matrix, self.cold_start_scores, count)
         write_json_atomic(self.run_dir / "metrics.json", metrics)
+
+    def _write_memory_diagnostics(self) -> None:
+        diagnostics = build_memory_diagnostics(self.run_dir, self.stream.task_ids)
+        write_json_atomic(self.run_dir / "memory" / "diagnostics.json", diagnostics)
 
 
 def _artifact_from_dict(raw: dict) -> HeuristicArtifact:

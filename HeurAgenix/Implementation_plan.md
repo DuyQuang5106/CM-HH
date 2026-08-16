@@ -21,7 +21,7 @@ This file is the live milestone tracker for CM-HH. It should be updated next to
 | Phase | Theme | Scientific Role | Current Status |
 | --- | --- | --- | --- |
 | Phase 0 | Experimental foundation | Make data, evaluation, references, budgets, resume, and audit trustworthy before testing hypotheses. | `[~]` Code mostly present; live references/LLM gates remain. |
-| Phase 1 | H1/H1b memory baselines | Test whether sequential adaptation and naive memory produce forgetting or retrieval interference. | `[~]` Phase 1A-C implemented; diagnostics and live gates remain. |
+| Phase 1 | H1/H1b memory baselines | Test whether sequential adaptation and naive memory produce forgetting or retrieval interference. | `[~]` Phase 1A-D implemented; live experiment gates remain. |
 | Phase 2 | H2 Archivist memory | Implement protected/distilled insight memory and compare against Phase 1 baselines. | `[ ]` Planned. |
 | Phase 3 | H3 curriculum and full study | Run curriculum ablations, cross-problem stream, diagnostics, and paper-ready reporting. | `[ ]` Planned. |
 
@@ -125,12 +125,12 @@ enabling the naive external memory pool and retrieval path.
 
 ### Phase 1D - Diagnostics
 
-- [ ] Add retrieval coverage.
-- [ ] Add top-k concentration.
-- [ ] Add duplicate-key or near-duplicate key rate.
-- [ ] Add source-task and memory-age distribution.
-- [ ] Add post-reuse validation delta.
-- [ ] Label failure modes:
+- [x] Add retrieval coverage.
+- [x] Add top-k concentration.
+- [x] Add duplicate-key or near-duplicate key rate.
+- [x] Add source-task and memory-age distribution.
+- [x] Add post-reuse validation delta.
+- [x] Label failure modes:
   - harmful reuse;
   - ineffective reuse;
   - retrieval pollution;
@@ -144,6 +144,7 @@ enabling the naive external memory pool and retrieval path.
 - [ ] H1/H1b pilot reruns for at least three seeds after audit passes.
 - [ ] Results include mean and variance for average performance, BWT, and FWT.
 - [ ] Retrieval diagnostics are computed without test leakage.
+- [x] Phase 1 run guide documents command order and artifacts.
 - [ ] Decision recorded: whether H1/H1b show enough signal to justify H2.
 
 ---
@@ -257,7 +258,9 @@ baselines.
    - generate and verify full TSP references;
    - run one real low-budget LLM evolution;
    - complete one audited stream pilot.
-2. Implement Phase 1A `population_carryover`.
+2. Run the Phase 1 smoke commands in `docs/cmhh/phase1_experiment_guide.md`.
+3. Run H1/H1b for seed 1 with a live HeurAgenix generator.
+4. Audit the seed-1 population-carryover and naive-memory runs.
 3. Add the explicit `MemoryUnit` schema before implementing any more archive
    behavior.
 4. Run the H1 pilot before building protected memory.

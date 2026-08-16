@@ -755,3 +755,63 @@ Command executed from the HeurAgenix repository root with `PYTHONPATH=src`.
 
 1. `python -m unittest discover -s tests/cmhh -v`
    - 15 tests passed.
+
+## 2026-08-16 - Phase 1D memory diagnostics and experiment guide
+
+### Scope
+
+Completed the code-side Phase 1 diagnostics needed to audit H1b.
+
+Phase 1 remains scientifically gated on real references, live HeurAgenix runs,
+multi-seed reruns, and audit. The implementation now produces the artifacts
+needed to run those gates without adding the Phase 2 Archivist.
+
+### Implemented
+
+1. Added `memory_diagnostics.py`.
+   - Computes retrieval coverage.
+   - Computes top-k concentration.
+   - Computes duplicate-key rate summaries.
+   - Computes source-task and memory-age distributions.
+   - Computes post-reuse validation delta values.
+   - Adds heuristic failure-mode labels for harmful reuse, ineffective reuse,
+     retrieval pollution, context competition, memory dilution, and retrieval
+     diversity collapse.
+2. Added validation-only carryover baseline scoring for naive-memory runs.
+   - The runner evaluates the carried-over seed population on the current
+     validation task.
+   - It compares that score with the selected post-generation candidate score.
+   - Test results are not used for memory writing, retrieval scoring, candidate
+     selection, stopping, or diagnostics.
+3. Added `memory_reuse_outcome` events.
+   - Logs retrieved memory IDs, selected validation score, carryover validation
+     score, and post-reuse validation delta.
+4. Added persisted diagnostics output.
+   - Naive-memory runs now write `memory/diagnostics.json`.
+5. Added the Phase 1 run guide.
+   - `docs/cmhh/phase1_experiment_guide.md` documents config validation, data
+     generation, reference generation, smoke runs, real H1/H1b runs, resume,
+     multi-seed execution, audit, and artifact interpretation.
+
+### Tests added
+
+- Extended `test_naive_memory_preserves_carryover_and_retrieves_memory` to
+  verify that naive-memory runs write `memory/diagnostics.json` with retrieval
+  and validation-delta diagnostics.
+
+### Verification performed
+
+Commands executed from the HeurAgenix repository root with `PYTHONPATH=src`.
+
+1. `python -m unittest discover -s tests/cmhh -v`
+   - 15 tests passed.
+2. `python -m compileall -q src/cmhh tests/cmhh`
+   - passed.
+3. `python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/h1_isolated.yaml`
+   - passed with expected pending-artifact/adapter warnings.
+4. `python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/h1_population_carryover.yaml`
+   - passed with expected pending-artifact/adapter warnings.
+5. `python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/h1_naive_sequential.yaml`
+   - passed with expected pending-artifact/adapter warnings.
+6. `git diff --check -- HeurAgenix`
+   - passed; Git only reported Windows CRLF/LF conversion warnings.
