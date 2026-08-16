@@ -164,5 +164,8 @@ cython_debug/
 
 output/
 data/
+!src/cmhh/data/
+!src/cmhh/data/**
+src/cmhh/data/__pycache__/
 cmhh/results/
 tools/concorde/

@@ -25,7 +25,8 @@ def tour_objective(instance_path: str | Path, tour: list[int]) -> float:
     total = 0.0
     for index, node in enumerate(tour):
         next_node = tour[(index + 1) % len(tour)]
-        total += float(graph[node][next_node]["weight"])
+        edge = graph[node][next_node]
+        total += float(edge["weight"] if isinstance(edge, dict) else edge)
     return total
 
 
