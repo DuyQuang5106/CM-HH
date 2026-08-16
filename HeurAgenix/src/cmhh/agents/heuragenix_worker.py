@@ -23,6 +23,27 @@ def _prompt_hash(repo_root: Path, problem: str) -> str:
     return digest.hexdigest()
 
 
+def _format_memory_context(path: str | None) -> str:
+    if not path:
+        return ""
+    memory_path = Path(path)
+    if not memory_path.exists():
+        return ""
+    units = json.loads(memory_path.read_text(encoding="utf-8"))
+    if not units:
+        return ""
+    lines = ["External memory units retrieved for this task:"]
+    for unit in units:
+        lines.append(
+            "- "
+            + unit["id"]
+            + f" [{unit['value']['type']}]: "
+            + unit["value"]["content"]
+            + f" Applicability: {unit['key']['applicability']}"
+        )
+    return "\n".join(lines)
+
+
 def run(args) -> dict:
     from src.pipeline.heuristic_evolver import HeuristicEvolver
     from src.util.llm_client.get_llm_client import get_llm_client
@@ -60,6 +81,7 @@ def run(args) -> dict:
             evolution_round=args.generations,
             max_refinement_round=max(1, args.candidates_per_generation),
             smoke_test=False,
+            external_memory_context=_format_memory_context(args.memory_context),
         )
         candidates = []
         for item in evolved or []:
@@ -87,6 +109,7 @@ def main() -> None:
     parser.add_argument("--llm-config", required=True)
     parser.add_argument("--output-root", required=True)
     parser.add_argument("--result", required=True)
+    parser.add_argument("--memory-context")
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--generations", required=True, type=int)
     parser.add_argument("--candidates-per-generation", required=True, type=int)

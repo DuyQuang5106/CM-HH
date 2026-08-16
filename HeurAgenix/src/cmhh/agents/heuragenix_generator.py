@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 from cmhh.llm.config import load_llm_config, write_sanitized_snapshot
+from cmhh.memory import MemoryUnit
 from cmhh.models import HeuristicArtifact, SearchBudget
 from cmhh.tasks import TaskSpec
 
@@ -33,12 +34,18 @@ class HeurAgenixGenerator:
         seed_population: list[HeuristicArtifact],
         budget: SearchBudget,
         seed: int,
+        memory_context: list[MemoryUnit] | None = None,
     ) -> list[HeuristicArtifact]:
         if not seed_population:
             raise ValueError("HeurAgenixGenerator requires at least one seed heuristic")
         llm_config = load_llm_config(self.llm_config_path)
         self.output_root.mkdir(parents=True, exist_ok=True)
         write_sanitized_snapshot(self.output_root / "llm_config.snapshot.json", llm_config)
+        memory_context_path = self.output_root / "memory_context.json"
+        memory_context_path.write_text(
+            json.dumps([unit.to_dict() for unit in memory_context or []], indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
         result_path = self.output_root / "generator_result.json"
         command = [
             sys.executable, "-m", "cmhh.agents.heuragenix_worker",
@@ -50,6 +57,7 @@ class HeurAgenixGenerator:
             "--llm-config", str(self.llm_config_path),
             "--output-root", str(self.output_root),
             "--result", str(result_path),
+            "--memory-context", str(memory_context_path),
             "--seed", str(seed),
             "--generations", str(budget.generations),
             "--candidates-per-generation", str(budget.candidates_per_generation),

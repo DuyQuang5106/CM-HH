@@ -24,6 +24,15 @@ from cmhh.references.tour import parse_concorde_tour, tour_objective
 from cmhh.audit import audit_run
 from cmhh.llm.budgeted_client import BudgetedLLMClient, LLMBudgetExceeded
 from cmhh.llm.config import llm_config_fingerprint, sanitized_llm_config
+from cmhh.memory import (
+    MemoryKey,
+    MemoryScope,
+    MemoryStore,
+    MemoryUnit,
+    MemoryValue,
+    create_memory_unit,
+    utc_now,
+)
 
 
 class TspGeneratorTests(unittest.TestCase):
@@ -173,7 +182,8 @@ class RunnerResumeTests(unittest.TestCase):
                 self.calls = []
                 self.fail_on = fail_on
 
-            def generate(self, task, seed_population, budget, seed):
+            def generate(self, task, seed_population, budget, seed, memory_context=None):
+                del memory_context
                 self.calls.append(task.task_id)
                 if task.task_id == self.fail_on:
                     raise RuntimeError("intentional interruption")
@@ -197,7 +207,7 @@ class RunnerResumeTests(unittest.TestCase):
                     {"nodes": 20},
                 ))
             experiment = ExperimentConfig(
-                "test", root / "results", (1,), DataConfig(42, 0, 10000, {
+                "test", "independent_seed", root / "results", (1,), DataConfig(42, 0, 10000, {
                     "train": 1, "validation": 1, "test": 1, "smoke": 1
                 }), SearchBudget(1, 1, 1), EvaluationBudget(1, 10)
             )
@@ -217,6 +227,222 @@ class RunnerResumeTests(unittest.TestCase):
                 resumed, run_dir, 1,
             ).run()
             self.assertEqual(["tsp_b"], resumed.calls)
+
+    def test_population_carryover_seeds_next_task_from_ranked_population(self) -> None:
+        class FakeEvaluator:
+            def __init__(self, repo_root):
+                self.repo_root = Path(repo_root)
+
+            def evaluate(self, artifact, task, split):
+                objective = {
+                    "baseline": 300.0,
+                    "candidate_good": 100.0,
+                    "candidate_bad": 200.0,
+                }[artifact.heuristic_id]
+                return EvaluationResult(artifact.heuristic_id, task.task_id, split, (
+                    InstanceEvaluation(
+                        "instance", "ok", objective, 100.0, "optimal",
+                        (objective - 100.0) / 100.0, 0.01
+                    ),
+                ))
+
+        class CarryoverRecordingGenerator:
+            def __init__(self, artifacts):
+                self.artifacts = artifacts
+                self.seed_ids_by_task = {}
+
+            def generate(self, task, seed_population, budget, seed, memory_context=None):
+                del budget, seed, memory_context
+                self.seed_ids_by_task[task.task_id] = [
+                    artifact.heuristic_id for artifact in seed_population
+                ]
+                if task.task_id == "tsp_a":
+                    return [self.artifacts["candidate_bad"], self.artifacts["candidate_good"]]
+                return seed_population
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            heuristic_dir = root / "src/problems/tsp/heuristics/basic_heuristics"
+            heuristic_dir.mkdir(parents=True)
+            paths = {}
+            for heuristic_id in ("baseline", "candidate_good", "candidate_bad"):
+                path = heuristic_dir / f"{heuristic_id}.py"
+                path.write_text(f"def {heuristic_id}():\n    return None\n", encoding="utf-8")
+                paths[heuristic_id] = path
+            split = root / "split"
+            split.mkdir()
+            tasks = []
+            for task_id in ("tsp_a", "tsp_b"):
+                tasks.append(TaskSpec(
+                    task_id, "tsp", "n20", "uniform",
+                    TaskSplits(split, split, split, split),
+                    TaskReference("optimal"), TaskMetric("relative_gap", "minimize"), True,
+                    {"heuristic_dir": "basic_heuristics", "seed_heuristics": ["baseline"]},
+                    {"nodes": 20},
+                ))
+            experiment = ExperimentConfig(
+                "test", "population_carryover", root / "results", (1,),
+                DataConfig(42, 0, 10000, {
+                    "train": 1, "validation": 1, "test": 1, "smoke": 1
+                }),
+                SearchBudget(1, 1, 1), EvaluationBudget(1, 10)
+            )
+            artifacts = {
+                heuristic_id: HeuristicArtifact(
+                    heuristic_id, "tsp", path, hashlib.sha256(path.read_bytes()).hexdigest()
+                )
+                for heuristic_id, path in paths.items()
+            }
+            generator = CarryoverRecordingGenerator(artifacts)
+            StreamRunner(
+                TaskRegistry(tasks), StreamConfig("carryover", ("tsp_a", "tsp_b")),
+                experiment, FakeEvaluator(root), generator, root / "run", 1,
+            ).run()
+            self.assertEqual(["baseline"], generator.seed_ids_by_task["tsp_a"])
+            self.assertEqual(
+                ["candidate_good", "candidate_bad"],
+                generator.seed_ids_by_task["tsp_b"],
+            )
+
+    def test_naive_memory_preserves_carryover_and_retrieves_memory(self) -> None:
+        class FakeEvaluator:
+            def __init__(self, repo_root):
+                self.repo_root = Path(repo_root)
+
+            def evaluate(self, artifact, task, split):
+                objective = {
+                    "baseline": 300.0,
+                    "candidate_good": 100.0,
+                    "candidate_bad": 200.0,
+                }[artifact.heuristic_id]
+                return EvaluationResult(artifact.heuristic_id, task.task_id, split, (
+                    InstanceEvaluation(
+                        "instance", "ok", objective, 100.0, "optimal",
+                        (objective - 100.0) / 100.0, 0.01
+                    ),
+                ))
+
+        class MemoryRecordingGenerator:
+            def __init__(self, artifacts):
+                self.artifacts = artifacts
+                self.seed_ids_by_task = {}
+                self.memory_counts_by_task = {}
+
+            def generate(self, task, seed_population, budget, seed, memory_context=None):
+                del budget, seed
+                self.seed_ids_by_task[task.task_id] = [
+                    artifact.heuristic_id for artifact in seed_population
+                ]
+                self.memory_counts_by_task[task.task_id] = len(memory_context or [])
+                if task.task_id == "tsp_a":
+                    return [self.artifacts["candidate_bad"], self.artifacts["candidate_good"]]
+                return seed_population
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            heuristic_dir = root / "src/problems/tsp/heuristics/basic_heuristics"
+            heuristic_dir.mkdir(parents=True)
+            paths = {}
+            for heuristic_id in ("baseline", "candidate_good", "candidate_bad"):
+                path = heuristic_dir / f"{heuristic_id}.py"
+                path.write_text(f"def {heuristic_id}():\n    return None\n", encoding="utf-8")
+                paths[heuristic_id] = path
+            split = root / "split"
+            split.mkdir()
+            tasks = []
+            for task_id in ("tsp_a", "tsp_b"):
+                tasks.append(TaskSpec(
+                    task_id, "tsp", "n20", "uniform",
+                    TaskSplits(split, split, split, split),
+                    TaskReference("optimal"), TaskMetric("relative_gap", "minimize"), True,
+                    {"heuristic_dir": "basic_heuristics", "seed_heuristics": ["baseline"]},
+                    {"nodes": 20},
+                ))
+            experiment = ExperimentConfig(
+                "test", "naive_memory_sequential", root / "results", (1,),
+                DataConfig(42, 0, 10000, {
+                    "train": 1, "validation": 1, "test": 1, "smoke": 1
+                }),
+                SearchBudget(1, 1, 1), EvaluationBudget(1, 10)
+            )
+            artifacts = {
+                heuristic_id: HeuristicArtifact(
+                    heuristic_id, "tsp", path, hashlib.sha256(path.read_bytes()).hexdigest()
+                )
+                for heuristic_id, path in paths.items()
+            }
+            generator = MemoryRecordingGenerator(artifacts)
+            run_dir = root / "run"
+            StreamRunner(
+                TaskRegistry(tasks), StreamConfig("memory", ("tsp_a", "tsp_b")),
+                experiment, FakeEvaluator(root), generator, run_dir, 1,
+            ).run()
+            self.assertEqual(
+                ["candidate_good", "candidate_bad"],
+                generator.seed_ids_by_task["tsp_b"],
+            )
+            self.assertEqual(0, generator.memory_counts_by_task["tsp_a"])
+            self.assertGreater(generator.memory_counts_by_task["tsp_b"], 0)
+            self.assertTrue((run_dir / "memory" / "memory.jsonl").exists())
+
+
+class MemoryModelTests(unittest.TestCase):
+    def test_memory_unit_round_trips_through_dict(self) -> None:
+        unit = MemoryUnit(
+            id="mem-1",
+            created_at=utc_now(),
+            scope=MemoryScope(problem="tsp", task_id="tsp_n20_uniform"),
+            key=MemoryKey(
+                applicability="Use for compact Euclidean TSP instances",
+                task_signature={"nodes": 20},
+                bottleneck_type="construction_bias",
+            ),
+            value=MemoryValue(
+                type="insight",
+                content="Nearest-neighbor seeds need insertion refinement on dispersed points.",
+            ),
+        )
+        self.assertEqual(unit, MemoryUnit.from_dict(unit.to_dict()))
+
+    def test_memory_id_is_deterministic(self) -> None:
+        kwargs = {
+            "scope": MemoryScope(problem="tsp", task_id="tsp_n20_uniform"),
+            "key": MemoryKey(
+                applicability="Use for compact Euclidean TSP instances",
+                task_signature={"nodes": 20},
+            ),
+            "value": MemoryValue("insight", "Prefer insertion refinement after NN."),
+        }
+        first = create_memory_unit(**kwargs, created_at="2026-01-01T00:00:00Z")
+        second = create_memory_unit(**kwargs, created_at="2026-02-01T00:00:00Z")
+        self.assertEqual(first.id, second.id)
+
+    def test_memory_store_persists_jsonl_and_updates_validation_only(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            store = MemoryStore(Path(directory) / "memory.jsonl")
+            unit = create_memory_unit(
+                scope=MemoryScope(problem="tsp", task_id="tsp_n20_uniform"),
+                key=MemoryKey(applicability="Use on small Euclidean TSP"),
+                value=MemoryValue("warning", "Do not overuse raw trajectories."),
+                created_at="2026-01-01T00:00:00Z",
+            )
+            store.upsert(unit)
+            self.assertEqual([unit], store.load_all())
+
+            updated = store.update_validation_evidence(
+                unit.id,
+                split="validation",
+                validation_after={"score": -0.1},
+            )
+            self.assertEqual({"score": -0.1}, updated.evidence.validation_after)
+            self.assertEqual([updated], store.load_all())
+
+            with self.assertRaises(ValueError):
+                store.update_validation_evidence(
+                    unit.id,
+                    split="test",
+                    validation_after={"score": 1.0},
+                )
 
 
 if __name__ == "__main__":

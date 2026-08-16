@@ -1,7 +1,7 @@
 version: 1
 experiment:
-  name: h1_naive_sequential
-  condition: naive_memory_sequential
+  name: h1_population_carryover
+  condition: population_carryover
   output_root: cmhh/results
   seeds: [1, 2, 3]
 data:
@@ -21,4 +21,3 @@ evaluation:
   instance_timeout_seconds: 10
   batch_timeout_seconds: 300
   invalid_policy: fail_batch
-

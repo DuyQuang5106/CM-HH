@@ -200,6 +200,7 @@ def main(argv: list[str] | None = None) -> int:
                 seed,
                 [experiment_path, stream_path, root / "cmhh/configs/tasks/task_registry.yaml"],
                 {
+                    "condition": experiment.condition,
                     "generator": args.generator,
                     "stream_id": stream.stream_id,
                     "data_manifests": {str(path): sha256_file(path) for path in data_manifests},
@@ -249,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
             seed,
             [experiment_path, stream_path, root / "cmhh/configs/tasks/task_registry.yaml"],
             {
-                "condition": "isolated_task",
+                "condition": experiment.condition,
                 "generator": args.generator,
                 "stream_id": stream.stream_id,
                 "data_manifests": {str(path): sha256_file(path) for path in data_manifests},

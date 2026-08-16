@@ -44,6 +44,15 @@ def validate_configuration(
         report.errors.append("coordinate_max must be greater than coordinate_min")
     if experiment.evaluation.instance_timeout_seconds <= 0:
         report.errors.append("instance timeout must be positive")
+    allowed_conditions = {
+        "independent_seed",
+        "isolated_task",
+        "population_carryover",
+        "naive_memory_sequential",
+        "naive_sequential",
+    }
+    if experiment.condition not in allowed_conditions:
+        report.errors.append(f"Unknown experiment condition: {experiment.condition}")
 
     defaults_path = root / "cmhh/configs/tasks/problem_defaults.yaml"
     tiers_path = root / "cmhh/configs/tasks/size_tiers.yaml"

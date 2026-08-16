@@ -59,6 +59,7 @@ class HeuristicEvolver:
             evolution_round: int=3,
             max_refinement_round: int=5,
             smoke_test: bool=True,
+            external_memory_context: str="",
         ) -> None:
 
         # Prepare other heuristics' description for this evolution
@@ -68,6 +69,8 @@ class HeuristicEvolver:
             extract_function_with_short_docstring(open(search_file(heuristic_file, self.problem), encoding="utf-8").read(), heuristic_file.split(".")[0])
             for heuristic_file in os.listdir(heuristic_dir)
         ])
+        if external_memory_context:
+            heuristic_introduction_docs += "\n\n" + external_memory_context
 
         total_heuristic_benchmarks = [(basic_heuristic_file, 0)]
         for _ in range(evolution_round):

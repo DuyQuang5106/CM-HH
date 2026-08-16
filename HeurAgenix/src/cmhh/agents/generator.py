@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from cmhh.baselines import baseline_artifacts
+from cmhh.memory import MemoryUnit
 from cmhh.models import HeuristicArtifact, SearchBudget
 from cmhh.tasks import TaskSpec
 
@@ -14,6 +15,7 @@ class Generator(Protocol):
         seed_population: list[HeuristicArtifact],
         budget: SearchBudget,
         seed: int,
+        memory_context: list[MemoryUnit] | None = None,
     ) -> list[HeuristicArtifact]: ...
 
 
@@ -29,8 +31,9 @@ class BaselineGenerator:
         seed_population: list[HeuristicArtifact],
         budget: SearchBudget,
         seed: int,
+        memory_context: list[MemoryUnit] | None = None,
     ) -> list[HeuristicArtifact]:
-        del budget, seed
+        del budget, seed, memory_context
         return seed_population or baseline_artifacts(task, self.repo_root)
 
 

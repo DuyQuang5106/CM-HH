@@ -20,6 +20,7 @@ class DataConfig:
 @dataclass(frozen=True)
 class ExperimentConfig:
     name: str
+    condition: str
     output_root: Path
     seeds: tuple[int, ...]
     data: DataConfig
@@ -54,6 +55,7 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
         output_root = root / output_root
     return ExperimentConfig(
         name=experiment["name"],
+        condition=experiment.get("condition", "independent_seed"),
         output_root=output_root,
         seeds=tuple(int(seed) for seed in experiment["seeds"]),
         data=DataConfig(
