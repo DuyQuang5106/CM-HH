@@ -21,7 +21,7 @@ This file is the live milestone tracker for CM-HH. It should be updated next to
 | Phase | Theme | Scientific Role | Current Status |
 | --- | --- | --- | --- |
 | Phase 0 | Experimental foundation | Make data, evaluation, references, budgets, resume, and audit trustworthy before testing hypotheses. | `[~]` Code mostly present; live references/LLM gates remain. |
-| Phase 1 | H1/H1b memory baselines | Test whether sequential adaptation and naive memory produce forgetting or retrieval interference. | `[ ]` Planned. |
+| Phase 1 | H1/H1b memory baselines | Test whether sequential adaptation and naive memory produce forgetting or retrieval interference. | `[~]` Phase 1A-C implemented; diagnostics and live gates remain. |
 | Phase 2 | H2 Archivist memory | Implement protected/distilled insight memory and compare against Phase 1 baselines. | `[ ]` Planned. |
 | Phase 3 | H3 curriculum and full study | Run curriculum ablations, cross-problem stream, diagnostics, and paper-ready reporting. | `[ ]` Planned. |
 
@@ -73,18 +73,19 @@ Phase 1 separates three ideas that are easy to accidentally mix:
 1. isolated cold-start search has no stream and no forgetting;
 2. population-carryover sequential search has no explicit memory, but transfers
    the final population from task `k` to task `k+1`;
-3. naive external memory adds an uncurated memory pool and therefore can create
-   retrieval-side interference.
+3. naive external memory keeps the same population carryover as (2), then adds
+   an uncurated memory pool. This isolates retrieval-side interference beyond
+   population drift.
 
 ### Phase 1A - Population-Carryover Sequential
 
-- [ ] Add a `population_carryover` condition/config.
-- [ ] Persist the final selected candidate population after each task.
-- [ ] Seed the next task's generator from the previous final population.
-- [ ] Disable external memory retrieval, Archivist distillation, protection,
+- [x] Add a `population_carryover` condition/config.
+- [x] Persist the final selected candidate population after each task.
+- [x] Seed the next task's generator from the previous final population.
+- [x] Disable external memory retrieval, Archivist distillation, protection,
   and eviction.
-- [ ] Re-evaluate after every task on all previously seen test tasks.
-- [ ] Emit a performance matrix compatible with existing BWT/FWT metrics.
+- [x] Re-evaluate after every task on all previously seen test tasks.
+- [x] Emit a performance matrix compatible with existing BWT/FWT metrics.
 
 **H1 gate:** compare isolated cold-start against population-carryover
 sequential. H1 is only about forgetting from sequential adaptation/population
@@ -92,31 +93,35 @@ drift, not about memory retrieval.
 
 ### Phase 1B - Explicit Memory Object Model
 
-- [ ] Add a first-class `MemoryUnit` model:
+- [x] Add a first-class `MemoryUnit` model:
   - `scope`: problem/task/heuristic family/generation;
   - `key`: task signature, state signature, bottleneck type, applicability;
   - `value`: insight, rule, warning, code adjustment, or trajectory;
   - `evidence`: artifact paths, validation scores, code hashes;
   - `policy`: confidence, retrieval count, success/failure count, protected.
-- [ ] Persist memory as JSONL or manifest-backed records under the run output.
-- [ ] Add deterministic memory IDs.
-- [ ] Add validation-only evidence updates.
-- [ ] Block test results from memory writing, retrieval scoring, selection, and
+- [x] Persist memory as JSONL or manifest-backed records under the run output.
+- [x] Add deterministic memory IDs.
+- [x] Add validation-only evidence updates.
+- [x] Block test results from memory writing, retrieval scoring, selection, and
   stopping decisions.
 
 ### Phase 1C - Naive External-Memory Sequential
 
-- [ ] Add a `naive_memory_sequential` condition/config.
-- [ ] Implement `naive_overwrite` over `MemoryUnit` records.
-- [ ] Start with weak/no distillation to model an uncurated archive.
-- [ ] Retrieve top-m memory units at the start of each task-generation episode.
-- [ ] Insert retrieved memory into the generator prompt/seed protocol in a
+- [x] Preserve all `population_carryover` behavior: task `k+1` must still be
+  seeded from task `k`'s final ranked population.
+- [x] Add a `naive_memory_sequential` condition/config.
+- [x] Implement `naive_overwrite` over `MemoryUnit` records.
+- [x] Start with weak/no distillation to model an uncurated archive.
+- [x] Retrieve top-m memory units at the start of each task-generation episode.
+- [x] Insert retrieved memory into the generator prompt/seed protocol in a
   deterministic, logged format.
-- [ ] Log retrieval ranks, source task, retrieval score, duplicate-key rate, and
+- [x] Log retrieval ranks, source task, retrieval score, duplicate-key rate, and
   whether each retrieved unit was actually used.
 
 **H1b gate:** compare population-carryover against naive-memory sequential.
-H1b is about retrieval-side interference beyond population drift.
+H1b is about retrieval-side interference beyond population drift. Therefore
+`naive_memory_sequential` must differ from `population_carryover` only by
+enabling the naive external memory pool and retrieval path.
 
 ### Phase 1D - Diagnostics
 

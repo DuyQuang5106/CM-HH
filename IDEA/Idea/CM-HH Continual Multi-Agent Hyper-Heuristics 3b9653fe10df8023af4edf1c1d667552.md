@@ -43,7 +43,7 @@ Read these in this order. For each, you need to understand *what problem it solv
 **Hypotheses to test** (these become your paper's claims if confirmed):
 
 - **H1**: A minimal sequential system with no explicit external memory or Archivist, but with population carryover from each task to the next, will show measurable negative backward transfer as the final population drifts toward newer tasks. This is the lowest-level continual baseline: it tests forgetting caused by sequential adaptation alone, before adding any memory retrieval mechanism.
-- **H1b**: A naive external-memory system with `naive_overwrite` may improve forward transfer relative to pure population carryover, but can introduce retrieval-side interference as the memory pool grows. In memory terms, the failure may appear not only as old heuristics being evicted, but also as useful old experience becoming harder to retrieve because newer or irrelevant memories pollute the context.
+- **H1b**: A naive external-memory system with `naive_overwrite`, while retaining the same population carryover as H1, may improve forward transfer relative to pure population carryover, but can introduce retrieval-side interference as the memory pool grows. In memory terms, the failure may appear not only as old heuristics being evicted, but also as useful old experience becoming harder to retrieve because newer or irrelevant memories pollute the context.
 - **H2**: An Archivist that stores distilled insight memory units `(key, value)` and protects/curates them reduces forgetting and harmful retrieval relative to naive overwrite, without meaningfully hurting new-task performance.
 - **H3**: Task order matters â€” introducing structurally similar tasks adjacent to each other (or a size-ascending order) produces less forgetting and/or faster acquisition than a random order, holding the memory mechanism fixed.
 
@@ -126,7 +126,7 @@ Be precise about this â€” muddled baselines are the single most common reas
 | --- | --- | --- | --- |
 | **Isolated-task baseline** | None â€” every task solved from scratch, independently, no stream at all | N/A | Establishes the *ceiling* for per-task performance and gives you a "there was nothing to forget" reference point |
 | **Population-carryover sequential** | No explicit memory; final population from task k seeds task k+1 | Random or fixed stream order | The lowest continual baseline. It tests whether sequential adaptation alone causes population drift and forgetting before any Archivist/retrieval mechanism is introduced. |
-| **Naive-memory sequential** | External memory pool with `naive_overwrite`; no protected units, weak/no distillation | Random | The realistic memory failure mode â€” what you'd get if you chained HMACE/EoH across tasks with an uncurated archive. This isolates retrieval pollution/memory dilution beyond population carryover. |
+| **Naive-memory sequential** | Same population carryover as H1, plus external memory pool with `naive_overwrite`; no protected units, weak/no distillation | Random | The realistic memory failure mode â€” what you'd get if you chained HMACE/EoH across tasks with an uncurated archive. This isolates retrieval pollution/memory dilution beyond population carryover. |
 | **CM-HH (full system)** | Archivist-distilled insight memory units `(key, value)` with `utility_weighted_retention` | Best-performing order from your curriculum ablation | The proposed system |
 
 ### 5.2 The ablation grid
@@ -406,6 +406,8 @@ Goal: make memory units first-class artifacts.
 Goal: test H1b separately from pure population drift.
 
 - Implement `naive_overwrite` over explicit `MemoryUnit` records.
+- Preserve the Phase 1A population-carryover mechanism exactly; the only
+  experimental difference from H1 should be enabling naive external memory.
 - Use weak/no distillation first, so this condition behaves like an uncurated
   archive.
 - Retrieve top-m memory units at the start of each task-generation episode.

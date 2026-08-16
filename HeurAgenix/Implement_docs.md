@@ -555,3 +555,203 @@ The downloaded compressed executable had SHA-256
 
 These are installation pilots, not experimental results. The remaining 29 test
 instances per size still require reference generation and full verification.
+
+## 2026-08-16 - Phase 1A population carryover and memory schema scaffold
+
+### Scope
+
+Started Phase 1 implementation from `Implementation_plan.md`.
+
+This increment implements the lowest-level H1 baseline:
+
+`population_carryover`: no explicit external memory, no Archivist retrieval, no
+distillation, no protection, and no eviction. The final ranked candidate
+population after task `k` is persisted in the stream checkpoint and used as the
+seed population for task `k+1`.
+
+This separates H1 from H1b:
+
+- H1 tests forgetting from sequential adaptation and population drift.
+- H1b will later test retrieval-side interference from naive external memory.
+
+### Implemented
+
+1. Added `experiment.condition` to `ExperimentConfig`.
+   - Default is `independent_seed`, preserving Phase 0 behavior.
+   - Allowed conditions include `isolated_task`, `population_carryover`, and
+     `naive_memory_sequential`.
+2. Added `cmhh/configs/experiments/h1_population_carryover.yaml`.
+3. Updated `StreamRunner`:
+   - ranks all smoke/validation-valid candidates, not only the best one;
+   - selects the first ranked candidate as before;
+   - stores ranked population in checkpoints as `carryover_population`;
+   - when condition is `population_carryover`, seeds the next task from that
+     ranked population if the problem family is compatible;
+   - logs `population_carried_over` events.
+4. Updated manifest metadata to record the experiment condition.
+5. Renamed the naive-memory config condition from `naive_sequential` to
+   `naive_memory_sequential`.
+6. Added `src/cmhh/memory.py` as the Phase 1B schema scaffold:
+   - `MemoryScope`
+   - `MemoryKey`
+   - `MemoryValue`
+   - `MemoryEvidence`
+   - `MemoryPolicyState`
+   - `MemoryUnit`
+7. Restored the missing `src/cmhh/data` package required by existing CM-HH
+   imports and tests:
+   - `manifest.py`
+   - `references.py`
+   - `tsp_io.py`
+   - `tsp_generator.py`
+8. Updated `tour_objective()` to support both matrix-style distance graphs and
+   dict-edge graphs.
+
+### Tests added
+
+- `test_population_carryover_seeds_next_task_from_ranked_population`
+  verifies that task 2 receives the ranked valid population from task 1 rather
+  than falling back to built-in baselines.
+- `test_memory_unit_round_trips_through_dict` verifies the schema can be
+  serialized and reloaded.
+
+### Verification performed
+
+Commands executed from the HeurAgenix repository root with `PYTHONPATH=src`.
+
+1. `python -m unittest discover -s tests/cmhh -v`
+   - 12 tests passed.
+2. `python -m compileall -q src/cmhh tests/cmhh`
+   - passed.
+3. `python -m cmhh.cli validate-config`
+   - passed with expected pending-artifact/adapter warnings.
+4. `python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/h1_population_carryover.yaml`
+   - passed with expected pending-artifact/adapter warnings.
+5. `git diff --check -- HeurAgenix`
+   - passed; Git only reported Windows CRLF/LF conversion warnings.
+
+### Remaining Phase 1 work
+
+1. Implement persisted memory records and deterministic memory IDs.
+2. Implement `naive_memory_sequential` retrieval over `MemoryUnit`.
+3. Add retrieval diagnostics for H1b.
+4. Run the H1 population-carryover pilot only after Phase 0 references and live
+   LLM gates are complete.
+
+## 2026-08-16 - Phase 1B persisted memory object model
+
+### Scope
+
+Completed the remaining Phase 1B memory-object work from
+`Implementation_plan.md`.
+
+This increment still does not enable memory retrieval in the runner. It makes
+memory auditable and persistable so Phase 1C can implement naive external
+memory without inventing ad hoc dict formats.
+
+### Implemented
+
+1. Added deterministic memory IDs.
+   - `create_memory_unit()` now derives IDs from stable memory content.
+   - `created_at` and policy counters do not affect the ID.
+2. Added `MemoryStore`.
+   - Persists memory as JSONL.
+   - Supports `load_all()`, `save_all()`, and `upsert()`.
+   - Rewrites atomically to avoid partial JSONL writes.
+3. Added validation-only evidence updates.
+   - `update_validation_evidence()` accepts only `split="validation"`.
+   - Attempts to update memory evidence from `test` raise an error.
+4. Kept retrieval, scoring, and prompt insertion out of this increment. Those
+   belong to Phase 1C.
+
+### Tests added
+
+- `test_memory_id_is_deterministic`
+- `test_memory_store_persists_jsonl_and_updates_validation_only`
+
+### Verification performed
+
+Command executed from the HeurAgenix repository root with `PYTHONPATH=src`.
+
+1. `python -m unittest discover -s tests/cmhh -v`
+   - 14 tests passed.
+
+## 2026-08-16 - Phase 1C control freeze
+
+### Decision
+
+Before implementing Phase 1C, freeze the H1b control as:
+
+`naive_memory_sequential = population_carryover + naive external memory`.
+
+This means the naive-memory condition must preserve the full Phase 1A behavior:
+
+- task `k+1` is seeded from task `k`'s final ranked population;
+- no fallback to a memory-only seed path should replace population carryover;
+- the only experimental difference from `population_carryover` is that an
+  uncurated external memory pool is written, retrieved, and inserted into the
+  generation context.
+
+### Rationale
+
+H1b is defined as retrieval-side interference beyond population drift. If
+`naive_memory_sequential` removed population carryover, any difference from H1
+could come from either changed population transfer or memory retrieval. Keeping
+carryover identical isolates the marginal effect of naive external memory.
+
+## 2026-08-16 - Phase 1C naive external memory baseline
+
+### Scope
+
+Implemented the Phase 1C `naive_memory_sequential` condition.
+
+The control freeze is enforced in code:
+
+`naive_memory_sequential = population_carryover + naive external memory`.
+
+The condition keeps task-to-task final-population carryover and adds an
+uncurated memory pool as generation context. It does not replace carryover with
+memory retrieval.
+
+### Implemented
+
+1. Extended the generator protocol with optional `memory_context`.
+   - `BaselineGenerator` ignores it.
+   - `HeurAgenixGenerator` snapshots retrieved memory to
+     `memory_context.json`.
+2. Added worker/evolver threading for memory context.
+   - The worker formats retrieved memory units.
+   - `HeuristicEvolver.evolve()` accepts `external_memory_context`.
+   - The context is appended to heuristic-doc/context material used by the
+     evolution prompts.
+3. Added naive retrieval over `MemoryUnit`.
+   - Retrieval scores by problem match, task-signature overlap, and
+     applicability text.
+   - Top-k default is 5.
+4. Added naive memory writing in `StreamRunner`.
+   - After validation ranking, all valid ranked candidates become uncurated
+     memory units.
+   - Memory value type is `trajectory` to reflect weak/no distillation.
+   - Evidence includes source code path, code hash, and validation summary.
+5. Added naive-overwrite capacity enforcement.
+   - Default capacity is 20.
+   - Evicts the lowest validation score first with deterministic tie breakers.
+6. Added retrieval/memory events:
+   - `memory_retrieved`
+   - `memory_written`
+   - `memory_evicted`
+   - retrieval logs include memory IDs, ranks, scores, source tasks,
+     duplicate-key rate, and whether the memory was used in generation.
+
+### Tests added
+
+- `test_naive_memory_preserves_carryover_and_retrieves_memory`
+  verifies that the naive-memory condition keeps the ranked carryover
+  population while also retrieving memory for the next task.
+
+### Verification performed
+
+Command executed from the HeurAgenix repository root with `PYTHONPATH=src`.
+
+1. `python -m unittest discover -s tests/cmhh -v`
+   - 15 tests passed.
