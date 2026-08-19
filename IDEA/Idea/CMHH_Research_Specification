@@ -1,0 +1,421 @@
+# CMHH Research Specification
+
+## 1. Research Thesis
+
+Current LLM-based heuristic search systems are primarily designed to optimize heuristics for a fixed optimization problem, a fixed task, or a predefined task distribution. In such settings, heuristic search is typically performed as an isolated optimization process: the system searches for high-performing heuristics for the current task, but the knowledge discovered during that search is not explicitly treated as knowledge that should be preserved, reused, and managed across future tasks.
+
+However, real-world optimization systems may operate in a non-stationary environment where optimization tasks arrive sequentially:
+
+$$
+T_1 \rightarrow T_2 \rightarrow T_3 \rightarrow \dots \rightarrow T_K
+$$
+
+Later tasks may differ from earlier ones in problem scale, instance distribution, problem family, or a combination of these shifts. In this setting, repeatedly restarting heuristic search from scratch discards potentially reusable knowledge discovered on previous tasks. Conversely, continuously carrying previous heuristic knowledge forward may introduce interference when previously useful knowledge becomes irrelevant, misleading, or competes with knowledge required by the current task.
+
+CMHH studies this setting from a Continual Learning perspective.
+
+The central research question is:
+
+> **Can an LLM-based heuristic search system continuously acquire, retain, and reuse heuristic knowledge across a sequential stream of combinatorial optimization tasks while avoiding destructive interference with previously acquired capabilities?**
+>
+> **More specifically: can the system construct a persistent problem-solving competence such that previously learned tasks remain solvable without full re-optimization, while knowledge from earlier tasks supports efficient adaptation to new ones?**
+
+The continual-learning problem in CMHH differs from classical parameter-based continual learning. In neural continual learning, knowledge is primarily encoded in model parameters, and catastrophic forgetting is commonly observed when parameter updates for new tasks degrade performance on previously learned tasks.
+
+In CMHH, the LLM itself is not continually trained. Instead, learning occurs at the level of the heuristic-search system. The system discovers explicit heuristic artifacts and accumulates information about their usefulness while interacting with a sequence of optimization tasks.
+
+**Crucially, in CMHH, evolutionary heuristic search is the learning process, while the accumulated heuristic memory, retrieval mechanisms, and decision systems constitute the learned continual system.** This resembles the relationship between training (SGD) and trained model in neural continual learning, but adapted to a domain where the LLM is frozen and learning operates on heuristic knowledge rather than model parameters.
+
+Therefore, CMHH reframes continual learning from:
+
+$$
+\text{continual preservation of learned model parameters}
+$$
+
+to:
+
+$$
+\text{continual acquisition, retention, retrieval, and adaptation of heuristic knowledge}.
+$$
+
+Under this formulation, forgetting should not be interpreted simply as the physical deletion of a stored heuristic. A heuristic may remain present in an external memory while the overall system loses the ability to effectively retrieve, select, adapt, or reuse it. Consequently, forgetting in CMHH is fundamentally a **loss of previously acquired problem-solving capability**, which may arise from different underlying memory and search mechanisms.
+
+We distinguish **functional forgetting** from mere storage loss:
+
+- **Storage forgetting**: heuristic knowledge is physically removed or overwritten.
+- **Functional forgetting**: despite stored knowledge remaining intact, the system cannot reliably retrieve, select, or effectively apply it to a previously learned task, resulting in degraded performance without full re-search.
+
+A continual learning system must guard against both. The critical insight is that **stored knowledge ≠ accessible competence**; forgetting must be measured at the capability level, not merely at the storage level.
+
+This creates a stability–plasticity problem at the heuristic-knowledge level:
+
+- **Plasticity** is the ability of the system to discover and adapt heuristic knowledge for newly encountered tasks.
+- **Stability** is the ability to preserve and reuse useful knowledge acquired from previous tasks.
+
+A successful continual heuristic-search system must achieve both. Excessive plasticity may cause useful past knowledge to disappear or become inaccessible, while excessive stability may prevent the system from adapting to new tasks.
+
+CMHH therefore investigates whether explicit management of heuristic knowledge can provide a better stability–plasticity trade-off than either independent heuristic search or naive forms of knowledge carryover.
+
+---
+
+### Continual Competence and the Three Capabilities
+
+The goal of CMHH is to develop a continual learning system with three core capabilities:
+
+**Retention**: After processing a task stream $\mathcal{T} = (T_1, \dots, T_K)$, if a previously learned task $T_j$ (where $j \le K$) is encountered again, the system must retain sufficient competence to solve it effectively **without performing full heuristic re-search from scratch**. This mirrors the expectation in classical continual learning that a final model should remain capable on previously learned tasks.
+
+**Forward Transfer**: When encountering a novel task $T_{K+1}$, knowledge accumulated during prior task learning should reduce the cost of learning (fewer LLM calls, fewer evaluations, fewer generations, or faster search) or improve solution quality under a fixed computational budget, compared to learning from cold start.
+
+**Backward Transfer**: Knowledge learned from later tasks may, though not mandatorily, improve the system's capability on earlier tasks. This is stronger than merely preserving old capabilities and represents true bidirectional learning.
+
+To summarize CMHH's continual learning objective:
+
+$$
+\boxed{
+\text{Retain previous competence} + \text{Reuse retained knowledge} + \text{Adapt to new tasks}
+}
+$$
+
+---
+
+## 2. Problem Definition
+
+### 2.1 Sequential Combinatorial Optimization Setting
+
+Let a continual optimization environment consist of an ordered task stream
+
+$$
+\mathcal{T} = (T_1, T_2, \dots, T_K),
+$$
+
+where each $T_k$ represents a combinatorial optimization task encountered at step $k$.
+
+The system processes these tasks sequentially:
+
+$$
+T_1 \rightarrow T_2 \rightarrow \dots \rightarrow T_K.
+$$
+
+At task $T_k$, the heuristic-search system is allowed to search for and evaluate heuristics using information available from the current task and any knowledge legitimately retained from previous tasks.
+
+After finishing $T_k$, the system proceeds to $T_{k+1}$ without revisiting the optimization process for earlier tasks except through explicitly defined evaluation procedures.
+
+The key distinction from conventional heuristic search is therefore that the optimization process is not treated as a collection of independent runs. Instead, the internal state accumulated while solving previous tasks may influence how subsequent tasks are solved.
+
+### 2.2 Definition of a Task
+
+A task $T_k$ specifies an optimization environment under which candidate heuristics are generated, evaluated, and selected.
+
+Conceptually, a task may be represented as
+
+$$
+T_k = (\mathcal{P}_k, \mathcal{D}_k, \mathcal{I}_k, \mathcal{E}_k),
+$$
+
+where:
+
+- $\mathcal{P}_k$ denotes the combinatorial optimization problem definition;
+- $\mathcal{D}_k$ denotes the distribution from which problem instances are generated or sampled;
+- $\mathcal{I}_k$ denotes the instance-scale or structural characteristics of the task;
+- $\mathcal{E}_k$ denotes the evaluation setting used to measure heuristic performance.
+
+Two tasks may therefore belong to the same optimization problem while still differing in scale or instance distribution.
+
+For example,
+
+$$
+T_1 = \text{TSP-20}, \qquad
+T_2 = \text{TSP-50}, \qquad
+T_3 = \text{TSP-100}
+$$
+
+form a task stream in which the underlying TSP formulation remains unchanged while problem scale increases.
+
+### 2.3 Types of Task Shift
+
+A transition
+
+$$
+T_k \rightarrow T_{k+1}
+$$
+
+may introduce one or more forms of change.
+
+#### Scale shift
+
+The underlying optimization problem and instance distribution remain approximately the same, while the size or complexity of the instances changes.
+
+Example:
+
+$$
+\text{TSP-20}
+\rightarrow
+\text{TSP-50}
+\rightarrow
+\text{TSP-100}
+\rightarrow
+\text{TSP-200}.
+$$
+
+Scale shift tests whether heuristic knowledge discovered at one problem size remains useful as problem size changes.
+
+#### Instance-distribution shift
+
+The underlying optimization problem remains the same, but the distribution of problem instances changes.
+
+For example, Euclidean TSP instances may change from uniformly distributed cities to clustered spatial distributions.
+
+This setting tests whether the system can adapt previously acquired heuristic knowledge to a new region of the same problem space.
+
+#### Problem-family shift
+
+The underlying combinatorial optimization problem itself changes.
+
+For example,
+
+$$
+\text{TSP}
+\rightarrow
+\text{CVRP}
+\rightarrow
+\text{OVRP}.
+$$
+
+Such transitions require substantially stronger knowledge transfer because objectives, constraints, state representations, or feasible-solution structures may change.
+
+#### Composite shift
+
+A task transition may combine multiple shifts simultaneously.
+
+For example,
+
+$$
+\text{TSP-50, uniform}
+\rightarrow
+\text{CVRP-100, clustered}
+$$
+
+contains both a problem-family shift and changes in scale and instance distribution.
+
+CMHH does not assume that all forms of shift are equally difficult or require the same type of transferable heuristic knowledge. Instead, task-shift severity is treated as an important property of the continual optimization environment.
+
+### 2.4 Continual Heuristic Search
+
+For each task $T_k$, let
+
+$$
+P_k
+$$
+
+denote the working population of candidate heuristics used by the evolutionary heuristic-search process.
+
+A conventional independent-search system initializes a new population for every task:
+
+$$
+T_k \rightarrow P_k^{(0)}.
+$$
+
+No useful search state is intentionally transferred between tasks.
+
+A continual heuristic-search system instead allows information discovered during previous tasks to influence the search process for \(T_k\).
+
+The generic process can be represented as
+
+$$
+(T_k, P_k, M_{k-1})
+\rightarrow
+\text{Heuristic Search}
+\rightarrow
+(P_k^{*}, M_k),
+$$
+
+where:
+
+- $P_k$ is the working heuristic population for the current task;
+- $P_k^{*}$ is the population produced after search on $T_k$;
+- $M_{k-1}$ denotes knowledge retained before entering $T_k$;
+- $M_k$ denotes the retained knowledge state after processing $T_k$.
+
+The exact definition and structure of $M_k$ are intentionally left open at this stage and will be specified in the **Knowledge Definition** and **Memory Definition** sections.
+
+This distinction is important because a working population and a persistent memory need not represent the same thing.
+
+### 2.5 Continual Competence
+
+The goal of continual heuristic learning is not merely to accelerate search on the next task. Rather, after processing a sequence of tasks
+
+$$
+\mathcal{T} = (T_1, \dots, T_K),
+$$
+
+the system achieves a learned state that we conceptualize as a **continual problem-solving system**. This system must satisfy two complementary requirements:
+
+#### Previously Learned Tasks
+
+For a task $T_j$ where $j \le K$ that was previously encountered and learned, the system must retain sufficient competence to generate or select effective heuristic strategies **without re-running full evolutionary heuristic search from scratch**.
+
+Conceptually:
+
+$$
+T_j \rightarrow \text{[Retrieve/select retained knowledge]} \rightarrow \text{Execute heuristic} \rightarrow \text{Good performance}
+$$
+
+This is the **retention** guarantee: the system should not require re-learning what it has already learned.
+
+#### Novel and Related Tasks
+
+For a task $T_{K+1}$ not previously seen, or a task $T^{\text{novel}}$ that shares structure with earlier tasks, prior knowledge should enable faster learning or better performance under a fixed budget, compared to cold-start heuristic search.
+
+Conceptually:
+
+$$
+T^{\text{novel}} \rightarrow \text{[Retrieve relevant prior knowledge]} \rightarrow \text{Adapt/search} \rightarrow \text{Efficient learning}
+$$
+
+This is the **forward transfer** guarantee.
+
+---
+
+**Important Note**: CMHH does not require a single universal heuristic that solves all tasks equally well. Rather, the continual system is conceptualized as:
+
+$$
+\text{Continual system} = \text{Heuristic repertoire} + \text{Memory} + \text{Retrieval/selection mechanism} + \text{Adaptation capability}
+$$
+
+Task diversity is handled through effective organization, retrieval, and selective reuse of domain-specific or task-aware heuristics, not through a monolithic universal strategy.
+
+### 2.6 Baseline Forms of Knowledge Continuity
+
+Before defining a full memory-management mechanism, CMHH distinguishes several conceptually different ways in which information may persist across tasks. Each baseline represents a different trade-off with respect to **retained competence**, the ability to re-solve previously learned tasks efficiently.
+
+#### Independent cold-start search
+
+Each task is solved independently with no transfer of search state or learned knowledge:
+
+$$
+T_1 \rightarrow P_0, \quad T_2 \rightarrow P_0, \quad T_3 \rightarrow P_0
+$$
+
+No heuristic population or external heuristic memory is deliberately transferred between tasks.
+
+This condition represents the absence of continual heuristic learning. However, if the system stores the final heuristic discovered for each task (forming a task-indexed heuristic library), this becomes a conceptual baseline:
+
+$$
+\text{Task ID} \rightarrow \text{Optimized heuristic}
+$$
+
+CMHH must demonstrate advantages over such simple task-indexed storage through:
+
+1. **Reduced re-learning cost on seen tasks** (compared to rediscovering heuristics);
+2. **Improved new-task adaptation** (through cross-task transfer rather than isolated search);
+3. **Compressed reusable knowledge** (shared or generalized heuristic components rather than isolated specialists);
+4. **Better generalization** (to related but previously unseen tasks).
+
+#### Population carryover
+
+The final heuristic population obtained on one task is used to initialize the search for the next task:
+
+$$
+P_k^{*} \rightarrow P_{k+1}^{(0)}.
+$$
+
+No separate persistent memory is required. Knowledge persists only in the current working population.
+
+This creates a minimal form of knowledge continuity. Heuristics survive across task boundaries only if they remain competitive in the evolutionary population. However, once a task is finished, if the population is discarded or fully replaced, previously useful heuristics are lost.
+
+**In terms of retained competence**: if task $T_j$ must be re-visited after several subsequent tasks, population carryover provides no guarantee that relevant heuristics are available. The system must re-search.
+
+#### Persistent heuristic memory
+
+The system maintains heuristic knowledge independently of the current working population:
+
+$$
+P_k^{*} \rightarrow M_k
+$$
+
+Knowledge from $M_k$ may later be retrieved to influence search on new tasks, or to rapidly reconstruct competence on previously learned tasks.
+
+Persistent memory allows useful knowledge to survive beyond a single task's evolutionary process. This is necessary for retained competence: even if a heuristic is no longer in the active population, it can be retrieved and reused.
+
+**However, persistence alone is insufficient.** As memory grows with more tasks, several challenges emerge:
+
+- Irrelevant, outdated, or conflicting heuristics may interfere with retrieval and selection;
+- The retrieval mechanism may fail to identify task-appropriate heuristics;
+- Memory management and computational costs may become prohibitive.
+
+This motivates the distinction between **naive persistent memory** (mere storage of all discovered heuristics) and **managed persistent memory** (with curation, organization, retrieval, and adaptation mechanisms designed to preserve functional competence while scaling to multiple tasks). CMHH investigates mechanisms for managed persistent memory, which will be formally defined in later sections.
+
+### 2.7 The Continual Heuristic Learning Problem
+
+The research problem studied by CMHH can therefore be stated as follows.
+
+Given a sequence of combinatorial optimization tasks
+
+$$
+\mathcal{T}=(T_1,\dots,T_K),
+$$
+
+design a heuristic-search system that accumulates and organizes heuristic knowledge such that the final learned continual system achieves the following:
+
+#### On Previously Learned Tasks
+
+For a task $T_j$ ($j \le K$) that was previously encountered, the system must retain sufficient organized knowledge to effectively re-solve the task **without performing full evolutionary heuristic re-search from scratch**.
+
+Concretely:
+
+$$
+T_j \rightarrow \text{Retrieve relevant competence from } M_K \rightarrow \text{Execute/adapt} \rightarrow \text{Good performance}.
+$$
+
+This avoids the cost of re-discovering heuristics that have already been learned.
+
+#### On Novel or Related Tasks
+
+For a new task $T_{K+1}$ or a previously unseen task structurally related to tasks in $\mathcal{T}$, knowledge accumulated during prior learning should enable faster or better adaptation compared to cold-start heuristic search:
+
+$$
+T_{K+1} \rightarrow \text{Retrieve transferable prior knowledge} \rightarrow \text{Adapt/search efficiently} \rightarrow \text{Faster/better learning}.
+$$
+
+This represents forward transfer of learned competence.
+
+#### Avoiding Destructive Interference
+
+The system must avoid harmful interference from obsolete, irrelevant, or conflicting heuristic knowledge that could degrade performance on any task (whether previously learned or new).
+
+#### Scalability
+
+Memory, retrieval, selection, and adaptation mechanisms must remain computationally and practically manageable as the task stream grows.
+
+---
+
+**Note on Computational Resources**
+
+Continual heuristic learning offers computational benefits primarily at the level of **search and acquisition cost**, not necessarily at the level of heuristic execution:
+
+- **Seen-task efficiency**: Reusing discovered heuristics avoids re-running LLM-based evolutionary search, reducing LLM calls, candidate evaluations, and generations needed to re-discover known strategies.
+- **New-task efficiency**: Warm-starting heuristic search with transferable knowledge may reduce the search generations, evaluations, or wall-clock time required to reach a target performance on novel tasks.
+
+CMHH makes no claim that continual memory reduces the computational cost of **executing** a heuristic during solving. The benefits are in **learning cost reduction** through knowledge reuse and transfer.
+
+---
+
+### Continual Learning Objective
+
+The continual heuristic-learning objective can be summarized as:
+
+$$
+\boxed{
+\text{Retain previously learned competence} \quad + \quad \text{Transfer knowledge to new tasks} \quad - \quad \text{Destructive interference}
+}
+$$
+
+The concrete definitions of **heuristic knowledge**, **memory**, **forgetting**, **transfer**, **retrieval**, and **interference** are treated as first-class components of the CMHH formulation and are defined in the subsequent sections.
+
+---
+
+## 3. Memory Definition
+
+## 4. Research Questions
+
+## 5. Evaluation Metrics
