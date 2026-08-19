@@ -12,20 +12,24 @@ from cmhh.checkpoint import load_checkpoint, save_checkpoint
 from cmhh.config import ExperimentConfig, StreamConfig
 from cmhh.data.manifest import write_json_atomic
 from cmhh.evaluation.evaluator import Evaluator
+from cmhh.logging import EventRecord, EventWriter
+from cmhh.archivist import Archivist, DefaultArchivist, EvictionPolicy
 from cmhh.memory import (
     MemoryEvidence,
+    MemoryItem,
     MemoryKey,
     MemoryScope,
     MemoryStore,
     MemoryUnit,
     MemoryValue,
+    WorkingBuffer,
     create_memory_unit,
-    retrieve_naive,
 )
 from cmhh.memory_diagnostics import build_memory_diagnostics
 from cmhh.metrics.continual import average_final_performance, backward_transfer, forward_transfer
 from cmhh.models import HeuristicArtifact
 from cmhh.reporting import write_evaluation
+from cmhh.retrieval import RetrievalBudget, RetrievalQuery, Retriever, RetrieverV0
 from cmhh.tasks import TaskRegistry
 
 
@@ -43,6 +47,8 @@ class StreamRunner:
         run_dir: str | Path,
         seed: int,
         cold_start_scores: dict[int, float] | None = None,
+        retriever: Retriever | None = None,
+        archivist: Archivist | None = None,
     ) -> None:
         self.registry = registry
         self.stream = stream
@@ -52,6 +58,11 @@ class StreamRunner:
         self.run_dir = Path(run_dir)
         self.seed = seed
         self.cold_start_scores = cold_start_scores
+        self.retriever = retriever or RetrieverV0()
+        self.archivist = archivist or DefaultArchivist(
+            eviction=EvictionPolicy(max_capacity=self.NAIVE_MEMORY_CAPACITY)
+        )
+        self.working_buffer = WorkingBuffer(capacity=50)
 
     def run(self) -> dict[int, dict[int, float]]:
         self.run_dir.mkdir(parents=True, exist_ok=True)
@@ -74,6 +85,10 @@ class StreamRunner:
 
         for k in range(int(checkpoint["completed_tasks"]), len(self.stream.task_ids)):
             task = self.registry.get(self.stream.task_ids[k])
+            
+            # Executed read-only Pre-learning Probe (A) on task Tk using M_{k-1} state
+            self._run_pre_learning_probe(k, task)
+            
             seeds = self._seed_population(task, carryover_population)
             memory_context = self._retrieve_memory_context(task) if self._uses_naive_memory else []
             carryover_validation_score = (
@@ -101,27 +116,10 @@ class StreamRunner:
                 )
             selected[task.task_id] = best.to_dict()
             self._event("candidate_selected", task_id=task.task_id, heuristic_id=best.heuristic_id)
-            matrix[k] = {}
-            for j, prior_task_id in enumerate(self.stream.task_ids[: k + 1]):
-                prior_task = self.registry.get(prior_task_id)
-                artifact = _artifact_from_dict(selected[prior_task_id])
-                self._event(
-                    "test_evaluation_started",
-                    task_id=prior_task_id,
-                    heuristic_id=artifact.heuristic_id,
-                    after_task_index=k,
-                )
-                result = self.evaluator.evaluate(artifact, prior_task, "test")
-                write_evaluation(
-                    self.run_dir / "evaluations" / f"after_{k}" / f"{prior_task_id}.json",
-                    result,
-                )
-                if result.mean_score is None:
-                    raise RuntimeError(
-                        f"Cannot build performance matrix for {prior_task_id}: certified or "
-                        "best-known references are missing"
-                    )
-                matrix[k][j] = result.mean_score
+
+            # Execute read-only Retention Probe (C) on tasks T_1..T_k using Retriever & M_k
+            self._run_retention_probe(k, selected, matrix)
+
             save_checkpoint(checkpoint_path, {
                 "completed_tasks": k + 1,
                 "selected": selected,
@@ -136,6 +134,93 @@ class StreamRunner:
         if self._uses_naive_memory:
             self._write_memory_diagnostics()
         return matrix
+
+    def _run_pre_learning_probe(self, k: int, task) -> None:
+        self._event(
+            "pre_learning_probe_started",
+            task_id=task.task_id,
+            task_index=k,
+            read_only=True,
+        )
+        retrieved_ids = []
+        if self._uses_naive_memory:
+            store = self._memory_store()
+            query = RetrievalQuery(
+                problem=task.problem,
+                task_id=task.task_id,
+                task_signature=self._task_signature(task),
+            )
+            retrieved = self.retriever.retrieve(query, store.load_all(), RetrievalBudget(top_k=1))
+            retrieved_ids = [item.unit.id for item in retrieved]
+        self._event(
+            "pre_learning_probe_completed",
+            task_id=task.task_id,
+            task_index=k,
+            retrieved_memory_ids=retrieved_ids,
+            read_only=True,
+        )
+
+    def _run_retention_probe(
+        self,
+        k: int,
+        selected: dict[str, dict],
+        matrix: dict[int, dict[int, float]],
+    ) -> None:
+        matrix[k] = {}
+        store = self._memory_store() if self._uses_naive_memory else None
+        memory_units = store.load_all() if store else []
+
+        for j, prior_task_id in enumerate(self.stream.task_ids[: k + 1]):
+            prior_task = self.registry.get(prior_task_id)
+            artifact = None
+
+            if memory_units:
+                query = RetrievalQuery(
+                    problem=prior_task.problem,
+                    task_id=prior_task.task_id,
+                    task_signature=self._task_signature(prior_task),
+                )
+                retrieved = self.retriever.retrieve(query, memory_units, RetrievalBudget(top_k=1))
+                if retrieved and retrieved[0].unit.evidence.source_artifacts:
+                    code_path = Path(retrieved[0].unit.evidence.source_artifacts[0])
+                    if code_path.exists():
+                        artifact = HeuristicArtifact(
+                            heuristic_id=retrieved[0].unit.scope.heuristic_family or code_path.stem,
+                            problem=prior_task.problem,
+                            code_path=code_path,
+                            code_hash=retrieved[0].unit.evidence.code_hashes[0] if retrieved[0].unit.evidence.code_hashes else "",
+                            task_id=prior_task_id,
+                        )
+
+            if artifact is None:
+                artifact = _artifact_from_dict(selected[prior_task_id])
+
+            self._event(
+                "retention_probe_started",
+                task_id=prior_task_id,
+                heuristic_id=artifact.heuristic_id,
+                after_task_index=k,
+                read_only=True,
+            )
+            result = self.evaluator.evaluate(artifact, prior_task, "test")
+            write_evaluation(
+                self.run_dir / "evaluations" / f"after_{k}" / f"{prior_task_id}.json",
+                result,
+            )
+            if result.mean_score is None:
+                raise RuntimeError(
+                    f"Cannot build performance matrix for {prior_task_id}: certified or "
+                    "best-known references are missing"
+                )
+            matrix[k][j] = result.mean_score
+            self._event(
+                "retention_probe_completed",
+                task_id=prior_task_id,
+                heuristic_id=artifact.heuristic_id,
+                after_task_index=k,
+                mean_score=result.mean_score,
+                read_only=True,
+            )
 
     def _seed_population(
         self,
@@ -171,12 +256,13 @@ class StreamRunner:
 
     def _retrieve_memory_context(self, task) -> list[MemoryUnit]:
         store = self._memory_store()
-        retrieved = retrieve_naive(
-            store.load_all(),
+        query = RetrievalQuery(
             problem=task.problem,
+            task_id=task.task_id,
             task_signature=self._task_signature(task),
-            top_k=self.NAIVE_MEMORY_TOP_K,
         )
+        budget = RetrievalBudget(top_k=self.NAIVE_MEMORY_TOP_K)
+        retrieved = self.retriever.retrieve(query, store.load_all(), budget)
         keys = [item.unit.key.applicability for item in retrieved]
         duplicate_key_rate = (
             0.0 if not keys else 1.0 - (len(set(keys)) / len(keys))
@@ -199,64 +285,32 @@ class StreamRunner:
         ranked_population: list[HeuristicArtifact],
         validation_summaries: dict[str, dict],
     ) -> None:
-        store = self._memory_store()
+        self.working_buffer.clear()
         for artifact in ranked_population:
             summary = validation_summaries[artifact.heuristic_id]
-            unit = create_memory_unit(
-                scope=MemoryScope(
-                    problem=task.problem,
-                    task_id=task.task_id,
-                    heuristic_family=artifact.heuristic_id.split("_")[0],
-                    generation=artifact.generation,
-                ),
-                key=MemoryKey(
-                    applicability=(
-                        f"Uncurated {task.problem} memory from {task.task_id} "
-                        f"for size {task.size_tier} and distribution {task.distribution}"
-                    ),
-                    task_signature=self._task_signature(task),
-                ),
-                value=MemoryValue(
-                    type="trajectory",
-                    content=(
-                        f"Heuristic {artifact.heuristic_id} survived smoke and validation "
-                        f"on {task.task_id}; reuse cautiously as naive external memory."
-                    ),
-                ),
-                evidence=MemoryEvidence(
-                    source_artifacts=(str(artifact.code_path),),
-                    validation_after=summary,
-                    code_hashes=(artifact.code_hash,),
-                ),
-            )
-            store.upsert(unit)
+            self.working_buffer.add_experience(artifact, summary, task)
+
+        store = self._memory_store()
+        result = self.archivist.process_transaction(self.working_buffer, store, task)
+
+        for memory_id in result.admitted_ids:
             self._event(
                 "memory_written",
                 task_id=task.task_id,
-                memory_id=unit.id,
-                heuristic_id=artifact.heuristic_id,
-                validation_score=summary["score"],
+                memory_id=memory_id,
             )
-        self._enforce_naive_memory_capacity(store)
-
-    def _enforce_naive_memory_capacity(self, store: MemoryStore) -> None:
-        units = store.load_all()
-        if len(units) <= self.NAIVE_MEMORY_CAPACITY:
-            return
-        ordered = sorted(
-            units,
-            key=lambda unit: (
-                unit.evidence.validation_after.get("score", float("-inf")),
-                unit.created_at,
-                unit.id,
-            ),
-            reverse=True,
-        )
-        kept = ordered[:self.NAIVE_MEMORY_CAPACITY]
-        evicted = ordered[self.NAIVE_MEMORY_CAPACITY:]
-        store.save_all(kept)
-        for unit in evicted:
-            self._event("memory_evicted", memory_id=unit.id, task_id=unit.scope.task_id)
+        for memory_id in result.protected_ids:
+            self._event(
+                "memory_protected",
+                task_id=task.task_id,
+                memory_id=memory_id,
+            )
+        for memory_id in result.evicted_ids:
+            self._event(
+                "memory_evicted",
+                task_id=task.task_id,
+                memory_id=memory_id,
+            )
 
     def _score_seed_population_on_validation(
         self,
@@ -353,13 +407,14 @@ class StreamRunner:
 
     def _event(self, event: str, **content) -> None:
         path = self.run_dir / "events.jsonl"
-        record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "event": event,
-            **content,
-        }
-        with path.open("a", encoding="utf-8") as fp:
-            fp.write(json.dumps(record, sort_keys=True) + "\n")
+        writer = EventWriter(path)
+        record = EventRecord(
+            event=event,
+            task_id=content.get("task_id"),
+            payload=content,
+            schema_version=1,
+        )
+        writer.write_event(record)
 
     def _write_matrix(self, matrix: dict[int, dict[int, float]]) -> None:
         path = self.run_dir / "performance_matrix.csv"

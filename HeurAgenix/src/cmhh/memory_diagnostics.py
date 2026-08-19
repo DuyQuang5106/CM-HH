@@ -14,6 +14,7 @@ def build_memory_diagnostics(
     events = _load_events(Path(run_dir) / "events.jsonl")
     retrieval_events = [event for event in events if event.get("event") == "memory_retrieved"]
     reuse_events = [event for event in events if event.get("event") == "memory_reuse_outcome"]
+    eviction_events = [event for event in events if event.get("event") == "memory_evicted"]
     written_ids = {
         event["memory_id"]
         for event in events
@@ -40,9 +41,19 @@ def build_memory_diagnostics(
         for event in reuse_events
         if event.get("post_reuse_validation_delta") is not None
     ]
+    eviction_lineage = [
+        {
+            "memory_id": event.get("memory_id"),
+            "task_id": event.get("task_id"),
+            "timestamp": event.get("timestamp"),
+        }
+        for event in eviction_events
+        if event.get("memory_id")
+    ]
     task_order = {task_id: index for index, task_id in enumerate(task_ids)}
     memory_ages = _memory_ages(retrieval_events, task_order)
     diagnostics = {
+        "schema_version": 1,
         "retrieval_events": len(retrieval_events),
         "retrieval_events_with_results": sum(
             1 for event in retrieval_events if event.get("memory_ids")
@@ -63,6 +74,7 @@ def build_memory_diagnostics(
             mean(validation_deltas) if validation_deltas else None
         ),
         "post_reuse_validation_delta_values": validation_deltas,
+        "eviction_lineage": eviction_lineage,
         "failure_mode_labels": [],
         "labels_are_diagnostic_heuristics": True,
     }

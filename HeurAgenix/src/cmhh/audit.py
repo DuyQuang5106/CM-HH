@@ -50,12 +50,22 @@ def audit_run(run_dir: str | Path) -> AuditReport:
 
     events = [json.loads(line) for line in events_path.read_text(encoding="utf-8").splitlines() if line]
     selected_at: dict[str, int] = {}
+    has_schema_v1 = False
+    has_probe_events = False
+
     for index, event in enumerate(events):
+        if event.get("schema_version") == 1:
+            has_schema_v1 = True
+        if "probe" in event.get("event", ""):
+            has_probe_events = True
         task_id = event.get("task_id")
         if event["event"] == "candidate_selected":
             selected_at[task_id] = index
-        elif event["event"] == "test_evaluation_started" and task_id not in selected_at:
+        elif event["event"] in {"test_evaluation_started", "retention_probe_started"} and task_id not in selected_at and event.get("after_task_index", 0) == 0:
             report.errors.append(f"{task_id}: test evaluation occurred before candidate selection")
+
+    if events and not has_schema_v1:
+        report.warnings.append("Event log records are missing explicit schema_version = 1")
 
     test_markers = ("/test/", "\\test\\")
     for path in root.rglob("*"):

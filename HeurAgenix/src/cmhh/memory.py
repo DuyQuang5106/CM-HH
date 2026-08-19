@@ -82,37 +82,243 @@ class MemoryUnit:
         )
 
 
+# =====================================================================
+# 3-Layer Formal Memory Models (schema_version = 1)
+# =====================================================================
+
+@dataclass(frozen=True)
+class ApplicabilityDescriptor:
+    problem_family: str
+    task_id: str
+    size_tier: str | None = None
+    distribution: str | None = None
+    heuristic_interface: str = "tsp_constructive_v1"
+    task_signature: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class KnowledgeAbstraction:
+    abstraction_type: str = "procedural_skill"
+    summary: str = ""
+    prompt_hint: str | None = None
+    tags: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class MemoryMetadata:
+    origin_task_id: str
+    origin_generation: int = 0
+    parent_ids: tuple[str, ...] = ()
+    validation_score: float = 0.0
+    validation_summary: dict[str, Any] = field(default_factory=dict)
+    retrieval_count: int = 0
+    success_count: int = 0
+    protected: bool = False
+    created_at: str = ""
+
+
+@dataclass(frozen=True)
+class MemoryItem:
+    """Formal 3-layer logical memory unit in CMHH.
+    
+    Encapsulates:
+    - h_i: Procedural Artifact Reference (artifact_id, code_path, code_hash)
+    - k_i: Applicability Descriptor (applicability)
+    - z_i: Knowledge Abstraction (abstraction)
+    - mu_i: Lifecycle Metadata (metadata)
+    """
+    id: str
+    artifact_id: str
+    code_path: str
+    code_hash: str
+    applicability: ApplicabilityDescriptor
+    abstraction: KnowledgeAbstraction
+    metadata: MemoryMetadata
+    schema_version: int = 1
+
+    @property
+    def scope(self) -> MemoryScope:
+        return MemoryScope(
+            problem=self.applicability.problem_family,
+            task_id=self.applicability.task_id,
+            heuristic_family=self.artifact_id,
+            generation=self.metadata.origin_generation,
+        )
+
+    @property
+    def key(self) -> MemoryKey:
+        return MemoryKey(
+            applicability=f"{self.applicability.problem_family} {self.applicability.task_id}",
+            task_signature=self.applicability.task_signature,
+        )
+
+    @property
+    def value(self) -> MemoryValue:
+        return MemoryValue(
+            type=self.abstraction.abstraction_type,
+            content=self.abstraction.summary,
+        )
+
+    @property
+    def evidence(self) -> MemoryEvidence:
+        return MemoryEvidence(
+            source_artifacts=(self.code_path,),
+            validation_after=self.metadata.validation_summary,
+            code_hashes=(self.code_hash,),
+        )
+
+    @property
+    def policy(self) -> MemoryPolicyState:
+        return MemoryPolicyState(
+            retrieval_count=self.metadata.retrieval_count,
+            success_count=self.metadata.success_count,
+            protected=self.metadata.protected,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> "MemoryItem":
+        if raw.get("schema_version") == 1:
+            return cls(
+                id=raw["id"],
+                artifact_id=raw["artifact_id"],
+                code_path=raw["code_path"],
+                code_hash=raw["code_hash"],
+                applicability=ApplicabilityDescriptor(**raw["applicability"]),
+                abstraction=KnowledgeAbstraction(
+                    abstraction_type=raw["abstraction"]["abstraction_type"],
+                    summary=raw["abstraction"]["summary"],
+                    prompt_hint=raw["abstraction"].get("prompt_hint"),
+                    tags=tuple(raw["abstraction"].get("tags", ())),
+                ),
+                metadata=MemoryMetadata(
+                    origin_task_id=raw["metadata"]["origin_task_id"],
+                    origin_generation=raw["metadata"].get("origin_generation", 0),
+                    parent_ids=tuple(raw["metadata"].get("parent_ids", ())),
+                    validation_score=raw["metadata"].get("validation_score", 0.0),
+                    validation_summary=raw["metadata"].get("validation_summary", {}),
+                    retrieval_count=raw["metadata"].get("retrieval_count", 0),
+                    success_count=raw["metadata"].get("success_count", 0),
+                    protected=raw["metadata"].get("protected", False),
+                    created_at=raw["metadata"].get("created_at", ""),
+                ),
+                schema_version=1,
+            )
+        return cls.from_legacy_unit(MemoryUnit.from_dict(raw))
+
+    @classmethod
+    def from_legacy_unit(cls, unit: MemoryUnit) -> "MemoryItem":
+        code_path = unit.evidence.source_artifacts[0] if unit.evidence.source_artifacts else ""
+        code_hash = unit.evidence.code_hashes[0] if unit.evidence.code_hashes else ""
+        val_summary = unit.evidence.validation_after
+        val_score = float(val_summary.get("score", 0.0)) if isinstance(val_summary, dict) else 0.0
+        return cls(
+            id=unit.id,
+            artifact_id=unit.scope.heuristic_family or unit.id,
+            code_path=code_path,
+            code_hash=code_hash,
+            applicability=ApplicabilityDescriptor(
+                problem_family=unit.scope.problem,
+                task_id=unit.scope.task_id,
+                task_signature=unit.key.task_signature,
+            ),
+            abstraction=KnowledgeAbstraction(
+                abstraction_type=unit.value.type,
+                summary=unit.value.content,
+            ),
+            metadata=MemoryMetadata(
+                origin_task_id=unit.scope.task_id,
+                origin_generation=unit.scope.generation or 0,
+                validation_score=val_score,
+                validation_summary=val_summary if isinstance(val_summary, dict) else {},
+                retrieval_count=unit.policy.retrieval_count,
+                success_count=unit.policy.success_count,
+                protected=unit.policy.protected,
+                created_at=unit.created_at,
+            ),
+            schema_version=1,
+        )
+
+
+# =====================================================================
+# WorkingBuffer Class
+# =====================================================================
+
+class WorkingBuffer:
+    """Short-term bounded memory buffer holding recent search experience.
+    
+    Acts as a transient stage between heuristic generation/evaluation and long-term memory.
+    """
+
+    def __init__(self, capacity: int = 50) -> None:
+        self.capacity = capacity
+        self._buffer: list[dict[str, Any]] = []
+
+    def add_experience(
+        self,
+        artifact: Any,
+        validation_summary: dict[str, Any],
+        task: Any,
+    ) -> None:
+        record = {
+            "artifact": artifact,
+            "validation_summary": validation_summary,
+            "task_id": task.task_id,
+            "problem": task.problem,
+            "timestamp": utc_now(),
+        }
+        self._buffer.append(record)
+        if len(self._buffer) > self.capacity:
+            self._buffer.pop(0)
+
+    def get_experiences(self) -> list[dict[str, Any]]:
+        return list(self._buffer)
+
+    def clear(self) -> None:
+        self._buffer.clear()
+
+    def size(self) -> int:
+        return len(self._buffer)
+
+
+# =====================================================================
+# MemoryStore Engine
+# =====================================================================
+
 class MemoryStore:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
 
-    def load_all(self) -> list[MemoryUnit]:
+    def load_all(self) -> list[MemoryItem]:
         if not self.path.exists():
             return []
-        units = []
+        items = []
         with self.path.open("r", encoding="utf-8") as fp:
             for line in fp:
                 if line.strip():
-                    units.append(MemoryUnit.from_dict(json.loads(line)))
-        return units
+                    raw = json.loads(line)
+                    items.append(MemoryItem.from_dict(raw))
+        return items
 
-    def save_all(self, units: list[MemoryUnit]) -> None:
+    def save_all(self, items: list[MemoryItem]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temp = self.path.with_name(f".{self.path.name}.tmp")
         with temp.open("w", encoding="utf-8") as fp:
-            for unit in units:
-                fp.write(json.dumps(unit.to_dict(), sort_keys=True) + "\n")
+            for item in items:
+                fp.write(json.dumps(item.to_dict(), sort_keys=True) + "\n")
         os.replace(temp, self.path)
 
-    def upsert(self, unit: MemoryUnit) -> None:
-        units = self.load_all()
-        for index, existing in enumerate(units):
-            if existing.id == unit.id:
-                units[index] = unit
-                self.save_all(units)
+    def upsert(self, item: MemoryItem) -> None:
+        items = self.load_all()
+        for index, existing in enumerate(items):
+            if existing.id == item.id:
+                items[index] = item
+                self.save_all(items)
                 return
-        units.append(unit)
-        self.save_all(units)
+        items.append(item)
+        self.save_all(items)
 
     def update_validation_evidence(
         self,
@@ -121,21 +327,22 @@ class MemoryStore:
         split: str,
         validation_before: dict[str, Any] | None = None,
         validation_after: dict[str, Any] | None = None,
-    ) -> MemoryUnit:
+    ) -> MemoryItem:
         if split != "validation":
             raise ValueError("Memory evidence updates must come from the validation split")
-        units = self.load_all()
-        for index, unit in enumerate(units):
-            if unit.id != memory_id:
+        items = self.load_all()
+        for index, item in enumerate(items):
+            if item.id != memory_id:
                 continue
-            evidence = replace(
-                unit.evidence,
-                validation_before=validation_before if validation_before is not None else unit.evidence.validation_before,
-                validation_after=validation_after if validation_after is not None else unit.evidence.validation_after,
+            updated_summary = validation_after if validation_after is not None else item.metadata.validation_summary
+            updated_metadata = replace(
+                item.metadata,
+                validation_summary=updated_summary,
+                validation_score=float(updated_summary.get("score", item.metadata.validation_score)),
             )
-            updated = replace(unit, evidence=evidence)
-            units[index] = updated
-            self.save_all(units)
+            updated = replace(item, metadata=updated_metadata)
+            items[index] = updated
+            self.save_all(items)
             return updated
         raise KeyError(f"Unknown memory unit: {memory_id}")
 
@@ -193,16 +400,40 @@ def create_memory_unit(
     evidence: MemoryEvidence | None = None,
     policy: MemoryPolicyState | None = None,
     created_at: str | None = None,
-) -> MemoryUnit:
+) -> MemoryItem:
     evidence = evidence or MemoryEvidence()
-    return MemoryUnit(
-        id=deterministic_memory_id(scope, key, value, evidence),
-        created_at=created_at or utc_now(),
-        scope=scope,
-        key=key,
-        value=value,
-        evidence=evidence,
-        policy=policy or MemoryPolicyState(),
+    val_after = evidence.validation_after
+    val_score = float(val_after.get("score", 0.0)) if isinstance(val_after, dict) else 0.0
+    code_path = evidence.source_artifacts[0] if evidence.source_artifacts else ""
+    code_hash = evidence.code_hashes[0] if evidence.code_hashes else ""
+    policy_state = policy or MemoryPolicyState()
+    
+    item_id = deterministic_memory_id(scope, key, value, evidence)
+    return MemoryItem(
+        id=item_id,
+        artifact_id=scope.heuristic_family or item_id,
+        code_path=code_path,
+        code_hash=code_hash,
+        applicability=ApplicabilityDescriptor(
+            problem_family=scope.problem,
+            task_id=scope.task_id,
+            task_signature=key.task_signature,
+        ),
+        abstraction=KnowledgeAbstraction(
+            abstraction_type=value.type,
+            summary=value.content,
+        ),
+        metadata=MemoryMetadata(
+            origin_task_id=scope.task_id,
+            origin_generation=scope.generation or 0,
+            validation_score=val_score,
+            validation_summary=val_after if isinstance(val_after, dict) else {},
+            retrieval_count=policy_state.retrieval_count,
+            success_count=policy_state.success_count,
+            protected=policy_state.protected,
+            created_at=created_at or utc_now(),
+        ),
+        schema_version=1,
     )
 
 
