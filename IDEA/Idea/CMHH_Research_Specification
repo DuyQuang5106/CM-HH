@@ -416,6 +416,234 @@ The concrete definitions of **heuristic knowledge**, **memory**, **forgetting**,
 
 ## 3. Memory Definition
 
-## 4. Research Questions
+To support both **retained competence** and **cross-task transfer**, CMHH adopts a structured hybrid memory representation that combines executable heuristic artifacts with contextual, semantic, and empirical information.
 
-## 5. Evaluation Metrics
+This design is motivated by several complementary lines of prior work. External-memory approaches for LLM agents commonly represent reusable experience as retrievable memory units, separating the information used to identify relevant memories from the knowledge stored within them. Experience-reuse methods further suggest that abstracted or distilled knowledge may transfer more effectively across tasks than raw task-specific trajectories. In parallel, executable skill-library approaches demonstrate the value of retaining reusable code artifacts that can be directly retrieved and executed without relearning the underlying capability.
+
+These requirements are complementary in CMHH. An executable heuristic is necessary to preserve **retained competence**: when a previously encountered task reappears, the system should be able to retrieve and execute an already acquired heuristic rather than performing the complete evolutionary search again.
+
+However, executable code alone does not explicitly encode when the heuristic is applicable, why it is useful, or which underlying principles may generalize to related but different tasks. Supporting **cross-task transfer** therefore requires additional contextual and semantic representations.
+
+The memory representation is consequently designed around four functional requirements:
+
+1. preserve executable problem-solving competence;
+2. support selective retrieval under changing task contexts;
+3. expose transferable knowledge beyond the task on which a heuristic was discovered;
+4. retain sufficient empirical evidence to support later memory-management decisions.
+
+### 3.1 Memory Representation
+
+CMHH represents each long-term memory item as
+
+$$
+m_i = (h_i, k_i, z_i, \mu_i),
+$$
+
+where:
+
+* $h_i$ is the **executable heuristic artifact**, preserving directly reusable problem-solving competence;
+* $k_i$ is the **applicability and retrieval descriptor**, describing the task, instance, or search contexts in which the heuristic is expected to be relevant;
+* $z_i$ is the **semantic or procedural abstraction**, capturing reusable principles, rationale, behavioral characteristics, or adaptation knowledge associated with the heuristic;
+* $\mu_i$ is the **empirical and lifecycle metadata**, including provenance, observed performance, usage history, confidence, and other evidence that may support memory-management decisions.
+
+The long-term memory after processing task $T_k$ is represented as
+
+$$
+M_k = {m_i}_{i=1}^{N_k}.
+$$
+
+The components serve complementary roles:
+
+| Component                      | Primary role                                   |
+| ------------------------------ | ---------------------------------------------- |
+| Executable heuristic $h_i$     | Preserve competence without full re-search     |
+| Applicability descriptor $k_i$ | Support selective retrieval                    |
+| Semantic abstraction $z_i$     | Support generalization and cross-task transfer |
+| Empirical metadata $\mu_i$     | Support evidence-based memory management       |
+
+The representation is intentionally hybrid because no single form of stored information is sufficient for all continual-learning requirements considered in CMHH.
+
+Executable artifacts preserve previously acquired capabilities, while contextual and semantic representations make those capabilities selectively reusable beyond the specific task on which they were discovered. Empirical metadata provides the evidence needed to reason about whether knowledge remains useful as the task stream evolves.
+
+This representation should be interpreted as the **minimal functional memory structure used by CMHH**, rather than as a claim that it is universally optimal among possible agent-memory architectures. More complex organizations such as hierarchical, graph-based, or multi-store episodic-semantic memories remain possible extensions but are not required by the core formulation.
+
+### 3.2 Memory Scope and Persistence
+
+CMHH distinguishes between **working search state** and **long-term continual memory**.
+
+The evolutionary population used while solving the current task is a transient working state. It contains candidate heuristics actively participating in the current search process and may change substantially during evolution.
+
+Long-term memory $M_k$, in contrast, persists across task boundaries and is intended to preserve knowledge that remains potentially useful after the current evolutionary process has terminated.
+
+Conceptually,
+
+$$
+\text{Working State}_k \neq M_k.
+$$
+
+Population carryover may provide a minimal form of cross-task continuity because the final population of $T_k$ can initialize the search on $T_{k+1}$. However, it does not constitute the full long-term memory considered by CMHH because knowledge survives only insofar as it remains represented in the active evolutionary population.
+
+Persistent memory instead allows heuristic knowledge to remain available independently of whether the corresponding heuristic is present in the current population.
+
+This distinction enables two different uses of accumulated knowledge:
+
+* for a **previously encountered task**, retained knowledge may be retrieved and directly reused without performing full evolutionary re-search;
+* for a **novel task**, relevant prior knowledge may be retrieved to support initialization, reasoning, or adaptation during a new heuristic-search process.
+
+### 3.3 Memory Capacity
+
+CMHH assumes that long-term memory is **bounded**.
+
+Let $C$ denote the maximum number of persistent memory items available to the system. Then
+
+$$
+|M_k| = N_k \leq C.
+$$
+
+This assumption prevents continual learning from degenerating into an unconstrained strategy in which every discovered heuristic and every search experience are stored indefinitely.
+
+A bounded memory introduces a continual resource-allocation problem: as new knowledge is acquired, the system must determine which information deserves persistent capacity and which information may be removed, replaced, or consolidated.
+
+The initial formulation uses the **number of memory items** as the primary capacity constraint because it provides a simple and interpretable experimental control. The actual token, code, or storage footprint of memory items may additionally be measured as an efficiency metric without being part of the primary capacity definition.
+
+Memory capacity and retrieval capability are not independent.
+
+Increasing $C$ allows more previously acquired knowledge to remain available and can therefore increase the potential for retention and transfer. However, a larger memory also increases the amount of irrelevant, redundant, obsolete, or contextually inappropriate knowledge from which the system must select.
+
+Conceptually,
+
+$$
+|M_k| \uparrow
+\quad\Rightarrow\quad
+\begin{cases}
+\text{potential retained knowledge} \uparrow,\
+\text{retrieval difficulty} \uparrow.
+\end{cases}
+$$
+
+CMHH therefore treats memory effectiveness as a balance between **retention capacity** and **retrieval selectivity**, rather than assuming that storing more knowledge necessarily produces a better continual system.
+
+This trade-off also motivates memory management: useful continual memory must control not only what knowledge remains stored, but also whether the appropriate subset of that knowledge can be accessed when required.
+
+### 3.4 Retrieval Definition
+
+Storage alone does not constitute usable memory. Knowledge stored in $M_k$ must be selectively accessible under the current task or search context.
+
+Let $q$ denote a retrieval query derived from the current task, instance, search state, or other available context. A retrieval mechanism $R$ maps the query and long-term memory to a selected subset:
+
+$$
+R(q, M_k) = M_k^{(q)},
+$$
+
+where
+
+$$
+M_k^{(q)} \subseteq M_k.
+$$
+
+Typically,
+
+$$
+|M_k^{(q)}| \ll |M_k|,
+$$
+
+so that only a small subset of persistent knowledge becomes active within the current reasoning or search process.
+
+This distinction separates three different quantities:
+
+$$
+\text{memory capacity}
+\neq
+\text{retrieval set size}
+\neq
+\text{active context size}.
+$$
+
+A memory item may therefore remain physically stored while being functionally unavailable because it is not retrieved under a context in which it would have been useful.
+
+This provides an important mechanism through which **functional forgetting** or **retrieval-side interference** may occur without explicit deletion of the underlying heuristic artifact.
+
+At this stage, CMHH defines retrieval only by its functional role. The specific query representation, similarity measure, ranking mechanism, top-$k$ policy, or learned retrieval algorithm are left as later design decisions.
+
+### 3.5 Memory Operations
+
+A continual memory system must support changes to $M_k$ as the task stream progresses.
+
+At the conceptual level, CMHH distinguishes the following memory operations:
+
+**Write**
+Introduce newly acquired heuristic knowledge into persistent memory.
+
+**Retrieve**
+Select knowledge from persistent memory that is relevant to the current task or search context.
+
+**Update**
+Revise the contextual, semantic, or empirical information associated with an existing memory item as additional evidence becomes available.
+
+**Consolidate**
+Combine or summarize overlapping or redundant knowledge when multiple memory items represent substantially similar competence.
+
+**Protect**
+Prevent knowledge judged to be important from being removed during later memory updates.
+
+**Evict**
+Remove knowledge from persistent memory when capacity constraints require space to be reallocated.
+
+The existence of these operations does not imply a particular algorithm for performing them. Their concrete policies are part of the memory-management mechanism and are defined separately from the memory representation itself.
+
+The bounded-memory setting gives these operations a direct functional motivation:
+
+$$
+\text{task stream grows}
+\rightarrow
+\text{knowledge accumulates}
+\rightarrow
+\text{capacity becomes constrained}
+\rightarrow
+\text{retention decisions become necessary}.
+$$
+
+Similarly, the retrieval-capacity trade-off motivates selective access:
+
+$$
+\text{memory grows}
+\rightarrow
+\text{retrieval competition increases}
+\rightarrow
+\text{relevant knowledge must be distinguished from interference}.
+$$
+
+Together, these constraints make continual memory a resource-constrained knowledge-management problem rather than a passive archive of previously discovered heuristics.
+
+### 3.6 Scope of the Memory Definition
+
+The purpose of this section is to define **what CMHH memory is, what information it preserves, what functional operations it must support, and under which high-level resource constraints it operates**.
+
+It intentionally does not specify the concrete algorithms used for retrieval, consolidation, protection, eviction, or other Archivist decisions. Those mechanisms must be motivated by the research hypotheses and evaluated independently rather than being embedded into the memory definition itself.
+
+
+## 4. Research Questions and Hypotheses
+
+### 4.1 RQ1 — Continual Competence
+### 4.2 RQ2 — Forward Transfer
+### 4.3 RQ3 — Memory Management and Interference
+### 4.4 RQ4 — Retrieval and Functional Forgetting
+
+
+## 5. Evaluation Framework
+
+### 5.1 Evaluation Protocol
+
+### 5.2 Continual Performance Matrix
+
+### 5.3 Continual Learning Metrics
+#### Average Performance
+#### Backward Transfer
+#### Forgetting
+#### Forward Transfer
+
+### 5.4 Search-Efficiency Metrics
+
+### 5.5 Memory and Retrieval Metrics
+
+### 5.6 Optimization Quality Metrics
