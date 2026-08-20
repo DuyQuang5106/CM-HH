@@ -1,0 +1,8 @@
+version: 1
+stream_id: random_perm_1
+description: Random task order permutation 1 for curriculum control (n50 -> n200 -> n20 -> n100).
+task_ids:
+  - tsp_n50_uniform
+  - tsp_n200_uniform
+  - tsp_n20_uniform
+  - tsp_n100_uniform

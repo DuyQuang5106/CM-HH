@@ -1,0 +1,8 @@
+version: 1
+stream_id: pfsp_size_ascending
+description: Permutation Flow Shop Scheduling (PFSP) size-ascending stream (n20 -> n50 -> n100 -> n200).
+task_ids:
+  - pfsp_n20_uniform
+  - pfsp_n50_uniform
+  - pfsp_n100_uniform
+  - pfsp_n200_uniform

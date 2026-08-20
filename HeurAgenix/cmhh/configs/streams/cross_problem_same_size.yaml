@@ -1,0 +1,7 @@
+version: 1
+stream_id: cross_problem_same_size
+description: Cross-problem domain shift stream with fixed problem scale (n50) (TSP -> PFSP -> OBP).
+task_ids:
+  - tsp_n50_uniform
+  - pfsp_n50_uniform
+  - obp_n50_uniform

@@ -1,0 +1,8 @@
+version: 1
+stream_id: mixed_problem_size
+description: Mixed problem domain and scale shift stream (TSP-n20 -> PFSP-n50 -> OBP-n100 -> TSP-n200).
+task_ids:
+  - tsp_n20_uniform
+  - pfsp_n50_uniform
+  - obp_n100_uniform
+  - tsp_n200_uniform

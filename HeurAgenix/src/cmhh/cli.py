@@ -5,23 +5,22 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from cmhh.baselines import baseline_artifacts
 from cmhh.agents.generator import BaselineGenerator
 from cmhh.agents.heuragenix_generator import HeurAgenixGenerator
 from cmhh.audit import audit_run
+from cmhh.baselines import baseline_artifacts
 from cmhh.config import load_experiment_config, load_stream_config
-from cmhh.data.tsp_generator import generate_tsp_datasets
+from cmhh.data import generate_data_for_tasks
 from cmhh.data.manifest import load_json, sha256_file, write_json_atomic
 from cmhh.evaluation.evaluator import Evaluator
-from cmhh.reporting import print_evaluation_summary, write_evaluation
-from cmhh.reproducibility import create_run_manifest
 from cmhh.references.concorde import load_concorde_config, validate_solver_command
 from cmhh.references.pipeline import generate_task_references
 from cmhh.references.verification import verify_task_references
+from cmhh.reporting import print_evaluation_summary, write_evaluation
+from cmhh.reproducibility import create_run_manifest
 from cmhh.runner import StreamRunner
 from cmhh.tasks import load_task_registry
 from cmhh.validation import validate_configuration
-
 
 DEFAULT_EXPERIMENT = "cmhh/configs/experiments/phase0_tsp.yaml"
 DEFAULT_STREAM = "cmhh/configs/streams/tsp_size_ascending.yaml"
@@ -118,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "generate-data":
         seed = args.seed if args.seed is not None else experiment.data.seed
-        for manifest in generate_tsp_datasets(registry, stream.task_ids, experiment, seed):
+        for manifest in generate_data_for_tasks(registry, stream.task_ids, experiment, seed):
             print(manifest)
         return 0
 
@@ -178,187 +177,125 @@ def main(argv: list[str] | None = None) -> int:
         run_id = args.run_id or datetime.now(timezone.utc).strftime("phase0_%Y%m%dT%H%M%SZ")
         run_dir = experiment.output_root / run_id
         checkpoint_path = run_dir / "checkpoints/latest.json"
-        if checkpoint_path.exists() and not args.resume:
-            print(f"ERROR: run already has a checkpoint; pass --resume: {run_id}", file=sys.stderr)
-            return 2
-        if args.resume and not checkpoint_path.exists():
-            print(f"ERROR: no checkpoint exists for resume: {run_id}", file=sys.stderr)
-            return 2
-        experiment_path = _resolve(args.experiment, root)
-        stream_path = _resolve(args.stream, root)
-        manifest_path = run_dir / "manifest.json"
-        if args.resume:
-            manifest = load_json(manifest_path)
-            manifest.setdefault("resume_events", []).append(datetime.now(timezone.utc).isoformat())
-            write_json_atomic(manifest_path, manifest)
-        else:
-            data_manifests = [registry.get(task_id).splits.train.parent / "manifest.json" for task_id in stream.task_ids]
-            create_run_manifest(
-                manifest_path,
-                root,
-                run_id,
-                seed,
-                [experiment_path, stream_path, root / "cmhh/configs/tasks/task_registry.yaml"],
-                {
-                    "condition": experiment.condition,
-                    "generator": args.generator,
-                    "stream_id": stream.stream_id,
-                    "data_manifests": {str(path): sha256_file(path) for path in data_manifests},
-                },
-            )
+
+        if not args.resume and checkpoint_path.exists():
+            print(f"ERROR: Run directory {run_dir} exists; pass --resume to continue", file=sys.stderr)
+            return 1
+
+        evaluator = Evaluator(root, experiment.evaluation)
         if args.generator == "heuragenix":
             if not args.llm_config:
-                print("ERROR: --llm-config is required for HeurAgenix generation", file=sys.stderr)
-                return 2
+                print("ERROR: --llm-config is required for --generator heuragenix", file=sys.stderr)
+                return 1
             generator = HeurAgenixGenerator(
-                root, _resolve(args.llm_config, root), run_dir / "candidates",
+                repo_root=root,
+                llm_config_path=_resolve(args.llm_config, root),
                 timeout_seconds=args.evolution_timeout,
             )
         else:
-            generator = BaselineGenerator(str(root))
+            generator = BaselineGenerator(root)
+
+        cold_start_scores = (
+            load_json(_resolve(args.cold_start_scores, root)) if args.cold_start_scores else None
+        )
         runner = StreamRunner(
             registry=registry,
             stream=stream,
             experiment=experiment,
-            evaluator=Evaluator(root, experiment.evaluation),
+            evaluator=evaluator,
             generator=generator,
             run_dir=run_dir,
             seed=seed,
-            cold_start_scores=(
-                {
-                    index: float(load_json(_resolve(args.cold_start_scores, root))[task_id])
-                    for index, task_id in enumerate(stream.task_ids)
-                }
-                if args.cold_start_scores else None
-            ),
+            cold_start_scores=cold_start_scores,
         )
-        runner.run()
-        print(run_dir)
+
+        manifest = create_run_manifest(
+            root,
+            [args.experiment, args.stream],
+            [
+                task.splits.train.parent
+                for task_id in stream.task_ids
+                if (task := registry.get(task_id))
+            ],
+            stream.task_ids,
+        )
+        write_json_atomic(run_dir / "manifest.json", manifest)
+        matrix = runner.run()
+
+        print(f"Completed run {run_id}:")
+        for after_idx, row in sorted(matrix.items()):
+            row_str = ", ".join(f"T{j}={score:.4f}" for j, score in sorted(row.items()))
+            print(f"  After task {after_idx} ({stream.task_ids[after_idx]}): {row_str}")
         return 0
 
     if args.command == "run-isolated":
         seed = args.seed if args.seed is not None else experiment.seeds[0]
         run_id = args.run_id or datetime.now(timezone.utc).strftime("isolated_%Y%m%dT%H%M%SZ")
         run_dir = experiment.output_root / run_id
-        experiment_path = _resolve(args.experiment, root)
-        stream_path = _resolve(args.stream, root)
-        data_manifests = [registry.get(task_id).splits.train.parent / "manifest.json" for task_id in stream.task_ids]
-        create_run_manifest(
-            run_dir / "manifest.json",
-            root,
-            run_id,
-            seed,
-            [experiment_path, stream_path, root / "cmhh/configs/tasks/task_registry.yaml"],
-            {
-                "condition": experiment.condition,
-                "generator": args.generator,
-                "stream_id": stream.stream_id,
-                "data_manifests": {str(path): sha256_file(path) for path in data_manifests},
-            },
-        )
         evaluator = Evaluator(root, experiment.evaluation)
-        scores = {}
-        selected = {}
-        for index, task_id in enumerate(stream.task_ids):
-            task = registry.get(task_id)
-            if args.generator == "heuragenix":
-                if not args.llm_config:
-                    print("ERROR: --llm-config is required for HeurAgenix generation", file=sys.stderr)
-                    return 2
-                generator = HeurAgenixGenerator(
-                    root,
-                    _resolve(args.llm_config, root),
-                    run_dir / "candidates" / task_id,
-                    timeout_seconds=args.evolution_timeout,
-                )
-            else:
-                generator = BaselineGenerator(str(root))
-            candidates = generator.generate(
-                task, baseline_artifacts(task, root), experiment.search, seed + index
+        if args.generator == "heuragenix":
+            if not args.llm_config:
+                print("ERROR: --llm-config is required for --generator heuragenix", file=sys.stderr)
+                return 1
+            generator = HeurAgenixGenerator(
+                repo_root=root,
+                llm_config_path=_resolve(args.llm_config, root),
+                timeout_seconds=args.evolution_timeout,
             )
-            ranked = []
-            for candidate in candidates:
-                smoke = evaluator.evaluate(candidate, task, "smoke")
-                if smoke.failure_rate:
-                    continue
-                validation = evaluator.evaluate(candidate, task, "validation")
-                write_evaluation(
-                    run_dir / "evaluations" / task_id / "validation" / f"{candidate.heuristic_id}.json",
-                    validation,
-                )
-                objectives = [item.objective for item in validation.successful if item.objective is not None]
-                if validation.failure_rate == 0 and objectives:
-                    runtime = sum(item.runtime_seconds for item in validation.successful) / len(validation.successful)
-                    ranked.append((sum(objectives) / len(objectives), runtime, candidate.heuristic_id, candidate))
-            if not ranked:
-                print(f"ERROR: no valid isolated candidate for {task_id}", file=sys.stderr)
-                return 1
-            best = min(ranked, key=lambda item: item[:3])[3]
-            result = evaluator.evaluate(best, task, "test")
-            write_evaluation(run_dir / "evaluations" / task_id / "test.json", result)
-            if result.mean_score is None:
-                print(f"ERROR: references are missing for {task_id}", file=sys.stderr)
-                return 1
-            scores[task_id] = result.mean_score
-            selected[task_id] = best.to_dict()
-        write_json_atomic(run_dir / "cold_start_scores.json", scores)
-        write_json_atomic(run_dir / "selected.json", selected)
-        print(run_dir)
+        else:
+            generator = BaselineGenerator(root)
+
+        runner = StreamRunner(
+            registry=registry,
+            stream=stream,
+            experiment=experiment,
+            evaluator=evaluator,
+            generator=generator,
+            run_dir=run_dir,
+            seed=seed,
+        )
+        matrix = runner.run()
+        print(f"Completed isolated run {run_id}:")
+        for after_idx, row in sorted(matrix.items()):
+            print(f"  Task {after_idx} ({stream.task_ids[after_idx]}): T{after_idx}={row.get(after_idx, 0.0):.4f}")
         return 0
 
     if args.command == "evolve-task":
         task = registry.get(args.task)
-        run_id = args.run_id or datetime.now(timezone.utc).strftime("evolve_%Y%m%dT%H%M%SZ")
-        run_dir = experiment.output_root / run_id
-        budget = experiment.search
-        if args.max_llm_calls is not None:
-            from cmhh.models import SearchBudget
-            budget = SearchBudget(
-                generations=budget.generations,
-                candidates_per_generation=budget.candidates_per_generation,
-                max_llm_calls=args.max_llm_calls,
-            )
+        evaluator = Evaluator(root, experiment.evaluation)
         generator = HeurAgenixGenerator(
-            root, _resolve(args.llm_config, root), run_dir / "candidates" / task.task_id,
+            repo_root=root,
+            llm_config_path=_resolve(args.llm_config, root),
             timeout_seconds=args.evolution_timeout,
         )
-        candidates = generator.generate(
-            task, baseline_artifacts(task, root), budget, args.seed
+        seed_population = [
+            artifact
+            for artifact in baseline_artifacts(task, root)
+        ]
+        results = generator.generate(
+            task=task,
+            seed_population=seed_population,
+            budget=experiment.search,
+            seed=args.seed,
         )
-        evaluator = Evaluator(root, experiment.evaluation)
-        ranked = []
-        for candidate in candidates:
-            smoke = evaluator.evaluate(candidate, task, "smoke")
-            write_evaluation(run_dir / "evaluations/smoke" / f"{candidate.heuristic_id}.json", smoke)
-            if smoke.failure_rate:
-                continue
-            validation = evaluator.evaluate(candidate, task, "validation")
-            write_evaluation(
-                run_dir / "evaluations/validation" / f"{candidate.heuristic_id}.json", validation
-            )
-            objectives = [item.objective for item in validation.successful if item.objective is not None]
-            if validation.failure_rate == 0 and objectives:
-                runtime = sum(item.runtime_seconds for item in validation.successful) / len(validation.successful)
-                ranked.append((sum(objectives) / len(objectives), runtime, candidate.heuristic_id, candidate))
-        if not ranked:
-            print("ERROR: evolution produced no valid candidate", file=sys.stderr)
-            return 1
-        selected = min(ranked, key=lambda item: item[:3])[3]
-        write_json_atomic(run_dir / "selected.json", selected.to_dict())
-        print(run_dir)
+        print(f"Generated {len(results)} candidates for {task.task_id}:")
+        for candidate in results:
+            eval_res = evaluator.evaluate(candidate, task, "validation")
+            print(f"  {candidate.heuristic_id}: gap={eval_res.mean_relative_gap:.4f} failure_rate={eval_res.failure_rate:.2f}")
         return 0
 
     if args.command == "audit-run":
-        report = audit_run(experiment.output_root / args.run_id)
-        for warning in report.warnings:
-            print(f"WARNING: {warning}")
+        run_dir = experiment.output_root / args.run_id
+        report = audit_run(run_dir)
         for error in report.errors:
             print(f"ERROR: {error}", file=sys.stderr)
-        print(f"Audit {'passed' if report.valid else 'failed'}: {args.run_id}")
+        for warning in report.warnings:
+            print(f"WARNING: {warning}")
+        print(f"Audit {run_dir.name}: valid={report.valid} ({len(report.errors)} errors, {len(report.warnings)} warnings)")
         return 0 if report.valid else 1
 
-    return 2
+    return 1
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

@@ -13,6 +13,7 @@ Official implementation of **CMHH (Continual Multi-Agent Hyper-Heuristics)** —
 | File Documentation | Mục đích & Nội dung | Đối tượng |
 |---|---|---|
 | 🚀 [**`CMHH_BEGINNER_WALKTHROUGH.md`**](CMHH_BEGINNER_WALKTHROUGH.md) | **Hướng dẫn từng bước cho người mới (Quickstart 5 phút)**, giải thích sơ đồ 5 phần, chạy lệnh đầu tiên và cách đọc ma trận kết quả | Người mới bắt đầu / Sinh viên / ML Engineer |
+| 📌 [**`CMHH_STEP_BY_STEP_EXECUTION_GUIDE.md`**](CMHH_STEP_BY_STEP_EXECUTION_GUIDE.md) | **Lộ trình chạy từng bước có đánh số (từ 1 đến 8)** kèm các câu lệnh PowerShell copy-paste trực tiếp | Người trực tiếp chạy thí nghiệm |
 | 📊 [**`CMHH_EXPERIMENT_GUIDE.md`**](CMHH_EXPERIMENT_GUIDE.md) | **Hướng dẫn thử nghiệm chuyên sâu & đọc chỉ số**, giải thích chi tiết $R_{k,j}$, $AF$, $BWT$, $FWT$, `diagnostics.json` và `eviction_lineage` | PhD / ML Research Engineers |
 | 🛠️ [**`CMHH_ENGINEERING_HANDOFF_REVIEW.md`**](CMHH_ENGINEERING_HANDOFF_REVIEW.md) | **Báo cáo kiểm định kiến trúc & lịch sử tái cấu trúc hệ thống**, phân tích 5 giai đoạn hoàn thiện codebase | Core Maintainers / Code Auditors |
 | 📄 [**`IDEA/Idea/CMHH_Research_Specification.md`**](IDEA/Idea/CMHH_Research_Specification.md) | **Tài liệu đặc tả bài báo nghiên cứu (Research Specs)** | Scientific Research Team |
