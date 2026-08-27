@@ -26,7 +26,7 @@ class ProtectionPolicy:
 
 @dataclass(frozen=True)
 class EvictionPolicy:
-    max_capacity: int = 20
+    max_capacity: int | None = 20
     utility_weight: float = 0.7
     recency_weight: float = 0.3
 

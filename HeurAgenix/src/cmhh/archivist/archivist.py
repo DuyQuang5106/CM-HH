@@ -125,35 +125,36 @@ class DefaultArchivist(Archivist):
 
         # Step 2: Capacity check & Eviction
         all_items = memory_store.load_all()
-        protected_count = sum(1 for item in all_items if item.metadata.protected)
-
-        if protected_count > self.eviction.max_capacity:
-            raise CapacityOverflowError(
-                f"Protected memory anchor count ({protected_count}) exceeds "
-                f"maximum capacity ({self.eviction.max_capacity})"
-            )
-
         evicted_ids: list[str] = []
-        if len(all_items) > self.eviction.max_capacity:
-            protected_items = [item for item in all_items if item.metadata.protected]
-            non_protected_items = [item for item in all_items if not item.metadata.protected]
 
-            ranked_non_protected = sorted(
-                non_protected_items,
-                key=lambda item: (
-                    item.metadata.validation_score,
-                    item.metadata.created_at,
-                    item.id,
-                ),
-                reverse=True,
-            )
-            allowed_non_protected = self.eviction.max_capacity - len(protected_items)
-            kept_non_protected = ranked_non_protected[:allowed_non_protected]
-            evicted_non_protected = ranked_non_protected[allowed_non_protected:]
+        if self.eviction.max_capacity is not None and self.eviction.max_capacity > 0:
+            protected_count = sum(1 for item in all_items if item.metadata.protected)
+            if protected_count > self.eviction.max_capacity:
+                raise CapacityOverflowError(
+                    f"Protected memory anchor count ({protected_count}) exceeds "
+                    f"maximum capacity ({self.eviction.max_capacity})"
+                )
 
-            evicted_ids = [item.id for item in evicted_non_protected]
-            kept_all = protected_items + kept_non_protected
-            memory_store.save_all(kept_all)
+            if len(all_items) > self.eviction.max_capacity:
+                protected_items = [item for item in all_items if item.metadata.protected]
+                non_protected_items = [item for item in all_items if not item.metadata.protected]
+
+                ranked_non_protected = sorted(
+                    non_protected_items,
+                    key=lambda item: (
+                        item.metadata.validation_score,
+                        item.metadata.created_at,
+                        item.id,
+                    ),
+                    reverse=True,
+                )
+                allowed_non_protected = self.eviction.max_capacity - len(protected_items)
+                kept_non_protected = ranked_non_protected[:allowed_non_protected]
+                evicted_non_protected = ranked_non_protected[allowed_non_protected:]
+
+                evicted_ids = [item.id for item in evicted_non_protected]
+                kept_all = protected_items + kept_non_protected
+                memory_store.save_all(kept_all)
 
         return ArchivistTransactionResult(
             admitted_ids=tuple(admitted_ids),

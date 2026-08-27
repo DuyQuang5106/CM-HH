@@ -1,12 +1,12 @@
 version: 1
 experiment:
-  name: h1_naive_sequential
+  name: h1_naive_unbounded
   condition: naive_memory_sequential
   output_root: cmhh/results
   seeds: [1, 2, 3]
 archive:
-  policy: naive_overwrite
-  capacity: 20
+  policy: naive_unbounded
+  capacity: null
   top_k: 5
 data:
   seed: 42
@@ -25,4 +25,3 @@ evaluation:
   instance_timeout_seconds: 10
   batch_timeout_seconds: 300
   invalid_policy: fail_batch
-

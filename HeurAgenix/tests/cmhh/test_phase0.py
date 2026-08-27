@@ -17,19 +17,22 @@ from cmhh.models import EvaluationBudget, HeuristicArtifact
 from cmhh.models import EvaluationResult, InstanceEvaluation, SearchBudget
 from cmhh.tasks import TaskMetric, TaskReference, TaskSpec, TaskSplits
 from cmhh.tasks import TaskRegistry
-from cmhh.config import DataConfig, ExperimentConfig, StreamConfig
+from cmhh.config import ArchiveConfig, DataConfig, ExperimentConfig, StreamConfig, load_experiment_config
 from cmhh.runner import StreamRunner
 from cmhh.references.concorde import ConcordeConfig, SolverFailure, solve_instance
 from cmhh.references.tour import parse_concorde_tour, tour_objective
 from cmhh.audit import audit_run
 from cmhh.llm.budgeted_client import BudgetedLLMClient, LLMBudgetExceeded
 from cmhh.llm.config import llm_config_fingerprint, sanitized_llm_config
+from cmhh.archivist import AdmissionCriteria, DefaultArchivist, EvictionPolicy, ProtectionPolicy
 from cmhh.memory import (
+    MemoryEvidence,
     MemoryKey,
     MemoryScope,
     MemoryStore,
     MemoryUnit,
     MemoryValue,
+    WorkingBuffer,
     create_memory_unit,
     utc_now,
 )
@@ -450,6 +453,103 @@ class MemoryModelTests(unittest.TestCase):
                     split="test",
                     validation_after={"score": 1.0},
                 )
+
+    def test_archive_config_parsing_bounded_and_unbounded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bounded_yaml = Path(directory) / "bounded.yaml"
+            bounded_yaml.write_text("""
+version: 1
+experiment:
+  name: bounded
+  condition: naive_memory_sequential
+  output_root: results
+  seeds: [1]
+archive:
+  policy: naive_overwrite
+  capacity: 20
+  top_k: 5
+data:
+  seed: 42
+  coordinate_min: 0
+  coordinate_max: 10000
+  splits: {train: 1, validation: 1, test: 1, smoke: 1}
+search: {generations: 1, candidates_per_generation: 1, max_llm_calls: 1}
+evaluation: {instance_timeout_seconds: 1, batch_timeout_seconds: 10, invalid_policy: fail_batch}
+""", encoding="utf-8")
+            cfg_bounded = load_experiment_config(bounded_yaml, directory)
+            self.assertEqual(20, cfg_bounded.archive.capacity)
+            self.assertEqual(5, cfg_bounded.archive.top_k)
+            self.assertEqual("naive_overwrite", cfg_bounded.archive.policy)
+
+            unbounded_yaml = Path(directory) / "unbounded.yaml"
+            unbounded_yaml.write_text("""
+version: 1
+experiment:
+  name: unbounded
+  condition: naive_memory_sequential
+  output_root: results
+  seeds: [1]
+archive:
+  policy: naive_unbounded
+  capacity: null
+  top_k: 8
+data:
+  seed: 42
+  coordinate_min: 0
+  coordinate_max: 10000
+  splits: {train: 1, validation: 1, test: 1, smoke: 1}
+search: {generations: 1, candidates_per_generation: 1, max_llm_calls: 1}
+evaluation: {instance_timeout_seconds: 1, batch_timeout_seconds: 10, invalid_policy: fail_batch}
+""", encoding="utf-8")
+            cfg_unbounded = load_experiment_config(unbounded_yaml, directory)
+            self.assertIsNone(cfg_unbounded.archive.capacity)
+            self.assertEqual(8, cfg_unbounded.archive.top_k)
+            self.assertEqual("naive_unbounded", cfg_unbounded.archive.policy)
+
+    def test_runner_enforces_capacity_only_when_bounded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            task = TaskSpec(
+                "tsp_a", "tsp", "n20", "uniform",
+                TaskSplits(root, root, root, root),
+                TaskReference("optimal"), TaskMetric("relative_gap", "minimize"), True,
+                {"heuristic_dir": "basic_heuristics", "seed_heuristics": ["baseline"]},
+                {"nodes": 20},
+            )
+
+            # 1. Bounded Archivist (capacity = 3)
+            store_bounded = MemoryStore(root / "memory_bounded.jsonl")
+            buffer_bounded = WorkingBuffer(capacity=50)
+            for index in range(5):
+                code_file = root / f"h_{index}.py"
+                code_file.write_text("def solve(): pass", encoding="utf-8")
+                artifact = HeuristicArtifact(f"h_{index}", "tsp", code_file, "hash")
+                buffer_bounded.add_experience(artifact, {"score": float(index)}, task)
+
+            archivist_bounded = DefaultArchivist(
+                admission=AdmissionCriteria(elite_validation_rank=5),
+                protection=ProtectionPolicy(protect_best_per_task=False),
+                eviction=EvictionPolicy(max_capacity=3),
+            )
+            archivist_bounded.process_transaction(buffer_bounded, store_bounded, task)
+            self.assertEqual(3, len(store_bounded.load_all()))
+
+            # 2. Unbounded Archivist (capacity = None)
+            store_unbounded = MemoryStore(root / "memory_unbounded.jsonl")
+            buffer_unbounded = WorkingBuffer(capacity=50)
+            for index in range(5):
+                code_file = root / f"h_{index}.py"
+                artifact = HeuristicArtifact(f"h_{index}", "tsp", code_file, "hash")
+                buffer_unbounded.add_experience(artifact, {"score": float(index)}, task)
+
+            archivist_unbounded = DefaultArchivist(
+                admission=AdmissionCriteria(elite_validation_rank=5),
+                protection=ProtectionPolicy(protect_best_per_task=False),
+                eviction=EvictionPolicy(max_capacity=None),
+            )
+            archivist_unbounded.process_transaction(buffer_unbounded, store_unbounded, task)
+            self.assertEqual(5, len(store_unbounded.load_all()))
+
 
 
 if __name__ == "__main__":

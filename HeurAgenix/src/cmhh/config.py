@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +18,13 @@ class DataConfig:
 
 
 @dataclass(frozen=True)
+class ArchiveConfig:
+    policy: str = "naive_overwrite"
+    capacity: int | None = 20
+    top_k: int = 5
+
+
+@dataclass(frozen=True)
 class ExperimentConfig:
     name: str
     condition: str
@@ -26,6 +33,7 @@ class ExperimentConfig:
     data: DataConfig
     search: SearchBudget
     evaluation: EvaluationBudget
+    archive: ArchiveConfig = field(default_factory=ArchiveConfig)
 
 
 @dataclass(frozen=True)
@@ -53,6 +61,22 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
     output_root = Path(experiment["output_root"])
     if not output_root.is_absolute():
         output_root = root / output_root
+
+    archive_raw = raw.get("archive", {})
+    capacity = archive_raw.get("capacity", 20)
+    if isinstance(capacity, str) and capacity.lower() in {"unbounded", "none", "null", "inf", "infinite"}:
+        capacity = None
+    elif capacity is not None:
+        capacity = int(capacity)
+        if capacity <= 0:
+            capacity = None
+
+    archive = ArchiveConfig(
+        policy=archive_raw.get("policy", "naive_overwrite"),
+        capacity=capacity,
+        top_k=int(archive_raw.get("top_k", 5)),
+    )
+
     return ExperimentConfig(
         name=experiment["name"],
         condition=experiment.get("condition", "independent_seed"),
@@ -66,6 +90,7 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
         ),
         search=SearchBudget(**search),
         evaluation=EvaluationBudget(**evaluation),
+        archive=archive,
     )
 
 

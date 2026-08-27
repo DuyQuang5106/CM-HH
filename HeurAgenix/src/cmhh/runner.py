@@ -60,7 +60,7 @@ class StreamRunner:
         self.cold_start_scores = cold_start_scores
         self.retriever = retriever or RetrieverV0()
         self.archivist = archivist or DefaultArchivist(
-            eviction=EvictionPolicy(max_capacity=self.NAIVE_MEMORY_CAPACITY)
+            eviction=EvictionPolicy(max_capacity=self.naive_memory_capacity)
         )
         self.working_buffer = WorkingBuffer(capacity=50)
 
@@ -251,6 +251,18 @@ class StreamRunner:
     def _uses_naive_memory(self) -> bool:
         return self.experiment.condition == "naive_memory_sequential"
 
+    @property
+    def naive_memory_capacity(self) -> int | None:
+        if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
+            return self.experiment.archive.capacity
+        return self.NAIVE_MEMORY_CAPACITY
+
+    @property
+    def naive_memory_top_k(self) -> int:
+        if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
+            return self.experiment.archive.top_k
+        return self.NAIVE_MEMORY_TOP_K
+
     def _memory_store(self) -> MemoryStore:
         return MemoryStore(self.run_dir / "memory" / "memory.jsonl")
 
@@ -261,7 +273,7 @@ class StreamRunner:
             task_id=task.task_id,
             task_signature=self._task_signature(task),
         )
-        budget = RetrievalBudget(top_k=self.NAIVE_MEMORY_TOP_K)
+        budget = RetrievalBudget(top_k=self.naive_memory_top_k)
         retrieved = self.retriever.retrieve(query, store.load_all(), budget)
         keys = [item.unit.key.applicability for item in retrieved]
         duplicate_key_rate = (

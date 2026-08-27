@@ -191,40 +191,40 @@ class TestDataGenerators(unittest.TestCase):
         # 1. Test TSP parser
         if TspEnv is not None:
             tsp_file = next((self.root / "data/tsp/smoke").glob("*.tsp"))
-            tsp_data = TspEnv("tsp_test").load_data(str(tsp_file))
+            tsp_data = TspEnv.__new__(TspEnv).load_data(str(tsp_file))
             self.assertEqual(tsp_data["node_num"], 20)
 
         # 2. Test CVRP parser
         if CvrpEnv is not None:
             cvrp_file = next((self.root / "data/cvrp/smoke").glob("*.vrp"))
-            cvrp_data = CvrpEnv("cvrp_test").load_data(str(cvrp_file))
+            cvrp_data = CvrpEnv.__new__(CvrpEnv).load_data(str(cvrp_file))
             self.assertEqual(cvrp_data["node_num"], 20)
             self.assertGreaterEqual(cvrp_data["vehicle_num"], 2)
 
         # 3. Test JSSP parser
         if JsspEnv is not None:
             jssp_file = next((self.root / "data/jssp/smoke").glob("*.txt"))
-            jssp_data = JsspEnv("jssp_test").load_data(str(jssp_file))
+            jssp_data = JsspEnv.__new__(JsspEnv).load_data(str(jssp_file))
             self.assertEqual(jssp_data["job_num"], 10)
             self.assertEqual(jssp_data["machine_num"], 5)
 
         # 4. Test DPOSP parser
         if DpospEnv is not None:
             dposp_dir = next((self.root / "data/dposp/smoke").iterdir())
-            dposp_data = DpospEnv("dposp_test").load_data(str(dposp_dir))
+            dposp_data = DpospEnv.__new__(DpospEnv).load_data(str(dposp_dir))
             self.assertEqual(dposp_data["order_num"], 10)
 
         # 5. Test MKP parser
         if MkpEnv is not None:
             mkp_file = next((self.root / "data/mkp/smoke").glob("*.txt"))
-            mkp_data = MkpEnv("mkp_test").load_data(str(mkp_file))
+            mkp_data = MkpEnv.__new__(MkpEnv).load_data(str(mkp_file))
             self.assertEqual(mkp_data["item_num"], 15)
             self.assertEqual(mkp_data["resource_num"], 5)
 
         # 6. Test MaxCut parser
         if MaxCutEnv is not None:
             max_cut_file = next((self.root / "data/max_cut/smoke").glob("*.txt"))
-            max_cut_data = MaxCutEnv("max_cut_test").load_data(str(max_cut_file))
+            max_cut_data = MaxCutEnv.__new__(MaxCutEnv).load_data(str(max_cut_file))
             self.assertEqual(max_cut_data["node_num"], 15)
 
 
