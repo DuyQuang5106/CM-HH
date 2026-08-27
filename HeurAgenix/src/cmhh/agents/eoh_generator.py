@@ -6,7 +6,6 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 from cmhh.llm.config import load_llm_config, write_sanitized_snapshot
@@ -15,7 +14,9 @@ from cmhh.models import HeuristicArtifact, SearchBudget
 from cmhh.tasks import TaskSpec
 
 
-class HeurAgenixGenerator:
+class EOHGenerator:
+    """Official FeiLiu36/EoH cold-start generator used as a no-memory baseline."""
+
     def __init__(
         self,
         repo_root: str | Path,
@@ -36,36 +37,34 @@ class HeurAgenixGenerator:
         seed: int,
         memory_context: list[MemoryUnit] | None = None,
     ) -> list[HeuristicArtifact]:
-        if not seed_population:
-            raise ValueError("HeurAgenixGenerator requires at least one seed heuristic")
+        del seed_population, memory_context
         llm_config = load_llm_config(self.llm_config_path)
         invocation_root = self.output_root / task.task_id / f"seed_{seed}"
         invocation_root.mkdir(parents=True, exist_ok=True)
         write_sanitized_snapshot(invocation_root / "llm_config.snapshot.json", llm_config)
-        memory_context_path = invocation_root / "memory_context.json"
-        memory_context_path.write_text(
-            json.dumps([unit.to_dict() for unit in memory_context or []], indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
         result_path = invocation_root / "generator_result.json"
+        max_candidates = max(1, budget.generations * budget.candidates_per_generation)
         command = [
-            sys.executable, "-m", "cmhh.agents.heuragenix_worker",
+            sys.executable, "-m", "cmhh.agents.eoh_worker",
             "--repo-root", str(self.repo_root),
             "--problem", task.problem,
             "--train-dir", str(task.splits.train),
-            "--validation-dir", str(task.splits.validation),
-            "--seed-heuristic", str(seed_population[0].code_path),
             "--llm-config", str(self.llm_config_path),
             "--output-root", str(invocation_root),
             "--result", str(result_path),
-            "--memory-context", str(memory_context_path),
             "--seed", str(seed),
             "--generations", str(budget.generations),
-            "--candidates-per-generation", str(budget.candidates_per_generation),
+            "--pop-size", str(budget.candidates_per_generation),
             "--max-llm-calls", str(budget.max_llm_calls),
+            "--max-candidates", str(max_candidates),
+            "--evaluation-timeout", "40",
         ]
         environment = dict(os.environ)
-        environment["PYTHONPATH"] = str(self.repo_root / "src") + os.pathsep + environment.get("PYTHONPATH", "")
+        environment["PYTHONPATH"] = os.pathsep.join([
+            str(self.repo_root),
+            str(self.repo_root / "src"),
+            environment.get("PYTHONPATH", ""),
+        ])
         try:
             completed = subprocess.run(
                 command,
@@ -77,13 +76,13 @@ class HeurAgenixGenerator:
                 check=False,
             )
         except subprocess.TimeoutExpired as exc:
-            raise TimeoutError(f"HeurAgenix evolution exceeded {self.timeout_seconds}s") from exc
+            raise TimeoutError(f"EOH generation exceeded {self.timeout_seconds}s") from exc
         if not result_path.exists():
             detail = (completed.stderr or completed.stdout or "worker produced no result")[-4000:]
-            raise RuntimeError(f"HeurAgenix worker failed: {detail}")
+            raise RuntimeError(f"EOH worker failed: {detail}")
         raw = json.loads(result_path.read_text(encoding="utf-8"))
         if raw["status"] != "ok":
-            raise RuntimeError(raw.get("error", "HeurAgenix worker failed"))
+            raise RuntimeError(raw.get("error", "EOH worker failed"))
         artifacts: list[HeuristicArtifact] = []
         for index, candidate in enumerate(raw["candidates"]):
             path = Path(candidate["path"])
@@ -94,12 +93,14 @@ class HeurAgenixGenerator:
                 problem=task.problem,
                 code_path=path,
                 code_hash=hashlib.sha256(code.encode()).hexdigest(),
-                strategy="HeurAgenix evolved candidate",
-                parent_ids=(seed_population[0].heuristic_id,),
+                strategy="Official EOH cold-start candidate",
+                parent_ids=(),
                 generation=max(1, index // max(1, budget.candidates_per_generation) + 1),
                 task_id=task.task_id,
                 prompt_hash=raw["prompt_hash"],
                 model=raw["model"],
-                llm_call_index=raw["calls_used"],
+                llm_call_index=raw.get("calls_used_estimate"),
             ))
+        if not artifacts:
+            raise RuntimeError(f"EOH worker produced no usable candidates for {task.task_id}")
         return artifacts

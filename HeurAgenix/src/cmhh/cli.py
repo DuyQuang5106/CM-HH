@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from cmhh.agents.eoh_generator import EOHGenerator
 from cmhh.agents.generator import BaselineGenerator
 from cmhh.agents.heuragenix_generator import HeurAgenixGenerator
 from cmhh.audit import audit_run
@@ -48,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_stream.add_argument("--seed", type=int)
     run_stream.add_argument("--run-id")
     run_stream.add_argument("--resume", action="store_true")
-    run_stream.add_argument("--generator", choices=("baseline", "heuragenix"), default="baseline")
+    run_stream.add_argument("--generator", choices=("baseline", "heuragenix", "eoh"), default="baseline")
     run_stream.add_argument("--llm-config")
     run_stream.add_argument("--evolution-timeout", type=float, default=3600)
     run_stream.add_argument("--cold-start-scores")
@@ -57,7 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_config_arguments(isolated)
     isolated.add_argument("--seed", type=int)
     isolated.add_argument("--run-id")
-    isolated.add_argument("--generator", choices=("baseline", "heuragenix"), default="baseline")
+    isolated.add_argument("--generator", choices=("baseline", "heuragenix", "eoh"), default="baseline")
     isolated.add_argument("--llm-config")
     isolated.add_argument("--evolution-timeout", type=float, default=3600)
 
@@ -183,13 +184,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         evaluator = Evaluator(root, experiment.evaluation)
-        if args.generator == "heuragenix":
+        if args.generator in {"heuragenix", "eoh"}:
             if not args.llm_config:
-                print("ERROR: --llm-config is required for --generator heuragenix", file=sys.stderr)
+                print(f"ERROR: --llm-config is required for --generator {args.generator}", file=sys.stderr)
                 return 1
-            generator = HeurAgenixGenerator(
+            generator_cls = HeurAgenixGenerator if args.generator == "heuragenix" else EOHGenerator
+            generator = generator_cls(
                 repo_root=root,
                 llm_config_path=_resolve(args.llm_config, root),
+                output_root=run_dir / "generator",
                 timeout_seconds=args.evolution_timeout,
             )
         else:
@@ -233,13 +236,15 @@ def main(argv: list[str] | None = None) -> int:
         run_id = args.run_id or datetime.now(timezone.utc).strftime("isolated_%Y%m%dT%H%M%SZ")
         run_dir = experiment.output_root / run_id
         evaluator = Evaluator(root, experiment.evaluation)
-        if args.generator == "heuragenix":
+        if args.generator in {"heuragenix", "eoh"}:
             if not args.llm_config:
-                print("ERROR: --llm-config is required for --generator heuragenix", file=sys.stderr)
+                print(f"ERROR: --llm-config is required for --generator {args.generator}", file=sys.stderr)
                 return 1
-            generator = HeurAgenixGenerator(
+            generator_cls = HeurAgenixGenerator if args.generator == "heuragenix" else EOHGenerator
+            generator = generator_cls(
                 repo_root=root,
                 llm_config_path=_resolve(args.llm_config, root),
+                output_root=run_dir / "generator",
                 timeout_seconds=args.evolution_timeout,
             )
         else:
@@ -263,9 +268,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "evolve-task":
         task = registry.get(args.task)
         evaluator = Evaluator(root, experiment.evaluation)
+        run_id = args.run_id or datetime.now(timezone.utc).strftime("evolve_%Y%m%dT%H%M%SZ")
         generator = HeurAgenixGenerator(
             repo_root=root,
             llm_config_path=_resolve(args.llm_config, root),
+            output_root=experiment.output_root / run_id / "generator",
             timeout_seconds=args.evolution_timeout,
         )
         seed_population = [
