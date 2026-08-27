@@ -106,10 +106,10 @@ class StreamRunner:
 
             for k in range(int(checkpoint["completed_tasks"]), len(self.stream.task_ids)):
                 task = self.registry.get(self.stream.task_ids[k])
-                
+
                 # Executed read-only Pre-learning Probe (A) on task Tk using M_{k-1} state
                 self._run_pre_learning_probe(k, task)
-                
+
                 seeds = self._seed_population(task, carryover_population)
                 memory_context = self._retrieve_memory_context(task) if self._uses_naive_memory else []
                 carryover_validation_score = (
@@ -163,7 +163,7 @@ class StreamRunner:
                     "matrix": matrix,
                 })
                 self._write_matrix(matrix)
-            
+
             metrics = self._write_metrics(matrix)
             self.tracker.log_performance_matrix(matrix, self.stream.task_ids)
             if metrics:

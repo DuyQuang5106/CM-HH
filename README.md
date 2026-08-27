@@ -63,7 +63,7 @@ uv run cmhh --repo-root HeurAgenix run-stream `
 
 ## 📈 Experiment Tracking with Weights & Biases (`wandb`)
 
-CM-HH tích hợp W&B dưới dạng **lớp tracking/visualization bổ sung**. 
+CM-HH tích hợp W&B dưới dạng **lớp tracking/visualization bổ sung**.
 
 > **Quan trọng**: Local experiment artifacts (`cmhh/results/<run_id>/`) luôn là **canonical source of truth**. W&B hoàn toàn tùy chọn (mặc định tắt) và không bao giờ làm gián đoạn experiment nếu mạng lỗi hay chưa đăng nhập.
 
