@@ -7,7 +7,7 @@
 
 This document is meant to take you from zero to running your first experiment. Read it in order — each section assumes you've absorbed the one before it. Don't skip the background reading; the whole project only makes sense once you've seen what EoH, HMACE, and classical continual learning look like separately.
 
-![image.png](image.png)
+![CM-HH overview](../assets/cmhh-overview.png)
 
 ## 1. The One-Paragraph Version
 
