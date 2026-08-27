@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cmhh"
+version = "0.1.0"
+description = "Continual Multi-Agent Hyper-Heuristics (CM-HH)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "networkx>=2.8.8",
+    "tsplib95>=0.7.1",
+    "pyyaml>=6.0",
+    "openai>=1.0.0",
+    "scipy>=1.10.0",
+    "tqdm>=4.65.0",
+    "requests>=2.28.0",
+    "wandb>=0.16.0",
+]
+
+[project.scripts]
+cmhh = "cmhh.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["HeurAgenix/src"]
+
+[tool.pytest.ini_options]
+testpaths = ["HeurAgenix/tests"]
+pythonpath = ["HeurAgenix/src", "HeurAgenix"]

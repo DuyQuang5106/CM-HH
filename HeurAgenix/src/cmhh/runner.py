@@ -31,6 +31,7 @@ from cmhh.models import HeuristicArtifact
 from cmhh.reporting import write_evaluation
 from cmhh.retrieval import RetrievalBudget, RetrievalQuery, Retriever, RetrieverV0
 from cmhh.tasks import TaskRegistry
+from cmhh.tracking import ExperimentTracker, create_tracker
 
 
 class StreamRunner:
@@ -49,6 +50,7 @@ class StreamRunner:
         cold_start_scores: dict[int, float] | None = None,
         retriever: Retriever | None = None,
         archivist: Archivist | None = None,
+        tracker: ExperimentTracker | None = None,
     ) -> None:
         self.registry = registry
         self.stream = stream
@@ -63,6 +65,13 @@ class StreamRunner:
             eviction=EvictionPolicy(max_capacity=self.naive_memory_capacity)
         )
         self.working_buffer = WorkingBuffer(capacity=50)
+        self.tracker = tracker or create_tracker(
+            getattr(experiment, "tracking", None),
+            run_id=self.run_dir.name,
+            run_dir=self.run_dir,
+            stream_id=stream.stream_id,
+            experiment_name=experiment.name,
+        )
 
     def run(self) -> dict[int, dict[int, float]]:
         self.run_dir.mkdir(parents=True, exist_ok=True)
@@ -83,57 +92,87 @@ class StreamRunner:
             for row, values in checkpoint["matrix"].items()
         }
 
-        for k in range(int(checkpoint["completed_tasks"]), len(self.stream.task_ids)):
-            task = self.registry.get(self.stream.task_ids[k])
-            
-            # Executed read-only Pre-learning Probe (A) on task Tk using M_{k-1} state
-            self._run_pre_learning_probe(k, task)
-            
-            seeds = self._seed_population(task, carryover_population)
-            memory_context = self._retrieve_memory_context(task) if self._uses_naive_memory else []
-            carryover_validation_score = (
-                self._score_seed_population_on_validation(task, seeds, k)
-                if self._uses_naive_memory else None
-            )
-            candidates = self.generator.generate(
-                task,
-                seeds,
-                self.experiment.search,
-                self.seed + k,
-                memory_context=memory_context,
-            )
-            ranked_population, validation_summaries = self._rank_on_validation(task, candidates, k)
-            best = ranked_population[0]
-            if self._uses_population_carryover:
-                carryover_population = ranked_population
-            if self._uses_naive_memory:
-                self._write_naive_memory(task, ranked_population, validation_summaries)
-                self._log_memory_reuse_outcome(
-                    task,
-                    memory_context,
-                    validation_summaries[best.heuristic_id],
-                    carryover_validation_score,
-                )
-            selected[task.task_id] = best.to_dict()
-            self._event("candidate_selected", task_id=task.task_id, heuristic_id=best.heuristic_id)
-
-            # Execute read-only Retention Probe (C) on tasks T_1..T_k using Retriever & M_k
-            self._run_retention_probe(k, selected, matrix)
-
-            save_checkpoint(checkpoint_path, {
-                "completed_tasks": k + 1,
-                "selected": selected,
-                "carryover_population": [
-                    artifact.to_dict()
-                    for artifact in carryover_population
-                ],
-                "matrix": matrix,
+        try:
+            self.tracker.log_config({
+                "experiment_name": self.experiment.name,
+                "condition": self.experiment.condition,
+                "stream_id": self.stream.stream_id,
+                "task_ids": list(self.stream.task_ids),
+                "seed": self.seed,
+                "archive_policy": getattr(self.experiment.archive, "policy", "naive_overwrite"),
+                "archive_capacity": self.naive_memory_capacity,
+                "archive_top_k": self.naive_memory_top_k,
             })
-            self._write_matrix(matrix)
-        self._write_metrics(matrix)
-        if self._uses_naive_memory:
-            self._write_memory_diagnostics()
-        return matrix
+
+            for k in range(int(checkpoint["completed_tasks"]), len(self.stream.task_ids)):
+                task = self.registry.get(self.stream.task_ids[k])
+
+                # Executed read-only Pre-learning Probe (A) on task Tk using M_{k-1} state
+                self._run_pre_learning_probe(k, task)
+
+                seeds = self._seed_population(task, carryover_population)
+                memory_context = self._retrieve_memory_context(task) if self._uses_naive_memory else []
+                carryover_validation_score = (
+                    self._score_seed_population_on_validation(task, seeds, k)
+                    if self._uses_naive_memory else None
+                )
+                candidates = self.generator.generate(
+                    task,
+                    seeds,
+                    self.experiment.search,
+                    self.seed + k,
+                    memory_context=memory_context,
+                )
+                ranked_population, validation_summaries = self._rank_on_validation(task, candidates, k)
+                best = ranked_population[0]
+                if self._uses_population_carryover:
+                    carryover_population = ranked_population
+                if self._uses_naive_memory:
+                    self._write_naive_memory(task, ranked_population, validation_summaries)
+                    self._log_memory_reuse_outcome(
+                        task,
+                        memory_context,
+                        validation_summaries[best.heuristic_id],
+                        carryover_validation_score,
+                    )
+                selected[task.task_id] = best.to_dict()
+                self._event("candidate_selected", task_id=task.task_id, heuristic_id=best.heuristic_id)
+
+                # Execute read-only Retention Probe (C) on tasks T_1..T_k using Retriever & M_k
+                self._run_retention_probe(k, selected, matrix)
+
+                # Track task-level step metrics
+                step_metrics: dict[str, float] = {
+                    "stream_step": k,
+                    "performance/validation_score": float(validation_summaries[best.heuristic_id].get("score", float("nan"))),
+                }
+                if k in matrix and k in matrix[k]:
+                    step_metrics["performance/current_task_gap"] = matrix[k][k]
+                if self._uses_naive_memory:
+                    store = self._memory_store()
+                    step_metrics["memory/size"] = len(store.load_all())
+                self.tracker.log_metrics(step_metrics, step=k)
+
+                save_checkpoint(checkpoint_path, {
+                    "completed_tasks": k + 1,
+                    "selected": selected,
+                    "carryover_population": [
+                        artifact.to_dict()
+                        for artifact in carryover_population
+                    ],
+                    "matrix": matrix,
+                })
+                self._write_matrix(matrix)
+
+            metrics = self._write_metrics(matrix)
+            self.tracker.log_performance_matrix(matrix, self.stream.task_ids)
+            if metrics:
+                self.tracker.log_summary(metrics)
+            if self._uses_naive_memory:
+                self._write_memory_diagnostics()
+            return matrix
+        finally:
+            self.tracker.finish()
 
     def _run_pre_learning_probe(self, k: int, task) -> None:
         self._event(
@@ -442,16 +481,28 @@ class StreamRunner:
                     *[matrix[row].get(column, "") for column in range(len(self.stream.task_ids))],
                 ])
 
-    def _write_metrics(self, matrix: dict[int, dict[int, float]]) -> None:
+    def _write_metrics(self, matrix: dict[int, dict[int, float]]) -> dict[str, Any]:
         count = len(self.stream.task_ids)
-        metrics = {
+        metrics: dict[str, Any] = {
             "average_final_performance": average_final_performance(matrix, count),
-            "backward_transfer": backward_transfer(matrix, count),
             "score_convention": "higher_is_better; score=-relative_gap",
         }
-        if self.cold_start_scores is not None:
-            metrics["forward_transfer"] = forward_transfer(matrix, self.cold_start_scores, count)
+        if count >= 2:
+            try:
+                metrics["backward_transfer"] = backward_transfer(matrix, count)
+            except Exception:
+                metrics["backward_transfer"] = None
+        else:
+            metrics["backward_transfer"] = None
+
+        if self.cold_start_scores is not None and count >= 2:
+            try:
+                metrics["forward_transfer"] = forward_transfer(matrix, self.cold_start_scores, count)
+            except Exception:
+                metrics["forward_transfer"] = None
+
         write_json_atomic(self.run_dir / "metrics.json", metrics)
+        return metrics
 
     def _write_memory_diagnostics(self) -> None:
         diagnostics = build_memory_diagnostics(self.run_dir, self.stream.task_ids)

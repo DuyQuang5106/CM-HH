@@ -20,30 +20,84 @@ Official implementation of **CMHH (Continual Multi-Agent Hyper-Heuristics)** —
 
 ---
 
-## ⚡ Quickstart (Khởi Động Nhanh Trong 5 Phút)
+## ⚡ Setup & Quickstart với `uv`
 
-### 1. Đặt biến môi trường `PYTHONPATH`
+### 1. Cài đặt môi trường với `uv`
+Repo sử dụng `pyproject.toml` và `uv` để quản lý dependencies nhanh và ổn định:
+
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"
+# Cài đặt toàn bộ dependencies vào virtual environment .venv
+uv sync
 ```
 
-### 2. Kiểm tra tính hợp lệ của hệ thống (Sanity Check)
+### 2. Chạy thử nghiệm qua `uv` (Console Script hoặc Module)
 ```powershell
-python -m cmhh.cli --repo-root HeurAgenix validate-config
+# Kiểm tra cấu hình hệ thống
+uv run cmhh --repo-root HeurAgenix validate-config
+
+# Hoặc dùng python module:
+uv run python -m cmhh.cli --repo-root HeurAgenix validate-config
 ```
 
 ### 3. Sinh dữ liệu benchmark & nghiệm tối ưu chuẩn
 ```powershell
 # Sinh dữ liệu bài toán TSPLIB
-python -m cmhh.cli --repo-root HeurAgenix generate-data --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
+uv run cmhh --repo-root HeurAgenix generate-data --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
 
 # Sinh nghiệm tối ưu tuyệt đối bằng Concorde exact solver
-python -m cmhh.cli --repo-root HeurAgenix generate-references --solver-config HeurAgenix/cmhh/configs/solvers/concorde.yaml --split validation --split test
+uv run cmhh --repo-root HeurAgenix generate-references --solver-config HeurAgenix/cmhh/configs/solvers/concorde.yaml --split validation --split test
 ```
 
 ### 4. Chạy luồng học liên tục (Continual Stream Run)
 ```powershell
-python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/openai.json --seed 42 --run-id my_cmhh_run
+uv run cmhh --repo-root HeurAgenix run-stream `
+  --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml `
+  --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml `
+  --generator heuragenix `
+  --llm-config HeurAgenix/data/llm_config/cmhh_phase1.json `
+  --seed 42 `
+  --run-id my_cmhh_run
+```
+
+---
+
+## 📈 Experiment Tracking with Weights & Biases (`wandb`)
+
+CM-HH tích hợp W&B dưới dạng **lớp tracking/visualization bổ sung**.
+
+> **Quan trọng**: Local experiment artifacts (`cmhh/results/<run_id>/`) luôn là **canonical source of truth**. W&B hoàn toàn tùy chọn (mặc định tắt) và không bao giờ làm gián đoạn experiment nếu mạng lỗi hay chưa đăng nhập.
+
+### 1. Đăng nhập W&B (Chỉ cần làm 1 lần)
+```powershell
+wandb login
+# hoặc set biến môi trường:
+# $env:WANDB_API_KEY="your_api_key"
+```
+
+### 2. Bật W&B qua Experiment YAML Config
+Trong file cấu hình experiment (ví dụ `cmhh/configs/experiments/archivist_managed.yaml`):
+```yaml
+tracking:
+  wandb:
+    enabled: true
+    project: cmhh
+    entity: null          # hoặc team entity
+    mode: online          # online | offline | disabled
+    tags: [pilot, tsp_scale]
+```
+
+### 3. Bật/Tắt và Chuyển Chế Độ trực tiếp từ CLI
+Bạn có thể bật nhanh hoặc ghi đè từ dòng lệnh:
+
+```powershell
+# Chạy với W&B online
+uv run cmhh --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/archivist_managed.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_20_50_100.yaml --wandb --run-id run_wandb_online
+
+# Chạy với W&B offline (không cần internet, lưu telemetry cục bộ)
+uv run cmhh --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/archivist_managed.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_20_50_100.yaml --wandb --wandb-mode offline --run-id run_wandb_offline
+
+# Đồng bộ dữ liệu offline lên W&B sau khi có mạng:
+wandb sync wandb/offline-run-...
 ```
 
 ---
@@ -91,13 +145,25 @@ CMHH bao gồm 5 thành phần chính hoạt động phối hợp:
 
 ## 🧪 Automated Testing (Chạy Kiểm Thử Tự Động)
 
-Chạy toàn bộ 30 unit & integration tests trong hệ thống:
+Chạy toàn bộ 40 unit & integration tests trong hệ thống:
 
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m unittest discover -s HeurAgenix/tests/cmhh -p "test_*.py"
+uv run pytest
+# Hoặc:
+uv run python -m unittest discover -s HeurAgenix/tests/cmhh -p "test_*.py"
 ```
 
 ---
+
+## 📊 Vị Trí Lưu Trữ Kết Quả
+
+Sau mỗi lượt chạy, kết quả cục bộ được lưu đầy đủ tại: `HeurAgenix/cmhh/results/<run_id>/`:
+1. `performance_matrix.csv`: Ma trận hiệu năng chuyển giao $R_{k,j}$.
+2. `metrics.json`: Các chỉ số tổng hợp $AF$, $BWT$, $FWT$.
+3. `events.jsonl`: Toàn bộ nhật ký sự kiện audit (pre-learning, candidate selection, memory transaction).
+4. `memory/diagnostics.json`: Lineage bộ nhớ và lịch sử đào thải tri thức.
+5. `manifest.json`: Mã băm SHA-256 của configs, mã nguồn và môi trường để tái lập kết quả.
+
 
 ## 📁 Thư Mục Dự Án (Project Structure)
 
