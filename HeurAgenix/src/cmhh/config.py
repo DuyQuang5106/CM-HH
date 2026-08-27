@@ -25,6 +25,21 @@ class ArchiveConfig:
 
 
 @dataclass(frozen=True)
+class WandbConfig:
+    enabled: bool = False
+    project: str = "cmhh"
+    entity: str | None = None
+    mode: str = "online"
+    tags: tuple[str, ...] = ()
+    run_name: str | None = None
+
+
+@dataclass(frozen=True)
+class TrackingConfig:
+    wandb: WandbConfig = field(default_factory=WandbConfig)
+
+
+@dataclass(frozen=True)
 class ExperimentConfig:
     name: str
     condition: str
@@ -34,6 +49,7 @@ class ExperimentConfig:
     search: SearchBudget
     evaluation: EvaluationBudget
     archive: ArchiveConfig = field(default_factory=ArchiveConfig)
+    tracking: TrackingConfig = field(default_factory=TrackingConfig)
 
 
 @dataclass(frozen=True)
@@ -77,6 +93,19 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
         top_k=int(archive_raw.get("top_k", 5)),
     )
 
+    tracking_raw = raw.get("tracking", {})
+    wandb_raw = tracking_raw.get("wandb", {}) if isinstance(tracking_raw, dict) else {}
+    tracking = TrackingConfig(
+        wandb=WandbConfig(
+            enabled=bool(wandb_raw.get("enabled", False)),
+            project=str(wandb_raw.get("project", "cmhh")),
+            entity=wandb_raw.get("entity"),
+            mode=str(wandb_raw.get("mode", "online")),
+            tags=tuple(wandb_raw.get("tags", ())),
+            run_name=wandb_raw.get("run_name"),
+        )
+    )
+
     return ExperimentConfig(
         name=experiment["name"],
         condition=experiment.get("condition", "independent_seed"),
@@ -91,6 +120,7 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
         search=SearchBudget(**search),
         evaluation=EvaluationBudget(**evaluation),
         archive=archive,
+        tracking=tracking,
     )
 
 

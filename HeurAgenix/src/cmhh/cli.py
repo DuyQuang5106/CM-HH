@@ -9,7 +9,13 @@ from cmhh.agents.generator import BaselineGenerator
 from cmhh.agents.heuragenix_generator import HeurAgenixGenerator
 from cmhh.audit import audit_run
 from cmhh.baselines import baseline_artifacts
-from cmhh.config import load_experiment_config, load_stream_config
+from cmhh.config import (
+    ExperimentConfig,
+    TrackingConfig,
+    WandbConfig,
+    load_experiment_config,
+    load_stream_config,
+)
 from cmhh.data import generate_data_for_tasks
 from cmhh.data.manifest import load_json, sha256_file, write_json_atomic
 from cmhh.evaluation.evaluator import Evaluator
@@ -24,6 +30,43 @@ from cmhh.validation import validate_configuration
 
 DEFAULT_EXPERIMENT = "cmhh/configs/experiments/phase0_tsp.yaml"
 DEFAULT_STREAM = "cmhh/configs/streams/tsp_size_ascending.yaml"
+
+
+def _apply_tracking_overrides(experiment: ExperimentConfig, args: argparse.Namespace) -> ExperimentConfig:
+    tracking = experiment.tracking
+    if (
+        getattr(args, "wandb", None) is not None
+        or getattr(args, "wandb_project", None)
+        or getattr(args, "wandb_mode", None)
+        or getattr(args, "wandb_entity", None)
+        or getattr(args, "wandb_tags", None)
+        or getattr(args, "wandb_run_name", None)
+    ):
+        enabled = args.wandb if getattr(args, "wandb", None) is not None else tracking.wandb.enabled
+        if getattr(args, "wandb_mode", None):
+            enabled = args.wandb_mode != "disabled"
+        tracking = TrackingConfig(
+            wandb=WandbConfig(
+                enabled=enabled,
+                project=args.wandb_project or tracking.wandb.project,
+                entity=args.wandb_entity or tracking.wandb.entity,
+                mode=args.wandb_mode or tracking.wandb.mode,
+                tags=tuple(args.wandb_tags) if args.wandb_tags else tracking.wandb.tags,
+                run_name=args.wandb_run_name or tracking.wandb.run_name,
+            )
+        )
+        return ExperimentConfig(
+            name=experiment.name,
+            condition=experiment.condition,
+            output_root=experiment.output_root,
+            seeds=experiment.seeds,
+            data=experiment.data,
+            search=experiment.search,
+            evaluation=experiment.evaluation,
+            archive=experiment.archive,
+            tracking=tracking,
+        )
+    return experiment
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -52,6 +95,13 @@ def build_parser() -> argparse.ArgumentParser:
     run_stream.add_argument("--llm-config")
     run_stream.add_argument("--evolution-timeout", type=float, default=3600)
     run_stream.add_argument("--cold-start-scores")
+    run_stream.add_argument("--wandb", dest="wandb", action="store_true", default=None, help="Enable Weights & Biases tracking")
+    run_stream.add_argument("--no-wandb", dest="wandb", action="store_false", help="Disable Weights & Biases tracking")
+    run_stream.add_argument("--wandb-project", help="W&B project name override")
+    run_stream.add_argument("--wandb-entity", help="W&B entity name override")
+    run_stream.add_argument("--wandb-mode", choices=("online", "offline", "disabled"), help="W&B tracking mode override")
+    run_stream.add_argument("--wandb-tags", action="append", help="W&B run tags")
+    run_stream.add_argument("--wandb-run-name", help="W&B run name override")
 
     isolated = subparsers.add_parser("run-isolated")
     _add_config_arguments(isolated)
@@ -60,6 +110,13 @@ def build_parser() -> argparse.ArgumentParser:
     isolated.add_argument("--generator", choices=("baseline", "heuragenix"), default="baseline")
     isolated.add_argument("--llm-config")
     isolated.add_argument("--evolution-timeout", type=float, default=3600)
+    isolated.add_argument("--wandb", dest="wandb", action="store_true", default=None, help="Enable Weights & Biases tracking")
+    isolated.add_argument("--no-wandb", dest="wandb", action="store_false", help="Disable Weights & Biases tracking")
+    isolated.add_argument("--wandb-project", help="W&B project name override")
+    isolated.add_argument("--wandb-entity", help="W&B entity name override")
+    isolated.add_argument("--wandb-mode", choices=("online", "offline", "disabled"), help="W&B tracking mode override")
+    isolated.add_argument("--wandb-tags", action="append", help="W&B run tags")
+    isolated.add_argument("--wandb-run-name", help="W&B run name override")
 
     evolve = subparsers.add_parser("evolve-task")
     _add_config_arguments(evolve)
@@ -96,7 +153,13 @@ def _add_config_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _resolve(path: str, root: Path) -> Path:
     value = Path(path)
-    return value if value.is_absolute() else root / value
+    if value.is_absolute():
+        return value
+    if value.exists():
+        return value.resolve()
+    if (root / value).exists():
+        return (root / value).resolve()
+    return root / value
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -173,6 +236,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if valid else 1
 
     if args.command == "run-stream":
+        experiment = _apply_tracking_overrides(experiment, args)
         seed = args.seed if args.seed is not None else experiment.seeds[0]
         run_id = args.run_id or datetime.now(timezone.utc).strftime("phase0_%Y%m%dT%H%M%SZ")
         run_dir = experiment.output_root / run_id
@@ -210,16 +274,13 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         manifest = create_run_manifest(
-            root,
-            [args.experiment, args.stream],
-            [
-                task.splits.train.parent
-                for task_id in stream.task_ids
-                if (task := registry.get(task_id))
-            ],
-            stream.task_ids,
+            path=run_dir / "manifest.json",
+            repo_root=root,
+            run_id=run_id,
+            seed=seed,
+            config_paths=[_resolve(args.experiment, root), _resolve(args.stream, root)],
+            extra={"task_ids": list(stream.task_ids)},
         )
-        write_json_atomic(run_dir / "manifest.json", manifest)
         matrix = runner.run()
 
         print(f"Completed run {run_id}:")
@@ -229,6 +290,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "run-isolated":
+        experiment = _apply_tracking_overrides(experiment, args)
         seed = args.seed if args.seed is not None else experiment.seeds[0]
         run_id = args.run_id or datetime.now(timezone.utc).strftime("isolated_%Y%m%dT%H%M%SZ")
         run_dir = experiment.output_root / run_id
