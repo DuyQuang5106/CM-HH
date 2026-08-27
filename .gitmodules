@@ -1,0 +1,3 @@
+[submodule "HeurAgenix/third_party/eoh-official"]
+	path = HeurAgenix/third_party/eoh-official
+	url = https://github.com/FeiLiu36/EoH.git

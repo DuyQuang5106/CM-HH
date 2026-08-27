@@ -169,3 +169,4 @@ data/
 src/cmhh/data/__pycache__/
 cmhh/results/
 tools/concorde/
+cmhh/configs/llm/llm_config.local.json

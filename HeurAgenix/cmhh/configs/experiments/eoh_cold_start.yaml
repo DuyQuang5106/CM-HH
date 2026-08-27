@@ -1,0 +1,23 @@
+version: 1
+experiment:
+  name: eoh_cold_start
+  condition: isolated_task
+  output_root: cmhh/results
+  seeds: [1, 2, 3]
+data:
+  seed: 42
+  coordinate_min: 0
+  coordinate_max: 10000
+  splits:
+    train: 20
+    validation: 10
+    test: 30
+    smoke: 2
+search:
+  generations: 2
+  candidates_per_generation: 3
+  max_llm_calls: 10
+evaluation:
+  instance_timeout_seconds: 10
+  batch_timeout_seconds: 300
+  invalid_policy: fail_batch
