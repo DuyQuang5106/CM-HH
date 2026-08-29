@@ -5,8 +5,10 @@ import hashlib
 import json
 import os
 import re
+import sys
 import tempfile
 import traceback
+import types
 from pathlib import Path
 
 from cmhh.llm.budgeted_client import BudgetedLLMClient
@@ -34,17 +36,64 @@ def _format_memory_context(path: str | None) -> str:
         return ""
     lines = ["External memory units retrieved for this task:"]
     for unit in units:
-        lines.append(
-            "- "
-            + unit["id"]
-            + f" [{unit['value']['type']}]: "
-            + unit["value"]["content"]
-            + f" Applicability: {unit['key']['applicability']}"
-        )
+        lines.append(_format_memory_unit(unit))
     return "\n".join(lines)
 
 
+def _format_memory_unit(unit: dict) -> str:
+    if "value" in unit and "key" in unit:
+        value_type = unit["value"].get("type", "memory")
+        content = unit["value"].get("content", "")
+        applicability = unit["key"].get("applicability", "")
+    else:
+        abstraction = unit.get("abstraction", {})
+        applicability_data = unit.get("applicability", {})
+        value_type = abstraction.get("abstraction_type", "memory")
+        content = abstraction.get("summary", "")
+        applicability = " ".join(
+            str(value)
+            for value in (
+                applicability_data.get("problem_family"),
+                applicability_data.get("task_id"),
+                applicability_data.get("size_tier"),
+                applicability_data.get("distribution"),
+            )
+            if value
+        )
+    return f"- {unit.get('id', '<unknown>')} [{value_type}]: {content} Applicability: {applicability}"
+
+
+def _ensure_tsplib95_fallback() -> None:
+    if "tsplib95" in sys.modules:
+        return
+    try:
+        __import__("tsplib95")
+        return
+    except ModuleNotFoundError:
+        pass
+
+    import networkx as nx
+    import numpy as np
+
+    from cmhh.data.tsp_io import load_euc2d_graph
+
+    fallback = types.ModuleType("tsplib95")
+
+    class FallbackProblem:
+        def __init__(self, path: str) -> None:
+            self._graph = nx.from_numpy_array(np.asarray(load_euc2d_graph(path), dtype=float))
+
+        def get_graph(self):
+            return self._graph
+
+    fallback.load = lambda path: FallbackProblem(path)
+    sys.modules["tsplib95"] = fallback
+
+
 def run(args) -> dict:
+    if args.problem == "tsp":
+        _ensure_tsplib95_fallback()
+
     from src.pipeline.heuristic_evolver import HeuristicEvolver
     from src.util.llm_client.get_llm_client import get_llm_client
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ast
-import hashlib
 import json
 import os
 import subprocess
@@ -9,6 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from cmhh.data.manifest import sha256_file
 from cmhh.llm.config import load_llm_config, write_sanitized_snapshot
 from cmhh.memory import MemoryUnit
 from cmhh.models import HeuristicArtifact, SearchBudget
@@ -93,7 +93,7 @@ class HeurAgenixGenerator:
                 heuristic_id=path.stem,
                 problem=task.problem,
                 code_path=path,
-                code_hash=hashlib.sha256(code.encode()).hexdigest(),
+                code_hash=sha256_file(path),
                 strategy="HeurAgenix evolved candidate",
                 parent_ids=(seed_population[0].heuristic_id,),
                 generation=max(1, index // max(1, budget.candidates_per_generation) + 1),

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import ast
-import hashlib
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
+from cmhh.data.manifest import sha256_file
 from cmhh.llm.config import load_llm_config, write_sanitized_snapshot
 from cmhh.memory import MemoryUnit
 from cmhh.models import HeuristicArtifact, SearchBudget
@@ -57,7 +57,7 @@ class EOHGenerator:
             "--pop-size", str(budget.candidates_per_generation),
             "--max-llm-calls", str(budget.max_llm_calls),
             "--max-candidates", str(max_candidates),
-            "--evaluation-timeout", "40",
+            "--evaluation-timeout", os.environ.get("CMHH_EOH_EVALUATION_TIMEOUT_SECONDS", "180"),
         ]
         environment = dict(os.environ)
         environment["PYTHONPATH"] = os.pathsep.join([
@@ -92,7 +92,7 @@ class EOHGenerator:
                 heuristic_id=path.stem,
                 problem=task.problem,
                 code_path=path,
-                code_hash=hashlib.sha256(code.encode()).hexdigest(),
+                code_hash=sha256_file(path),
                 strategy="Official EOH cold-start candidate",
                 parent_ids=(),
                 generation=max(1, index // max(1, budget.candidates_per_generation) + 1),

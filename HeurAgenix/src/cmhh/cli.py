@@ -322,6 +322,12 @@ def main(argv: list[str] | None = None) -> int:
             seed=seed,
         )
         matrix = runner.run()
+        cold_start_scores = {
+            index: matrix[index][index]
+            for index in range(len(stream.task_ids))
+            if index in matrix and index in matrix[index]
+        }
+        write_json_atomic(run_dir / "cold_start_scores.json", cold_start_scores)
         print(f"Completed isolated run {run_id}:")
         for after_idx, row in sorted(matrix.items()):
             print(f"  Task {after_idx} ({stream.task_ids[after_idx]}): T{after_idx}={row.get(after_idx, 0.0):.4f}")

@@ -10,6 +10,35 @@ from src.pipeline.hyper_heuristics.single import SingleHyperHeuristic
 from src.pipeline.hyper_heuristics.perturbation import PerturbationHyperHeuristic
 from src.util.util import df_to_str, extract, filter_dict_to_str, parse_text_to_dict, load_function, extract_function_with_short_docstring, search_file
 from src.util.llm_client.base_llm_client import BaseLLMClient
+
+
+def _data_files(directory: str) -> list[str]:
+    return [
+        os.path.join(directory, name)
+        for name in sorted(os.listdir(directory))
+        if not name.startswith(".") and os.path.isfile(os.path.join(directory, name))
+    ]
+
+
+def _heuristic_docs(heuristic_dir: str, problem: str) -> str:
+    docs = []
+    for name in sorted(os.listdir(heuristic_dir)):
+        if name.startswith(".") or not name.endswith(".py"):
+            continue
+        local_path = os.path.join(heuristic_dir, name)
+        heuristic_path = local_path if os.path.exists(local_path) else search_file(name, problem)
+        if heuristic_path is None:
+            continue
+        function_name = os.path.splitext(os.path.basename(heuristic_path))[0]
+        doc = extract_function_with_short_docstring(
+            open(heuristic_path, encoding="utf-8").read(),
+            function_name,
+        )
+        if doc:
+            docs.append(doc)
+    return "\n".join(docs)
+
+
 class HeuristicEvolver:
     def __init__(
         self,
@@ -21,8 +50,8 @@ class HeuristicEvolver:
     ) -> None:
         self.llm_client = llm_client
         self.problem = problem
-        self.evolution_cases = [os.path.join(evolution_dir, f) for f in os.listdir(evolution_dir)]
-        self.validation_cases = [os.path.join(validation_dir, f) for f in os.listdir(validation_dir)]
+        self.evolution_cases = _data_files(evolution_dir)
+        self.validation_cases = _data_files(validation_dir)
         self.output_root = output_root
         self.get_instance_problem_state = load_function("problem_state.py", problem=self.problem, function_name="get_instance_problem_state")
         self.get_solution_problem_state = load_function("problem_state.py", problem=self.problem, function_name="get_solution_problem_state")
@@ -48,7 +77,6 @@ class HeuristicEvolver:
             instance_problem_state.update(self.get_instance_problem_state(global_data))
             instance_problem_states.append(instance_problem_state)
         self.instance_problem_states_df = pd.DataFrame(instance_problem_states)
-
     def evolve(
             self,
             basic_heuristic_file: str,
@@ -65,10 +93,7 @@ class HeuristicEvolver:
         # Prepare other heuristics' description for this evolution
         heuristic_dir = os.path.dirname(basic_heuristic_file)
 
-        heuristic_introduction_docs = "\n".join([
-            extract_function_with_short_docstring(open(search_file(heuristic_file, self.problem), encoding="utf-8").read(), heuristic_file.split(".")[0])
-            for heuristic_file in os.listdir(heuristic_dir)
-        ])
+        heuristic_introduction_docs = _heuristic_docs(heuristic_dir, self.problem)
         if external_memory_context:
             heuristic_introduction_docs += "\n\n" + external_memory_context
 

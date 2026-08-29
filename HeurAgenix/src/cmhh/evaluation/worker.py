@@ -16,12 +16,14 @@ def run(problem: str, instance: str, heuristic: str) -> dict:
         raise ValueError(f"Phase 0 worker only supports TSP, received {problem}")
     if importlib.util.find_spec("tsplib95") is None:
         from cmhh.data.tsp_io import load_euc2d_graph
+        import networkx as nx
+        import numpy as np
 
         fallback = types.ModuleType("tsplib95")
 
         class FallbackProblem:
             def __init__(self, path: str) -> None:
-                self._graph = load_euc2d_graph(path)
+                self._graph = nx.from_numpy_array(np.asarray(load_euc2d_graph(path), dtype=float))
 
             def get_graph(self):
                 return self._graph

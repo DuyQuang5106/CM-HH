@@ -44,8 +44,9 @@ def audit_run(run_dir: str | Path) -> AuditReport:
         if not code_path.exists():
             report.errors.append(f"{task_id}: selected code is missing")
             continue
-        digest = hashlib.sha256(code_path.read_bytes()).hexdigest()
-        if digest != artifact["code_hash"]:
+        byte_digest = hashlib.sha256(code_path.read_bytes()).hexdigest()
+        text_digest = hashlib.sha256(code_path.read_text(encoding="utf-8").encode()).hexdigest()
+        if artifact["code_hash"] not in {byte_digest, text_digest}:
             report.errors.append(f"{task_id}: selected code hash changed after selection")
 
     events = [json.loads(line) for line in events_path.read_text(encoding="utf-8").splitlines() if line]

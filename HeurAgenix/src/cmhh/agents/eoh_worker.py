@@ -91,12 +91,14 @@ def _ensure_tsplib95_fallback() -> None:
         pass
 
     import types
+    import networkx as nx
+    import numpy as np
 
     fallback = types.ModuleType("tsplib95")
 
     class FallbackProblem:
         def __init__(self, path: str) -> None:
-            self._graph = load_euc2d_graph(path)
+            self._graph = nx.from_numpy_array(np.asarray(load_euc2d_graph(path), dtype=float))
 
         def get_graph(self):
             return self._graph
@@ -144,8 +146,15 @@ def _write_candidate_files(population: list[dict], output_root: Path, max_candid
         code = individual.get("code")
         if not code:
             continue
-        path = candidate_dir / f"official_eoh_candidate_{index:03d}.py"
-        path.write_text(code.rstrip() + "\n", encoding="utf-8")
+        function_name = f"official_eoh_candidate_{index:03d}"
+        path = candidate_dir / f"{function_name}.py"
+        wrapped_code = (
+            code.rstrip()
+            + "\n\n"
+            + f"def {function_name}(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple:\n"
+            + "    return eoh_tsp_heuristic(problem_state, algorithm_data, **kwargs)\n"
+        )
+        path.write_text(wrapped_code, encoding="utf-8")
         candidates.append({
             "path": str(path.resolve()),
             "objective": individual.get("objective"),
