@@ -13,7 +13,7 @@ from cmhh.config import ExperimentConfig, StreamConfig
 from cmhh.data.manifest import write_json_atomic
 from cmhh.evaluation.evaluator import Evaluator
 from cmhh.logging import EventRecord, EventWriter
-from cmhh.archivist import Archivist, DefaultArchivist, EvictionPolicy
+from cmhh.archivist import Archivist, DefaultArchivist, EvictionPolicy, NaiveMemoryManager
 from cmhh.memory import (
     MemoryEvidence,
     MemoryItem,
@@ -26,7 +26,11 @@ from cmhh.memory import (
     create_memory_unit,
 )
 from cmhh.memory_diagnostics import build_memory_diagnostics
-from cmhh.metrics.continual import average_final_performance, backward_transfer, forward_transfer
+from cmhh.metrics.continual import (
+    average_final_performance,
+    backward_transfer,
+    zero_shot_forward_transfer,
+)
 from cmhh.models import HeuristicArtifact
 from cmhh.reporting import write_evaluation
 from cmhh.retrieval import RetrievalBudget, RetrievalQuery, Retriever, RetrieverV0
@@ -61,9 +65,7 @@ class StreamRunner:
         self.seed = seed
         self.cold_start_scores = cold_start_scores
         self.retriever = retriever or RetrieverV0()
-        self.archivist = archivist or DefaultArchivist(
-            eviction=EvictionPolicy(max_capacity=self.naive_memory_capacity)
-        )
+        self.archivist = archivist or self._default_memory_manager()
         self.working_buffer = WorkingBuffer(capacity=50)
         self.tracker = tracker or create_tracker(
             getattr(experiment, "tracking", None),
@@ -81,6 +83,7 @@ class StreamRunner:
             "selected": {},
             "carryover_population": [],
             "matrix": {},
+            "pre_learning_scores": {},
         }
         selected = dict(checkpoint["selected"])
         carryover_population = [
@@ -90,6 +93,10 @@ class StreamRunner:
         matrix = {
             int(row): {int(column): float(value) for column, value in values.items()}
             for row, values in checkpoint["matrix"].items()
+        }
+        pre_learning_scores = {
+            int(index): (None if value is None else float(value))
+            for index, value in checkpoint.get("pre_learning_scores", {}).items()
         }
 
         try:
@@ -107,14 +114,20 @@ class StreamRunner:
             for k in range(int(checkpoint["completed_tasks"]), len(self.stream.task_ids)):
                 task = self.registry.get(self.stream.task_ids[k])
 
-                # Executed read-only Pre-learning Probe (A) on task Tk using M_{k-1} state
-                self._run_pre_learning_probe(k, task)
+                if k not in pre_learning_scores:
+                    pre_learning_scores[k] = self._run_pre_learning_probe(
+                        k,
+                        task,
+                        selected,
+                        carryover_population,
+                    )
+                    self._write_pre_learning_scores(pre_learning_scores)
 
                 seeds = self._seed_population(task, carryover_population)
-                memory_context = self._retrieve_memory_context(task) if self._uses_naive_memory else []
+                memory_context = self._retrieve_memory_context(task) if self._uses_persistent_memory else []
                 carryover_validation_score = (
                     self._score_seed_population_on_validation(task, seeds, k)
-                    if self._uses_naive_memory else None
+                    if self._uses_persistent_memory else None
                 )
                 candidates = self.generator.generate(
                     task,
@@ -127,8 +140,8 @@ class StreamRunner:
                 best = ranked_population[0]
                 if self._uses_population_carryover:
                     carryover_population = ranked_population
-                if self._uses_naive_memory:
-                    self._write_naive_memory(task, ranked_population, validation_summaries)
+                if self._uses_persistent_memory:
+                    self._write_memory(task, ranked_population, validation_summaries)
                     self._log_memory_reuse_outcome(
                         task,
                         memory_context,
@@ -139,7 +152,7 @@ class StreamRunner:
                 self._event("candidate_selected", task_id=task.task_id, heuristic_id=best.heuristic_id)
 
                 # Execute read-only Retention Probe (C) on tasks T_1..T_k using Retriever & M_k
-                self._run_retention_probe(k, selected, matrix)
+                self._run_retention_probe(k, selected, carryover_population, matrix)
 
                 # Track task-level step metrics
                 step_metrics: dict[str, float] = {
@@ -148,7 +161,7 @@ class StreamRunner:
                 }
                 if k in matrix and k in matrix[k]:
                     step_metrics["performance/current_task_gap"] = matrix[k][k]
-                if self._uses_naive_memory:
+                if self._uses_persistent_memory:
                     store = self._memory_store()
                     step_metrics["memory/size"] = len(store.load_all())
                 self.tracker.log_metrics(step_metrics, step=k)
@@ -161,52 +174,68 @@ class StreamRunner:
                         for artifact in carryover_population
                     ],
                     "matrix": matrix,
+                    "pre_learning_scores": pre_learning_scores,
                 })
                 self._write_matrix(matrix)
 
-            metrics = self._write_metrics(matrix)
+            metrics = self._write_metrics(matrix, pre_learning_scores)
             self.tracker.log_performance_matrix(matrix, self.stream.task_ids)
             if metrics:
                 self.tracker.log_summary(metrics)
-            if self._uses_naive_memory:
+            if self._uses_persistent_memory:
                 self._write_memory_diagnostics()
             return matrix
         finally:
             self.tracker.finish()
 
-    def _run_pre_learning_probe(self, k: int, task) -> None:
+    def _run_pre_learning_probe(
+        self,
+        k: int,
+        task,
+        selected: dict[str, dict],
+        carryover_population: list[HeuristicArtifact],
+    ) -> float | None:
+        before_hash = self._learner_state_hash(selected, carryover_population)
+        artifact, retrieved_ids = self._select_probe_artifact(task, selected, carryover_population)
         self._event(
             "pre_learning_probe_started",
             task_id=task.task_id,
             task_index=k,
+            heuristic_id=artifact.heuristic_id if artifact else None,
+            retrieved_memory_ids=retrieved_ids,
             read_only=True,
         )
-        retrieved_ids = []
-        if self._uses_naive_memory:
-            store = self._memory_store()
-            query = RetrievalQuery(
-                problem=task.problem,
-                task_id=task.task_id,
-                task_signature=self._task_signature(task),
+        score = None
+        if artifact is not None:
+            result = self.evaluator.evaluate(artifact, task, "test")
+            write_evaluation(
+                self.run_dir / "evaluations" / "pre_learning" / f"{task.task_id}.json",
+                result,
             )
-            retrieved = self.retriever.retrieve(query, store.load_all(), RetrievalBudget(top_k=1))
-            retrieved_ids = [item.unit.id for item in retrieved]
+            score = result.mean_score
         self._event(
             "pre_learning_probe_completed",
             task_id=task.task_id,
             task_index=k,
+            heuristic_id=artifact.heuristic_id if artifact else None,
             retrieved_memory_ids=retrieved_ids,
+            mean_score=score,
             read_only=True,
         )
+        after_hash = self._learner_state_hash(selected, carryover_population)
+        self._assert_probe_read_only("pre_learning", task.task_id, before_hash, after_hash)
+        return score
 
     def _run_retention_probe(
         self,
         k: int,
         selected: dict[str, dict],
+        carryover_population: list[HeuristicArtifact],
         matrix: dict[int, dict[int, float]],
     ) -> None:
+        before_hash = self._learner_state_hash(selected, carryover_population)
         matrix[k] = {}
-        store = self._memory_store() if self._uses_naive_memory else None
+        store = self._memory_store() if self._uses_persistent_memory else None
         memory_units = store.load_all() if store else []
 
         for j, prior_task_id in enumerate(self.stream.task_ids[: k + 1]):
@@ -261,6 +290,9 @@ class StreamRunner:
                 read_only=True,
             )
 
+        after_hash = self._learner_state_hash(selected, carryover_population)
+        self._assert_probe_read_only("retention", self.stream.task_ids[k], before_hash, after_hash)
+
     def _seed_population(
         self,
         task,
@@ -284,11 +316,24 @@ class StreamRunner:
 
     @property
     def _uses_population_carryover(self) -> bool:
-        return self.experiment.condition in {"population_carryover", "naive_memory_sequential"}
+        return self.experiment.condition in {
+            "population_carryover",
+            "naive_memory_sequential",
+            "archivist_managed",
+            "managed_archivist",
+        }
 
     @property
     def _uses_naive_memory(self) -> bool:
         return self.experiment.condition == "naive_memory_sequential"
+
+    @property
+    def _uses_managed_memory(self) -> bool:
+        return self.experiment.condition in {"archivist_managed", "managed_archivist"}
+
+    @property
+    def _uses_persistent_memory(self) -> bool:
+        return self._uses_naive_memory or self._uses_managed_memory
 
     @property
     def naive_memory_capacity(self) -> int | None:
@@ -301,6 +346,11 @@ class StreamRunner:
         if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
             return self.experiment.archive.top_k
         return self.NAIVE_MEMORY_TOP_K
+
+    def _default_memory_manager(self) -> Archivist:
+        if self._uses_naive_memory:
+            return NaiveMemoryManager(max_capacity=self.naive_memory_capacity)
+        return DefaultArchivist(eviction=EvictionPolicy(max_capacity=self.naive_memory_capacity))
 
     def _memory_store(self) -> MemoryStore:
         return MemoryStore(self.run_dir / "memory" / "memory.jsonl")
@@ -330,7 +380,7 @@ class StreamRunner:
         )
         return [item.unit for item in retrieved]
 
-    def _write_naive_memory(
+    def _write_memory(
         self,
         task,
         ranked_population: list[HeuristicArtifact],
@@ -349,18 +399,21 @@ class StreamRunner:
                 "memory_written",
                 task_id=task.task_id,
                 memory_id=memory_id,
+                manager="managed_archivist" if self._uses_managed_memory else "naive",
             )
         for memory_id in result.protected_ids:
             self._event(
                 "memory_protected",
                 task_id=task.task_id,
                 memory_id=memory_id,
+                manager="managed_archivist",
             )
         for memory_id in result.evicted_ids:
             self._event(
                 "memory_evicted",
                 task_id=task.task_id,
                 memory_id=memory_id,
+                manager="managed_archivist" if self._uses_managed_memory else "naive",
             )
 
     def _score_seed_population_on_validation(
@@ -481,7 +534,97 @@ class StreamRunner:
                     *[matrix[row].get(column, "") for column in range(len(self.stream.task_ids))],
                 ])
 
-    def _write_metrics(self, matrix: dict[int, dict[int, float]]) -> dict[str, Any]:
+    def _write_pre_learning_scores(self, scores: dict[int, float | None]) -> None:
+        write_json_atomic(
+            self.run_dir / "pre_learning_scores.json",
+            {str(index): value for index, value in sorted(scores.items())},
+        )
+
+    def _select_probe_artifact(
+        self,
+        task,
+        selected: dict[str, dict],
+        carryover_population: list[HeuristicArtifact],
+    ) -> tuple[HeuristicArtifact | None, list[str]]:
+        retrieved_ids: list[str] = []
+        if self._uses_persistent_memory:
+            query = RetrievalQuery(
+                problem=task.problem,
+                task_id=task.task_id,
+                task_signature=self._task_signature(task),
+            )
+            retrieved = self.retriever.retrieve(
+                query,
+                self._memory_store().load_all(),
+                RetrievalBudget(top_k=1),
+            )
+            retrieved_ids = [item.unit.id for item in retrieved]
+            if retrieved:
+                artifact = self._artifact_from_memory(retrieved[0].unit, task.task_id)
+                if artifact is not None:
+                    return artifact, retrieved_ids
+
+        compatible = [
+            artifact
+            for artifact in carryover_population
+            if artifact.problem == task.problem and artifact.code_path.exists()
+        ]
+        if compatible:
+            return compatible[0], retrieved_ids
+
+        if task.task_id in selected:
+            return _artifact_from_dict(selected[task.task_id]), retrieved_ids
+        return None, retrieved_ids
+
+    def _artifact_from_memory(self, unit: MemoryUnit, task_id: str) -> HeuristicArtifact | None:
+        if not unit.evidence.source_artifacts:
+            return None
+        code_path = Path(unit.evidence.source_artifacts[0])
+        if not code_path.exists():
+            return None
+        return HeuristicArtifact(
+            heuristic_id=unit.scope.heuristic_family or code_path.stem,
+            problem=unit.scope.problem,
+            code_path=code_path,
+            code_hash=unit.evidence.code_hashes[0] if unit.evidence.code_hashes else "",
+            task_id=task_id,
+        )
+
+    def _learner_state_hash(
+        self,
+        selected: dict[str, dict],
+        carryover_population: list[HeuristicArtifact],
+    ) -> str:
+        memory = (
+            [item.to_dict() for item in self._memory_store().load_all()]
+            if self._uses_persistent_memory
+            else []
+        )
+        payload = {
+            "selected": selected,
+            "carryover_population": [artifact.to_dict() for artifact in carryover_population],
+            "memory": memory,
+        }
+        encoded = json.dumps(payload, default=str, sort_keys=True).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def _assert_probe_read_only(
+        self,
+        probe_name: str,
+        task_id: str,
+        before_hash: str,
+        after_hash: str,
+    ) -> None:
+        if before_hash != after_hash:
+            raise RuntimeError(
+                f"{probe_name} probe mutated learner-visible state for {task_id}"
+            )
+
+    def _write_metrics(
+        self,
+        matrix: dict[int, dict[int, float]],
+        pre_learning_scores: dict[int, float | None],
+    ) -> dict[str, Any]:
         count = len(self.stream.task_ids)
         metrics: dict[str, Any] = {
             "average_final_performance": average_final_performance(matrix, count),
@@ -497,7 +640,12 @@ class StreamRunner:
 
         if self.cold_start_scores is not None and count >= 2:
             try:
-                metrics["forward_transfer"] = forward_transfer(matrix, self.cold_start_scores, count)
+                metrics["forward_transfer"] = zero_shot_forward_transfer(
+                    pre_learning_scores,
+                    self.cold_start_scores,
+                    count,
+                )
+                metrics["forward_transfer_source"] = "pre_learning_probe"
             except Exception:
                 metrics["forward_transfer"] = None
 

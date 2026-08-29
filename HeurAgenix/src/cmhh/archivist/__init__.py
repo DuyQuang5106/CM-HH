@@ -7,10 +7,12 @@ from cmhh.archivist.base import (
     ProtectionPolicy,
 )
 from cmhh.archivist.archivist import DefaultArchivist
+from cmhh.archivist.naive import NaiveMemoryManager
 
 __all__ = [
     "Archivist",
     "DefaultArchivist",
+    "NaiveMemoryManager",
     "AdmissionCriteria",
     "ProtectionPolicy",
     "EvictionPolicy",

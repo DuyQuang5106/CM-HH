@@ -45,6 +45,7 @@ function Show-RunStatus {
         $checkpointPath = Join-Path $run.FullName "checkpoints/latest.json"
         $matrixPath = Join-Path $run.FullName "performance_matrix.csv"
         $metricsPath = Join-Path $run.FullName "metrics.json"
+        $preLearningPath = Join-Path $run.FullName "pre_learning_scores.json"
         $eventsPath = Join-Path $run.FullName "events.jsonl"
         $memoryDiagPath = Join-Path $run.FullName "memory/diagnostics.json"
         $latestChild = Get-ChildItem $run.FullName -Recurse -File -ErrorAction SilentlyContinue |
@@ -85,6 +86,11 @@ function Show-RunStatus {
         } elseif (Test-Path $eventsPath) {
             Write-Host "  latest events:"
             Get-Content $eventsPath -Tail 4 | ForEach-Object { Write-Host "    $_" }
+        }
+
+        if (Test-Path $preLearningPath) {
+            Write-Host "  pre_learning_scores.json:"
+            Get-Content $preLearningPath | ForEach-Object { Write-Host "    $_" }
         }
 
         if (Test-Path $memoryDiagPath) {

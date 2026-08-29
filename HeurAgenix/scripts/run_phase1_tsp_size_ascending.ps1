@@ -7,6 +7,7 @@ param(
     [switch]$PrepareOnly,
     [switch]$Resume,
     [switch]$SkipEOH,
+    [switch]$SkipManaged,
     [int]$EohEvaluationTimeoutSeconds = 180
 )
 
@@ -81,13 +82,14 @@ function Run-Stream {
     Invoke-Cmhh $args
 }
 
-Write-Host "CM-HH Phase 1 TSP size-ascending experiment" -ForegroundColor Green
+Write-Host "CM-HH TSP size-ascending experiment" -ForegroundColor Green
 Write-Host "Repo      : $RepoRoot"
 Write-Host "Stream    : $Stream"
 Write-Host "LLM config: $LlmConfig"
 Write-Host "Seeds     : $($Seeds -join ', ')"
 Write-Host "RunPrefix : $RunPrefix"
 Write-Host "EOH eval timeout: ${EohEvaluationTimeoutSeconds}s"
+Write-Host "Managed CM-HH: $(if ($SkipManaged) { 'disabled' } else { 'enabled' })"
 Write-Host ""
 Write-Host "Open another PowerShell to monitor progress:" -ForegroundColor Green
 Write-Host "  powershell -ExecutionPolicy Bypass -File scripts\watch_phase1_tsp_run.ps1 -RunPrefix $RunPrefix"
@@ -100,6 +102,9 @@ Invoke-Cmhh @("validate-config", "--experiment", "cmhh/configs/experiments/h1_is
 Invoke-Cmhh @("validate-config", "--experiment", "cmhh/configs/experiments/h1_population_carryover.yaml", "--stream", $Stream)
 Invoke-Cmhh @("validate-config", "--experiment", "cmhh/configs/experiments/h1_naive_sequential.yaml", "--stream", $Stream)
 Invoke-Cmhh @("validate-config", "--experiment", "cmhh/configs/experiments/h1_naive_unbounded.yaml", "--stream", $Stream)
+if (-not $SkipManaged) {
+    Invoke-Cmhh @("validate-config", "--experiment", "cmhh/configs/experiments/archivist_managed.yaml", "--stream", $Stream)
+}
 if (-not $SkipEOH) {
     Invoke-Cmhh @("validate-config", "--experiment", "cmhh/configs/experiments/eoh_cold_start.yaml", "--stream", $Stream)
 }
@@ -139,6 +144,7 @@ foreach ($seed in $Seeds) {
     $population = "${RunPrefix}_population_carryover_seed${seed}"
     $naiveBounded = "${RunPrefix}_naive_bounded_seed${seed}"
     $naiveUnbounded = "${RunPrefix}_naive_unbounded_seed${seed}"
+    $managed = "${RunPrefix}_archivist_managed_seed${seed}"
     $coldStartScores = "cmhh/results/$hxCold/cold_start_scores.json"
 
     if (-not $SkipEOH) {
@@ -151,15 +157,24 @@ foreach ($seed in $Seeds) {
     Run-Stream "cmhh/configs/experiments/h1_population_carryover.yaml" "heuragenix" $population $seed $coldStartScores
     Run-Stream "cmhh/configs/experiments/h1_naive_sequential.yaml" "heuragenix" $naiveBounded $seed $coldStartScores
     Run-Stream "cmhh/configs/experiments/h1_naive_unbounded.yaml" "heuragenix" $naiveUnbounded $seed $coldStartScores
+    if (-not $SkipManaged) {
+        Run-Stream "cmhh/configs/experiments/archivist_managed.yaml" "heuragenix" $managed $seed $coldStartScores
+    }
 
     Invoke-Cmhh @("audit-run", "--experiment", "cmhh/configs/experiments/h1_population_carryover.yaml", "--stream", $Stream, "--run-id", $population)
     Invoke-Cmhh @("audit-run", "--experiment", "cmhh/configs/experiments/h1_naive_sequential.yaml", "--stream", $Stream, "--run-id", $naiveBounded)
     Invoke-Cmhh @("audit-run", "--experiment", "cmhh/configs/experiments/h1_naive_unbounded.yaml", "--stream", $Stream, "--run-id", $naiveUnbounded)
+    if (-not $SkipManaged) {
+        Invoke-Cmhh @("audit-run", "--experiment", "cmhh/configs/experiments/archivist_managed.yaml", "--stream", $Stream, "--run-id", $managed)
+    }
 
     $summary += $hxCold
     $summary += $population
     $summary += $naiveBounded
     $summary += $naiveUnbounded
+    if (-not $SkipManaged) {
+        $summary += $managed
+    }
 }
 
 Write-Host ""
@@ -172,4 +187,5 @@ Write-Host ""
 Write-Host "Report files to inspect:" -ForegroundColor Green
 Write-Host "  cmhh/results/<run-id>/metrics.json"
 Write-Host "  cmhh/results/<run-id>/performance_matrix.csv"
+Write-Host "  cmhh/results/<run-id>/pre_learning_scores.json"
 Write-Host "  cmhh/results/<run-id>/memory/diagnostics.json"

@@ -4,6 +4,10 @@ experiment:
   condition: archivist_managed
   output_root: cmhh/results
   seeds: [42]
+archive:
+  policy: archivist_managed
+  capacity: 20
+  top_k: 5
 data:
   seed: 42
   coordinate_min: 0

@@ -50,6 +50,8 @@ def validate_configuration(
         "population_carryover",
         "naive_memory_sequential",
         "naive_sequential",
+        "archivist_managed",
+        "managed_archivist",
     }
     if experiment.condition not in allowed_conditions:
         report.errors.append(f"Unknown experiment condition: {experiment.condition}")

@@ -815,3 +815,73 @@ Commands executed from the HeurAgenix repository root with `PYTHONPATH=src`.
    - passed with expected pending-artifact/adapter warnings.
 6. `git diff --check -- HeurAgenix`
    - passed; Git only reported Windows CRLF/LF conversion warnings.
+
+## 2026-08-29 - Managed Archivist condition wiring
+
+### Scope
+
+Started the Phase 2 transition from baseline-only memory experiments toward
+full CM-HH managed memory.
+
+This increment fixes the experiment semantics before adding heavier Archivist
+features: the naive persistent-memory baseline no longer uses protected
+Archivist behavior, and `archivist_managed` is now a first-class runnable
+condition.
+
+### Implemented
+
+1. Added `NaiveMemoryManager`.
+   - Admits all working-buffer experiences.
+   - Uses raw trajectory-style memory content.
+   - Applies no protection, no selective admission, no distillation, and no
+     managed utility update.
+   - Supports bounded overwrite and unbounded memory through the same archive
+     capacity config.
+2. Enabled `archivist_managed` / `managed_archivist` as valid experiment
+   conditions.
+3. Updated `StreamRunner`.
+   - `naive_memory_sequential` uses `NaiveMemoryManager`.
+   - `archivist_managed` uses `DefaultArchivist`.
+   - Managed memory keeps the matched population-carryover behavior used by
+     naive memory, so naive-vs-managed comparisons isolate memory management.
+4. Implemented executable Stage A pre-learning probes.
+   - Probes select retained competence from memory or compatible carryover.
+   - Probes execute before learning the current task.
+   - Probe scores are persisted to `pre_learning_scores.json`.
+   - Forward transfer in `metrics.json` now uses Stage A probe scores rather
+     than post-learning diagonal matrix cells.
+5. Added learner-visible state hashing around Stage A and Stage C probes.
+   - The invariant checks that probes do not mutate selected artifacts,
+     carryover population, or persistent memory state.
+6. Updated the TSP run script and watcher.
+   - Managed Archivist runs are included by default.
+   - `-SkipManaged` keeps the old baseline-only behavior.
+   - Watcher prints `pre_learning_scores.json` when available.
+
+### Tests added
+
+- `test_naive_memory_does_not_protect_units`
+- `test_archivist_managed_writes_protected_anchor`
+- Extended the end-to-end stream test to assert Stage A scores and FWT source.
+
+### Verification performed
+
+Commands executed from the HeurAgenix repository root with `PYTHONPATH=src`.
+
+1. `python -m unittest tests.cmhh.test_end_to_end_stream -v`
+   - 3 tests passed.
+2. `python -m unittest discover -s tests/cmhh -v`
+   - 42 tests passed.
+3. `python -m compileall -q src/cmhh tests/cmhh`
+   - passed.
+4. `python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/archivist_managed.yaml --stream cmhh/configs/streams/tsp_size_ascending.yaml`
+   - passed with expected OBP/PFSP warnings.
+
+### Remaining Phase 2 work
+
+1. Add a stronger managed distillation backend for `DefaultArchivist`.
+2. Add exact/near-duplicate consolidation.
+3. Add validation-only utility updates from reuse outcomes.
+4. Add matched-capacity naive-vs-managed audit checks.
+5. Add validation-oracle retrieval and controlled pollution diagnostics.
+6. Run a real one-seed TSP managed Archivist pilot against naive bounded memory.
