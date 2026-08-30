@@ -1,80 +1,73 @@
 # CMHH — Experiment Execution & Results Analysis Guide
 
-**Project:** Continual Multi-Agent Hyper-Heuristics (CMHH)  
-**Target Audience:** ML Research Engineers, PhD Researchers  
+**Project:** Continual Multi-Agent Hyper-Heuristics (CM-HH)  
+**Target Audience:** ML Research Engineers, PhD Researchers, Authors  
 **Repository Root:** `c:\Users\LENOVO\Projects\CM_HH`
-
----
-
-## 2026-08-29 Architecture Note
-
-CM-HH experiments should now be interpreted through the full memory-transfer
-pipeline:
-
-```text
-CandidateExtractor -> Archivist -> MemoryStore -> Retriever
-    -> TransferPolicy -> PopulationBuilder -> evolution -> transfer feedback
-```
-
-The experiment must distinguish:
-
-```text
-retrieved memory
-used memory
-memory-derived seed
-surviving seed
-child heuristic
-validation-improving child
-admitted child memory
-```
-
-The current `archivist_managed` condition is a managed-memory prototype. It is
-safe for pilot comparison, but final "full CM-HH" claims require explicit
-`CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only
-transfer feedback, and child-memory lineage.
 
 ---
 
 ## 1. Overview & Experimental Protocol
 
-CMHH evaluates continual learning in LLM-based heuristic search across a sequential stream of combinatorial optimization tasks:
+CM-HH evaluates continual learning in LLM-driven hyper-heuristic search across a sequential stream of combinatorial optimization tasks:
 
 $$
 T_1 \rightarrow T_2 \rightarrow T_3 \rightarrow \dots \rightarrow T_K
 $$
 
-### 1.1 Benchmark Experimental Conditions
-To isolate the contribution of persistent external memory and managed Archivist
-consolidation, pilot evaluations should compare these conditions:
+```text
+CandidateExtractor -> Archivist Gatekeeper -> MemoryStore -> Retriever Engine
+    -> TransferPolicy -> PopulationBuilder -> Evolution Search -> Transfer Feedback
+```
 
-1. **`isolated` (Cold Start Baseline)**:
-   - Each task $T_k$ is solved from scratch using cold-start seed heuristics. No knowledge carryover or memory across tasks.
+---
+
+### 1.1 Benchmark Experimental Conditions (5 Comparison Baselines)
+
+Every benchmark stream is evaluated across **5 conditions** to isolate the causal impact of managed memory consolidation:
+
+1. **`isolated` (Cold-Start Baseline)**:
+   - Each task $T_k$ is solved from scratch. No memory or heuristic transfer across tasks.
 2. **`population_carryover` (Working Population Baseline)**:
-   - Final population of evolved heuristics from task $T_{k-1}$ is passed directly as seeds to task $T_k$. No external persistent storage or Archivist.
-3. **`naive_memory_sequential` (Uncurated External Memory Baseline)**:
-   - All candidate heuristics surviving validation are written to `MemoryStore` (capacity $C=20$, top-$k=5$). Naive FIFO/score eviction without distillation or anchor protection.
-4. **`naive_memory_unbounded` / `h1_naive_unbounded` (Unbounded Naive Memory Diagnostic)**:
-   - Same uncurated memory policy, but without capacity pressure. This helps separate capacity-driven forgetting from retrieval pollution/noise.
-5. **`archivist_managed` (Managed Archivist Prototype)**:
-   - Search candidates pass through `WorkingBuffer`. `DefaultArchivist` applies `elite_validation` admission, anchor protection for top task heuristics, capacity overflow invariant checks, and utility-recency eviction ranking.
-6. **`eoh_cold_start` (Official EOH Cold Start)**:
-   - Official EOH used as an independent cold-start baseline where the adapter and LLM configuration are available.
+   - The final population of heuristics from task $T_{k-1}$ is passed directly as seeds to task $T_k$. No persistent external memory store.
+3. **`naive_bounded` (Uncurated Bounded Memory Baseline)**:
+   - All heuristics surviving validation are written to a flat `MemoryStore` (capacity $C=20$, top-$k=5$). Naive FIFO/score eviction without anchor protection.
+4. **`naive_unbounded` (Unbounded Memory Diagnostic)**:
+   - Same uncurated memory policy without capacity limits. Disentangles capacity-driven forgetting from retrieval noise.
+5. **`archivist_managed` (CM-HH Managed Archivist)**:
+   - Working buffer candidates pass through `DefaultArchivist` with `elite_validation` admission, anchor protection for top task heuristics, invariant checks, and utility-recency eviction ranking.
 
-Do not claim final "full CM-HH" results from `archivist_managed` alone until
-`CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only
-transfer feedback, and child-memory lineage are implemented and audited.
+---
 
-### 1.2 Main Experiment Streams
+### 1.2 The 13 Benchmark Stream Suite
 
-The main stream suite is documented in `docs/experiment_streams.md`. Current
-main streams cover TSP order sensitivity, CVRP/JSSP scale transfer, cross-problem
-transfer, revisit probes, and stationary same-size controls. `tsp_20_50_100`
-is retained only as a short/debug stream and should not be used as main evidence
-unless explicitly reported as a pilot.
+| Stream ID | Problem Domain | Task Ordering & Distribution Shift |
+|---|---|---|
+| **`tsp_size_ascending`** | TSP | Within-domain scale transfer: $n20 \to n50 \to n100 \to n200$ (Primary Pilot) |
+| **`tsp_size_descending`** | TSP | Within-domain reverse scale: $n200 \to n100 \to n50 \to n20$ |
+| **`tsp_random_perm_1`** | TSP | Randomized scale ordering: $n50 \to n200 \to n20 \to n100$ |
+| **`tsp_random_perm_2`** | TSP | Randomized scale ordering: $n100 \to n20 \to n200 \to n50$ |
+| **`cvrp_size_ascending`** | CVRP | Vehicle routing scale transfer: $n20 \to n50 \to n100$ |
+| **`cvrp_size_descending`** | CVRP | Vehicle routing reverse scale: $n100 \to n50 \to n20$ |
+| **`jssp_size_ascending`** | JSSP | Job-shop scale transfer: $3\times3 \to 6\times6 \to 10\times10$ |
+| **`jssp_size_descending`** | JSSP | Job-shop reverse scale: $50\times10 \to 20\times5 \to 10\times5$ |
+| **`cross_problem_tsp_cvrp_jssp`** | Cross-Domain | Cross-problem transfer: $\text{TSP} \to \text{CVRP} \to \text{JSSP}$ |
+| **`tsp_stationary`** | TSP | Stationary control: $n50 \times 4$ (Stability test) |
+| **`tsp_revisit`** | TSP | Architecture revisit: $n50 \to n100 \to n50 \to n200$ |
+| **`related_pair_tsp_cvrp_tsp`** | Cross-Domain | Related pair cycle: $\text{TSP} \to \text{CVRP} \to \text{TSP}$ |
+| **`unrelated_pair_tsp_jssp_tsp`**| Cross-Domain | Unrelated pair cycle: $\text{TSP} \to \text{JSSP} \to \text{TSP}$ |
 
-### 1.3 Frozen Full-Experiment Budget
+---
 
-Use the same budget for every compared non-EOH condition:
+### 1.3 Statistical Protocol: 3 to 5 Independent Seeds Required
+
+> [!IMPORTANT]
+> **Mandatory Statistical Reporting:**
+> To account for LLM stochasticity and evolutionary variance, every stream must be evaluated across **3 to 5 independent runs (Seeds: 1, 2, 3, 4, 5)**.
+> All paper tables report **$\text{Mean} \pm \text{Std}$** across seeds for $AF$, $BWT$, and $FWT$.
+
+---
+
+### 1.4 Production Search Budget
 
 ```yaml
 search:
@@ -86,294 +79,84 @@ evaluation:
   batch_timeout_seconds: 900
 ```
 
-The primary stopping budget is `max_llm_calls`. `generations: 100` is set high
-enough that normal runs should hit the LLM-call budget before exhausting the
-generation limit. The previous `2 x 3 / 10 LLM calls` budget is a smoke-test
-budget only. It is too small for competitive solution quality and too noisy for
-memory-strategy claims.
-
-Start with 500 LLM calls per task. If runtime, API stability, and generated-code
-quality look good, the next stronger budget is 1000 LLM calls per task with the
-same matched-budget rule across conditions. `phase0_tsp.yaml` remains a
-development config; use `h1_*` and `archivist_managed.yaml` for report runs.
-
 ---
 
-## 2. Environment & LLM Configuration Setup
+## 2. Environment & Quickstart Setup
 
-### 2.1 Python Environment
-Ensure `PYTHONPATH` points to `HeurAgenix/src`:
-
+### 2.1 Dependencies Installation
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"
+pip install -e .
 ```
 
-### 2.2 LLM Configuration File (`llm_config.json`)
-Create or edit your LLM configuration file (e.g. `HeurAgenix/cmhh/configs/llm/vllm_local.json` or `openai.json`):
-
-#### Option A: OpenAI / Commercial API
+### 2.2 LLM Configuration (`HeurAgenix/cmhh/configs/llm/llm_config.local.json`)
 ```json
 {
   "type": "api_model",
-  "provider": "openai",
-  "model": "gpt-4o-mini",
-  "api_key": "YOUR_OPENAI_API_KEY",
-  "temperature": 0.0,
-  "max_tokens": 2048
-}
-```
-
-#### Option B: Local Model (vLLM / Ollama / Local Server)
-```json
-{
-  "type": "api_model",
-  "provider": "openai_compatible",
-  "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
-  "api_base": "http://localhost:8000/v1",
-  "api_key": "none",
-  "temperature": 0.0,
-  "max_tokens": 2048
+  "name": "nvidia-gpt-oss-120b",
+  "url": "https://integrate.api.nvidia.com/v1/chat/completions",
+  "api_key": "nvapi-your-api-key-here",
+  "model": "openai/gpt-oss-120b",
+  "temperature": 1,
+  "max_tokens": 4096,
+  "max_attempts": 5,
+  "seed": 42
 }
 ```
 
 ---
 
-## 3. Step-by-Step Execution Guide
+## 3. Execution Commands
 
-### Step 1: Validate Task Registry and Experiment Configuration
-Verify that all task manifests and experiment configurations are intact:
-
+### 3.1 Interactive Stream Runner (Recommended)
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix validate-config --experiment HeurAgenix/cmhh/configs/experiments/h1_isolated.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml
+powershell -ExecutionPolicy Bypass -File scripts\run_menu.ps1
 ```
 
-*Expected output:* `Validated 22 tasks; stream has 4 tasks` (Exit code 0).
-
----
-
-### Step 2: Generate TSPLIB Datasets
-Generate deterministic train, validation, test, and smoke TSPLIB instance files for the task stream:
-
+### 3.2 Running Individual Streams with 3–5 Seeds
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-data --experiment HeurAgenix/cmhh/configs/experiments/h1_isolated.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
+# TSP Ascending (5 seeds):
+powershell -ExecutionPolicy Bypass -File scripts\run_stream_1_tsp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5
+
+# CVRP Ascending (5 seeds):
+powershell -ExecutionPolicy Bypass -File scripts\run_stream_3_cvrp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5
+
+# JSSP Ascending (5 seeds):
+powershell -ExecutionPolicy Bypass -File scripts\run_stream_4_jssp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5
+
+# Cross-Problem Transfer (5 seeds):
+powershell -ExecutionPolicy Bypass -File scripts\run_stream_5_cross_domain.ps1 -FullBenchmark -Seeds 1,2,3,4,5
 ```
 
----
-
-### Step 3: Generate & Verify Reference Solutions
-To compute relative gaps, generate reference solutions with the solver assigned
-to each problem. TSP uses Concorde proven-optimal references. CVRP uses PyVRP
-best-known references. JSSP uses OR-Tools CP-SAT references: `optimal` when
-CP-SAT proves optimality, otherwise `best_known` when it only proves feasibility.
-
+### 3.3 Automated Full-Suite Multi-Seed Execution
 ```powershell
-# TSP: proven optimal references with Concorde
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-references --solver-config HeurAgenix/cmhh/configs/solvers/concorde.yaml --split test --split validation
+# 3 Seeds on all 13 streams:
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3 -LlmConfig cmhh/configs/llm/llm_config.local.json
 
-# CVRP: best-known references with PyVRP
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-references --stream HeurAgenix/cmhh/configs/streams/cvrp_size_ascending.yaml --solver-config HeurAgenix/cmhh/configs/solvers/pyvrp.yaml --split test --split validation
-
-# JSSP: optimal or best-known references with OR-Tools CP-SAT
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-references --stream HeurAgenix/cmhh/configs/streams/jssp_size_ascending.yaml --solver-config HeurAgenix/cmhh/configs/solvers/ortools_cpsat.yaml --split test --split validation
-
-# Verify reference checksums and status labels
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix verify-references --split test --split validation
+# 5 Seeds on all 13 streams:
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3,4,5 -LlmConfig cmhh/configs/llm/llm_config.local.json
 ```
 
----
-
-### Step 4: Evaluate Baseline Seed Heuristics
-Evaluate built-in constructive baseline heuristics across all stream tasks:
-
+### 3.4 Resuming an Interrupted Benchmark
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix evaluate-baselines --split validation
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix evaluate-baselines --split test
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3,4,5 -Resume
 ```
 
 ---
 
-### Step 5: Run Continual Streams Across Experimental Conditions
+## 4. Live Monitoring & Metrics Inspection
 
-Execute the stream runner for your target experimental run:
-
+### 4.1 Real-Time Watcher
 ```powershell
-# Run Managed Archivist Condition
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/archivist_managed.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/vllm_local.json --seed 42 --run-id run_archivist_seed42
+powershell -ExecutionPolicy Bypass -File scripts\watch_phase1_tsp_run.ps1
 ```
 
-To run baseline conditions, specify the experiment YAML config corresponding to the desired condition:
-- `isolated_tsp.yaml` (`condition: isolated`)
-- `population_carryover_tsp.yaml` (`condition: population_carryover`)
-- `naive_memory_tsp.yaml` (`condition: naive_memory_sequential`)
-- `archivist_tsp.yaml` (`condition: archivist_managed`)
+### 4.2 Reading Output Reports
+Output directories are structured under: `HeurAgenix/cmhh/results/<stream_id>_<timestamp>_<condition>_seed<seed>/`
 
----
-
-### Step 6: Resume Interrupted Runs
-If a run is interrupted by hardware failure or API timeout, resume seamlessly from the latest checkpoint:
-
-```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/archivist_managed.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --run-id run_archivist_seed42 --resume --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/vllm_local.json
-```
-
----
-
-### Step 7: Audit Run Directory Integrity
-Verify that the run output directory passes all scientific audit checks:
-
-```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix audit-run --run-id run_archivist_seed42
-```
-
----
-
-## 4. Detailed Results Inspection & Analysis Guide
-
-Each run output directory is stored under `HeurAgenix/cmhh/results/<run_id>/` (or configured `output_root`).
-
-### Directory Layout:
-```text
-HeurAgenix/cmhh/results/<run_id>/
-├── manifest.json                  # Environment, seeds, code checksums, config snapshots
-├── events.jsonl                   # Full event-sourced audit log (schema_version = 1)
-├── performance_matrix.csv         # Performance matrix R_{k,j} (relative gap)
-├── metrics.json                   # Aggregated continual metrics (AF, BWT, FWT)
-├── checkpoints/
-│   └── latest.json                # Resumable run state & selected artifacts
-├── memory/
-│   ├── memory.jsonl               # Persistent long-term memory store (3-layer MemoryItem records)
-│   └── diagnostics.json           # Memory retrieval, coverage, eviction lineage, failure labels
-└── evaluations/
-    ├── after_0/                   # Post-task 0 test probe evaluations
-    ├── after_1/                   # Post-task 1 test probe evaluations
-    └── ...
-```
-
----
-
-### 4.1 How to Read `performance_matrix.csv`
-
-The performance matrix $R \in \mathbb{R}^{K \times K}$ stores the relative gap to optimal performance achieved on task $j$ (column) after completing learning on task $k$ (row).
-
-$$\text{Score Convention: } \text{score} = - \text{relative\_gap} = - \frac{\text{heuristic\_objective} - \text{optimal\_objective}}{\text{optimal\_objective}}$$
-
-*(Higher score is better; $0.0$ represents exact certified optimal performance).*
-
-#### Example `performance_matrix.csv`:
-```csv
-after_task,tsp_20,tsp_50,tsp_100,tsp_200
-tsp_20,-0.012,,
-tsp_50,-0.015,-0.035,,
-tsp_100,-0.018,-0.038,-0.062,
-tsp_200,-0.021,-0.040,-0.065,-0.098
-```
-
-#### How to Interpret the Matrix Regions:
-1. **Main Diagonal ($R_{k,k}$)**: Immediate performance on task $k$ right after learning $T_k$.
-2. **Lower Triangle ($R_{k,j}$ where $k > j$)**: Retained competence on prior task $T_j$ after subsequent task learning up to $T_k$.
-3. **Vertical Column Drift ($R_{1,j} \to R_{K,j}$)**: Competence trajectory on task $T_j$ over time:
-   - Constant values $\implies$ Perfect competence retention (zero forgetting).
-   - Decreasing values $\implies$ Functional forgetting or memory interference.
-   - Increasing values $\implies$ Positive Backward Transfer ($BWT$).
-
----
-
-### 4.2 How to Read `metrics.json`
-
-`metrics.json` contains aggregated paper metrics computed across the stream:
-
-```json
-{
-  "average_final_performance": -0.056,
-  "backward_transfer": -0.007,
-  "forward_transfer": 0.042,
-  "score_convention": "higher_is_better; score=-relative_gap"
-}
-```
-
-#### Metric Definitions & Formulas:
-1. **Average Final Performance ($AF$)**:
-   $$AF = \frac{1}{K} \sum_{j=1}^K R_{K,j}$$
-   Measures final system capability across all stream tasks at the end of the stream.
-
-2. **Backward Transfer ($BWT$)**:
-   $$BWT = \frac{1}{K-1} \sum_{j=1}^{K-1} \left( R_{K,j} - R_{j,j} \right)$$
-   Measures how learning subsequent tasks affects performance on earlier tasks.
-   - $BWT = 0 \implies$ No forgetting.
-   - $BWT < 0 \implies$ Catastrophic/functional forgetting.
-   - $BWT > 0 \implies$ Bidirectional positive learning.
-
-3. **Forward Transfer ($FWT$)**:
-   $$FWT = \frac{1}{K-1} \sum_{k=2}^K \left( R_{k-1,k}^{\text{probe}} - R_k^{\text{cold\_start}} \right)$$
-   Measures zero-shot transfer performance on new task $T_k$ using knowledge accumulated up to $M_{k-1}$, compared to cold-start learning.
-
----
-
-### 4.3 How to Read `memory/diagnostics.json`
-
-`diagnostics.json` provides scientific instrumentation for analyzing memory behavior:
-
-```json
-{
-  "schema_version": 1,
-  "retrieval_events": 8,
-  "retrieval_events_with_results": 8,
-  "memory_units_written": 12,
-  "memory_units_retrieved": 5,
-  "retrieval_coverage": 0.416,
-  "total_retrieved_units": 20,
-  "top_k_concentration": 0.45,
-  "duplicate_key_rate_mean": 0.0,
-  "post_reuse_validation_delta_mean": 0.038,
-  "eviction_lineage": [
-    {
-      "memory_id": "mem_a1b2c3d4",
-      "task_id": "tsp_100",
-      "timestamp": "2026-08-20T00:15:30.123456+00:00"
-    }
-  ],
-  "failure_mode_labels": []
-}
-```
-
-#### Key Diagnostic Metrics:
-- **`retrieval_coverage`**: Proportion of written long-term memory items that were actually retrieved at least once. Low coverage ($< 0.25$) signals **memory dilution**.
-- **`duplicate_key_rate_mean`**: Proportion of retrieved memory items with identical structural applicability keys. High duplicate rates ($\ge 0.5$) signal **retrieval pollution**.
-- **`post_reuse_validation_delta_mean`**: Average performance gain on validation split resulting from memory reuse. Negative delta ($< 0$) signals **harmful reuse**.
-- **`eviction_lineage`**: Audit trail of every evicted memory item, recording memory ID, task where eviction occurred, and timestamp.
-- **`failure_mode_labels`**: Diagnostic labels automatically flagged by the system (e.g., `harmful_reuse`, `retrieval_pollution`, `context_competition`, `retrieval_diversity_collapse`).
-
----
-
-### 4.4 How to Read `events.jsonl` Audit Log
-
-`events.jsonl` records append-only JSON event lines with `schema_version = 1`.
-
-#### Key Event Types to Audit:
-- **`pre_learning_probe_started` / `pre_learning_probe_completed`**:
-  Verifies zero-shot probe execution before task learning (`read_only: true`).
-- **`candidate_generated` / `candidate_selected`**:
-  Tracks generated heuristics and selection of the best candidate per generation/task.
-- **`memory_written` / `memory_protected` / `memory_evicted`**:
-  Tracks Archivist lifecycle decisions. `memory_protected` logs items assigned anchor protection status.
-- **`retrieval_event`**:
-  Logs query parameters, retrieved memory IDs, ranks, and similarity scores.
-- **`retention_probe_started` / `retention_probe_completed`**:
-  Verifies READ-ONLY evaluation of retained competence on prior tasks using current memory $M_k$.
-
----
-
-## 5. Troubleshooting & FAQs
-
-### Q1: What happens if LLM API rate limits or budget is exceeded during evolution?
-`BudgetedLLMClient` catches provider errors and enforces `max_llm_calls`. If the search budget is exhausted, `StreamRunner` saves a valid checkpoint at `checkpoints/latest.json`. You can resolve the provider issue and run with `--resume`.
-
-### Q2: Why did `DefaultArchivist` raise `CapacityOverflowError`?
-If `CapacityOverflowError` is raised, the cumulative number of protected task anchor heuristics across completed tasks has exceeded maximum memory capacity $C=20$. This invariant prevents silent eviction of protected anchors. Adjust capacity $C$ in config or check stream length.
-
-### Q3: How do I verify that test evaluation did not leak into memory admission or retrieval tuning?
-Run `audit-run`:
-```powershell
-python -m cmhh.cli --repo-root HeurAgenix audit-run --run-id <run_id>
-```
-`audit_run()` inspects prompt artifacts, generation logs, and event sequences to verify that no test split paths or test performance numbers were passed to the generator or Archivist.
+1. **`performance_matrix.csv`**: Contains relative gap matrix $R_{k,j} = -\frac{\text{Heuristic} - \text{Optimal}}{\text{Optimal}}$.
+2. **`metrics.json`**:
+   - $AF = \frac{1}{K} \sum_{j=1}^K R_{K, j}$
+   - $BWT = \frac{1}{K-1} \sum_{j=1}^{K-1} (R_{K, j} - R_{j, j})$
+   - $FWT = \frac{1}{K-1} \sum_{j=2}^K (R_{j-1, j}^{\text{probe}} - R_{\text{isolated}, j})$
+3. **`memory/diagnostics.json`**: Retrieval coverage, admission/eviction lineage, reuse delta, and failure mode labels.
+4. **`events.jsonl`**: Complete chronological audit log.

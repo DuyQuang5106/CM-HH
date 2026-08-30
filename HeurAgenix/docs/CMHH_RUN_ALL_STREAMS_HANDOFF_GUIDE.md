@@ -89,22 +89,25 @@ powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Qui
 }
 ```
 
-### Bước 4.2: Chạy Full Benchmark Toàn Bộ 13 Stream (Seed 1)
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1 -LlmConfig cmhh/configs/llm/llm_config.local.json
-```
+### Bước 4.2: Chạy Đầy Đủ 3 Đến 5 Seeds Độc Lập (Multi-Seed Benchmark Bắt Buộc)
 
-### Bước 4.3: Chạy Đầy Đủ 3 Seeds Độc Lập (Multi-Seed Benchmark)
+Để kết quả đạt tiêu chuẩn công bố khoa học (báo cáo giá trị $\text{Mean} \pm \text{Std}$), mỗi stream cần được chạy **từ 3 đến 5 lần độc lập**:
+
 ```powershell
+# Chạy 3 seeds độc lập (Seeds 1, 2, 3):
 powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3 -LlmConfig cmhh/configs/llm/llm_config.local.json
+
+# Chạy đầy đủ 5 seeds độc lập (Seeds 1, 2, 3, 4, 5):
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3,4,5 -LlmConfig cmhh/configs/llm/llm_config.local.json
 ```
 
-### Bước 4.4: Phục Hồi Nếu Bị Gián Đoạn (--Resume)
+### Bước 4.3: Phục Hồi Nếu Bị Gián Đoạn (--Resume)
 Nếu máy tính bị tắt hoặc ngắt mạng giữa chừng, chỉ cần thêm cờ `-Resume`:
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1 -Resume
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3,4,5 -Resume
 ```
 Hệ thống sẽ đọc checkpoint tại `cmhh/results/<run-id>/checkpoints/latest.json` và tiếp tục đúng task đang dở mà không phải chạy lại từ đầu.
+
 
 ---
 

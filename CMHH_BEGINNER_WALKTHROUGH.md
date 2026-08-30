@@ -1,275 +1,211 @@
-# CMHH — Hướng Dẫn Walkthrough Dành Cho Người Mới (Beginner & Quickstart Guide)
+# CMHH — Hướng Dẫn Walkthrough & Thiết Lập Thực Nghiệm Toàn Diện (Beginner & Research Protocol Guide)
 
-**Dự án:** CMHH — Continual Multi-Agent Hyper-Heuristics  
-**Mục tiêu file này:** Giúp người mới bắt đầu (sinh viên, nghiên cứu sinh, ML engineer) nhanh chóng hiểu bức tranh tổng thể, tự thiết lập môi trường, chạy thử nghiệm đầu tiên và đọc hiểu kết quả một cách dễ dàng nhất.
+**Dự án:** Continual Multi-Agent Hyper-Heuristics (CM-HH)  
+**Mục tiêu file này:** Giúp người mới bắt đầu (sinh viên, nghiên cứu sinh, ML engineer) nhanh chóng hiểu bức tranh tổng thể, tự thiết lập môi trường, chạy thử nghiệm kiểm tra nhanh (Smoke Test) và thực thi benchmark khoa học chính thức (**Chạy lặp 3–5 seeds độc lập cho mỗi stream**) để thu thập số liệu cho bài báo.
 
 ---
 
-## 2026-08-29 Architecture Note
+## 1. Giới thiệu Dễ hiểu về CM-HH (Conceptual Overview)
 
-The clearest way to understand CM-HH now is as a memory-transfer pipeline:
+### CM-HH là gì?
+Khi huấn luyện AI Agent (LLM) tự động sinh và tiến hóa thuật toán (Heuristics) qua một chuỗi các bài toán tối ưu tổ hợp kế tiếp nhau:
+$$
+T_1 \rightarrow T_2 \rightarrow T_3 \rightarrow \dots \rightarrow T_K
+$$
+
+- Khi giải bài toán nhỏ ($T_1$: TSP 20 thành phố), AI tìm ra nhiều heuristics tốt.
+- Khi chuyển sang bài toán lớn hơn ($T_2$: TSP 50 thành phố), ta muốn AI **tận dụng tri thức cũ** (Forward Transfer) thay vì học lại từ đầu, nhưng đồng thời **không được quên** cách giải bài toán cũ ($T_1$ — Backward Transfer / Anti-Forgetting).
+
+**CM-HH** chính là hệ thống quản lý bộ nhớ dài hạn 3 lớp ($h_i, k_i, z_i, \mu_i$) kết hợp cơ chế tuyển chọn (Archivist Gatekeeper), chính sách chuyển giao (Transfer Policy) và truy xuất thông minh (Retriever Engine) để hiện thực hóa việc học liên tục (Continual Learning).
+
+---
+
+### Sơ đồ Luồng Chuyển Giao Tri Thức CM-HH
 
 ```text
-completed task
-    -> CandidateExtractor: choose notable heuristics from final population
-    -> Archivist: decide what becomes long-term memory
-    -> MemoryStore: persist selected knowledge
-    -> Retriever: recall relevant memory for the next task
-    -> TransferPolicy: choose DIRECT_REUSE / REFINE / IGNORE
-    -> PopulationBuilder: build P0 from memory-derived and fresh candidates
-    -> evolution: search normally on the current task
-    -> feedback: update memory using validation-only transfer evidence
+Task hoàn thành (T_{k-1})
+    -> CandidateExtractor: Tuyển chọn các heuristic xuất sắc nhất từ quần thể cuối
+    -> Archivist Gatekeeper: Quyết định nạp bộ nhớ dài hạn (Admission) & bảo vệ mỏ neo (Anchor Protection)
+    -> MemoryStore: Lưu trữ tri thức dài hạn 3 lớp
+    -> Retriever Engine: Truy xuất các heuristic tương đồng cho task mới (T_k)
+    -> TransferPolicy: Quyết định DIRECT_REUSE / REFINE / IGNORE
+    -> PopulationBuilder: Khởi tạo quần thể P0 kết hợp giữa tri thức cũ và mầm mới
+    -> Tiến hóa (Evolution): Tìm kiếm heuristic tối ưu trên task hiện tại
+    -> Transfer Feedback: Cập nhật độ tin cậy của bộ nhớ dựa trên bằng chứng validation
 ```
-
-Important reading rule:
-
-```text
-retrieved != transferred
-transferred != survived evolution
-survived != caused improvement
-```
-
-The current `archivist_managed` condition is a runnable managed-memory
-prototype. It should be called "full CM-HH" only after `CandidateExtractor`,
-`TransferPolicy`, `PopulationBuilder`, validation-only transfer feedback, and
-child-memory lineage are implemented and audited.
 
 ---
 
-## 1. Giới thiệu Dễ hiểu về CMHH (Conceptual Overview)
+## 2. Danh Sách 13 Stream & 5 Điều Kiện Thử Nghiệm
 
-### CMHH là gì?
-Hãy tưởng tượng bạn có một **AI Agent (LLM)** chuyên viết code giải các bài toán tối ưu (như bài toán Người du lịch - TSP). 
-- Khi giải bài toán nhỏ ($T_1$: TSP 20 thành phố), AI tìm ra một số thuật toán (heuristics) rất hay.
-- Khi chuyển sang bài toán lớn hơn ($T_2$: TSP 50 thành phố), bạn muốn AI **tận dụng tri thức cũ** thay vì phải học lại từ đầu, nhưng đồng thời **không được quên** cách giải bài toán nhỏ ($T_1$).
+Dự án CM-HH định nghĩa **13 Stream thực nghiệm** chuẩn hóa đại diện cho các kịch bản dịch chuyển phân phối:
 
-**CMHH** chính là hệ thống quản lý bộ nhớ và điều phối agent để thực hiện việc học liên tục (Continual Learning) đó!
+### 2.1 Danh sách 13 Stream:
+1. `tsp_size_ascending`: TSP tăng dần kích thước ($n20 \to n50 \to n100 \to n200$). *(Stream cơ sở)*
+2. `tsp_size_descending`: TSP giảm dần kích thước ($n200 \to n100 \to n50 \to n20$).
+3. `tsp_random_perm_1`: TSP xáo trộn ngẫu nhiên 1 ($n50 \to n200 \to n20 \to n100$).
+4. `tsp_random_perm_2`: TSP xáo trộn ngẫu nhiên 2 ($n100 \to n20 \to n200 \to n50$).
+5. `cvrp_size_ascending`: Xe giao hàng CVRP tăng dần ($n20 \to n50 \to n100$).
+6. `cvrp_size_descending`: Xe giao hàng CVRP giảm dần ($n100 \to n50 \to n20$).
+7. `jssp_size_ascending`: Lập lịch máy JSSP tăng dần ($3\times3 \to 6\times6 \to 10\times10$).
+8. `jssp_size_descending`: Lập lịch máy JSSP giảm dần ($50\times10 \to 20\times5 \to 10\times5$).
+9. `cross_problem_tsp_cvrp_jssp`: Chuyển giao liên miền ($\text{TSP} \to \text{CVRP} \to \text{JSSP}$).
+10. `tsp_stationary`: Miền tĩnh kiểm tra ổn định ($n50 \times 4$).
+11. `tsp_revisit`: Hồi cứu kiến trúc ($n50 \to n100 \to n50 \to n200$).
+12. `related_pair_tsp_cvrp_tsp`: Cặp tương đồng ($\text{TSP} \to \text{CVRP} \to \text{TSP}$).
+13. `unrelated_pair_tsp_jssp_tsp`: Cặp dị biệt ($\text{TSP} \to \text{JSSP} \to \text{TSP}$).
 
----
-
-### Sơ đồ Kiến trúc 5 Thành phần Chính
-
-```
-  [ Task Stream: T_1 -> T_2 -> T_3 ]
-                 │
-  ┌──────────────┴──────────────┐
-  ▼                             ▼
-[ Pre-learning Probe (A) ]   [ Search & Generator (LLM) ]
-(Thi thử zero-shot)             (Sinh & Tiến hóa Heuristics)
-                                │
-                                ▼
-                       [ WorkingBuffer ] (Bộ đệm ngắn hạn)
-                                │
-                                ▼
-                       [ Archivist Gatekeeper ] (Trọng tài bộ nhớ)
-                       - Chọn lọc kinh nghiệm tốt (Admission)
-                       - Bảo vệ thuật toán mỏ neo (Anchor Protection)
-                       - Đào thải tri thức cũ yếu (Eviction)
-                                │
-                                ▼
-                       [ Long-Term MemoryStore ] (Bộ nhớ dài hạn 3-Layer)
-                                ▲
-                                │
-                       [ Retriever Engine ] (Động cơ truy xuất tri thức)
-```
-
-1. **`TaskStream`**: Chuỗi các bài toán nối tiếp nhau ($T_1 \rightarrow T_2 \rightarrow T_3 \dots$).
-2. **`WorkingBuffer`**: Bộ đệm ngắn hạn chứa các thuật toán mới được LLM tạo ra trong quá trình tìm kiếm.
-3. **`Archivist`**: "Người quản thư" thông minh — quyết định thuật toán nào đủ giỏi để lưu vào bộ nhớ, thuật toán nào là mỏ neo (protected anchor), và thuật toán nào nên xóa khi bộ nhớ đầy.
-4. **`MemoryStore` & `Retriever`**: Bộ nhớ dài hạn lưu trữ thuật toán theo dạng 3 lớp ($h_i, k_i, z_i, \mu_i$) và động cơ tìm kiếm gợi ý thuật toán phù hợp cho task mới.
-5. **`Probes` ($A$ & $C$)**: Các bài "thi thử" READ-ONLY để đo đạc chính xác khả năng chuyển giao tri thức ($FWT$) và khả năng giữ nét (không bị quên - $BWT$).
+### 2.2 5 Điều Kiện Đối Sánh Bắt Buộc (Comparison Conditions):
+1. **`isolated`**: Cold start độc lập từng task (không chuyển giao).
+2. **`population_carryover`**: Kế thừa quần thể heuristics cuối từ task trước (không có bộ nhớ ngoài).
+3. **`naive_bounded`**: Bộ nhớ thô giới hạn dung lượng ($C=20$, FIFO/overwrite đơn giản).
+4. **`naive_unbounded`**: Bộ nhớ thô không giới hạn dung lượng.
+5. **`archivist_managed`**: Hệ thống quản lý tri thức CM-HH hoàn chỉnh (Archivist + Retriever + Transfer Policy).
 
 ---
 
-## 2. Hướng Dẫn Quickstart 5 Phút (Bắt đầu từ Zero)
+## 3. Tiêu Chuẩn Thống Kê: Chạy Lặp 3 Đến 5 Lần (Multi-Seed Protocol)
 
-### Bước 1: Mở Terminal và Đặt Biến Môi Trường `PYTHONPATH`
-Mở PowerShell tại thư mục root dự án (`c:\Users\LENOVO\Projects\CM_HH`):
+> [!IMPORTANT]
+> **Yêu cầu bắt buộc cho công bố khoa học:**
+> Do tính ngẫu nhiên của LLM và thuật toán tiến hóa, mỗi Stream **bắt buộc phải được chạy từ 3 đến 5 lần độc lập (Seeds: 1, 2, 3, 4, 5)**.
+> Kết quả cuối cùng báo cáo trên bài báo là giá trị **Trung bình $\pm$ Độ lệch chuẩn ($\text{Mean} \pm \text{Std}$)** của các chỉ số:
+> - **$AF$ (Average Final Performance)**: Hiệu năng tổng thể trung bình tại cuối stream.
+> - **$BWT$ (Backward Transfer)**: Khả năng chống quên (Negative Forgetting).
+> - **$FWT$ (Forward Transfer)**: Khả năng chuyển giao tiến Zero-shot.
 
+---
+
+## 4. Thiết Lập Môi Trường (Setup trong 2 Phút)
+
+### Bước 4.1: Cài đặt thư viện Python
+Mở PowerShell tại thư mục gốc `CM_HH`:
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"
+pip install -e .
 ```
+*(Toàn bộ các thư viện PyVRP, OR-Tools, Concorde wrapper, TSPLIB95, SciPy, OpenAI... sẽ được tự động cài đặt).*
 
-### Bước 2: Chuẩn bị File Cấu Hình LLM (`llm_config.json`)
-Tạo một file cấu hình LLM (ví dụ `HeurAgenix/cmhh/configs/llm/my_llm.json`):
-
-#### Nếu dùng OpenAI API:
+### Bước 4.2: Cấu hình LLM API
+Chỉnh sửa file `HeurAgenix/cmhh/configs/llm/llm_config.local.json` (hoặc tạo file cấu hình riêng):
 ```json
 {
   "type": "api_model",
-  "provider": "openai",
-  "model": "gpt-4o-mini",
-  "api_key": "sk-xxx-key-cua-ban",
-  "temperature": 0.0,
-  "max_tokens": 2048
+  "name": "nvidia-gpt-oss-120b",
+  "url": "https://integrate.api.nvidia.com/v1/chat/completions",
+  "api_key": "nvapi-dien-key-cua-ban",
+  "model": "openai/gpt-oss-120b",
+  "temperature": 1,
+  "max_tokens": 4096,
+  "max_attempts": 5,
+  "seed": 42
 }
-```
-
-#### Nếu dùng Model Local (vLLM / Ollama / Local Server):
-```json
-{
-  "type": "api_model",
-  "provider": "openai_compatible",
-  "model": "Qwen/Qwen2.5-Coder-7B-Instruct",
-  "api_base": "http://localhost:8000/v1",
-  "api_key": "none",
-  "temperature": 0.0,
-  "max_tokens": 2048
-}
-```
-
-### Bước 3: Kiểm tra Sanity Check Hệ Thống
-Chạy lệnh kiểm tra cấu hình để đảm bảo mọi file manifest và code đều sẵn sàng:
-
-```powershell
-python -m cmhh.cli --repo-root HeurAgenix validate-config
-```
-*Nếu đầu ra báo:* `Validated 12 tasks; stream has 4 tasks` $\rightarrow$ **Chúc mừng, hệ thống của bạn hoàn toàn sẵn sàng!**
-
----
-
-## 3. Quy Trình Chạy Thử Nghiệm Chi Tiết (Từng Bước)
-
-Để chạy một thử nghiệm hoàn chỉnh, bạn thực hiện 4 bước đơn giản sau:
-
-### Bước 1: Sinh Dữ Liệu Benchmark TSPLIB
-Tạo dữ liệu các bài toán TSP (20, 50, 100, 200 thành phố) dùng chung cho các thí nghiệm:
-
-```powershell
-python -m cmhh.cli --repo-root HeurAgenix generate-data --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
-```
-
-### Bước 2: Sinh Nghiệm Chuẩn Tối Ưu (Exact Optimal Tours)
-Sinh nghiệm tối ưu tuyệt đối bằng Concorde solver để làm mốc so sánh khoảng cách (relative gap):
-
-```powershell
-python -m cmhh.cli --repo-root HeurAgenix generate-references --solver-config HeurAgenix/cmhh/configs/solvers/concorde.yaml --split validation --split test
-```
-
-### Bước 3: Chạy Stream Học Liên Tục (Continual Learning Stream)
-Chạy thử nghiệm CMHH với chế độ bộ nhớ quản lý bởi Archivist:
-
-```powershell
-python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/my_llm.json --seed 42 --run-id my_first_cmhh_run
-```
-
-### Bước 4: Kiểm Định Thư Mục Kết Quả (Audit Check)
-Sau khi stream chạy xong, kiểm tra xem thư mục kết quả có đạt chuẩn audit nghiên cứu không:
-
-```powershell
-python -m cmhh.cli --repo-root HeurAgenix audit-run --run-id my_first_cmhh_run
 ```
 
 ---
 
-## 4. Hướng Dẫn Đọc Hiểu Kết Quả Kết Xuất (Result Interpretation)
+## 5. Hướng Dẫn Thực Thi Thử Nghiệm
 
-Sau khi chạy xong, kết quả sẽ nằm tại thư mục: `HeurAgenix/cmhh/results/my_first_cmhh_run/`.
+Dự án cung cấp 3 cách chạy từ đơn giản đến toàn diện:
 
-### 4.1 Cấu trúc Thư mục Kết quả:
+### 🌟 Cách 1: Sử Dụng Menu Tương Tác Chọn Số (Dễ Nhất)
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_menu.ps1
+```
+Màn hình sẽ hiển thị menu 12 lựa chọn stream. Bạn chỉ việc gõ số (ví dụ `1` cho TSP, `3` cho CVRP, `12` cho All Streams) và chọn chế độ chạy.
+
+---
+
+### 🚀 Cách 2: Chạy Từng Stream Riêng Lẻ Bằng Script Định Sẵn
+
+Hệ thống có sẵn các file script được đặt tên tương ứng với từng bài toán:
+
+| File Script | Bài toán & Thứ tự Stream | Lệnh Chạy Kiểm Tra Nhanh (~2–5 phút) | Lệnh Chạy Chuẩn 3–5 Seeds (Full Benchmark) |
+|---|---|---|---|
+| `scripts\run_stream_1_tsp_ascending.ps1` | **Stream 1:** TSP tăng dần | `.\scripts\run_stream_1_tsp_ascending.ps1` | `.\scripts\run_stream_1_tsp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_2_tsp_descending.ps1` | **Stream 2:** TSP giảm dần | `.\scripts\run_stream_2_tsp_descending.ps1` | `.\scripts\run_stream_2_tsp_descending.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_3_cvrp_ascending.ps1` | **Stream 3:** CVRP tăng dần | `.\scripts\run_stream_3_cvrp_ascending.ps1` | `.\scripts\run_stream_3_cvrp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_4_jssp_ascending.ps1` | **Stream 4:** JSSP tăng dần | `.\scripts\run_stream_4_jssp_ascending.ps1` | `.\scripts\run_stream_4_jssp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_5_cross_domain.ps1` | **Stream 5:** TSP $\to$ CVRP $\to$ JSSP | `.\scripts\run_stream_5_cross_domain.ps1` | `.\scripts\run_stream_5_cross_domain.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_6_tsp_stationary.ps1` | **Stream 6:** TSP miền tĩnh | `.\scripts\run_stream_6_tsp_stationary.ps1` | `.\scripts\run_stream_6_tsp_stationary.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_7_tsp_revisit.ps1` | **Stream 7:** TSP hồi cứu | `.\scripts\run_stream_7_tsp_revisit.ps1` | `.\scripts\run_stream_7_tsp_revisit.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_8_cvrp_descending.ps1` | **Stream 8:** CVRP giảm dần | `.\scripts\run_stream_8_cvrp_descending.ps1` | `.\scripts\run_stream_8_cvrp_descending.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+| `scripts\run_stream_9_jssp_descending.ps1` | **Stream 9:** JSSP giảm dần | `.\scripts\run_stream_9_jssp_descending.ps1` | `.\scripts\run_stream_9_jssp_descending.ps1 -FullBenchmark -Seeds 1,2,3,4,5` |
+
+---
+
+### 🌐 Cách 3: Chạy Tự Động Toàn Bộ 13 Stream (All Streams Runner)
+
+Dùng cho máy trạm / server chạy tự động qua đêm cho toàn bộ 13 stream:
+
+#### A. Kiểm tra nhanh trước khi chạy lớn (Smoke Check ~5–10 phút):
+```powershell
+# Chế độ Zero-LLM (0 token LLM, kiểm tra dữ liệu và solver trong 1 phút):
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -SmokeOnly
+
+# Chế độ QuickSmoke (1 gen / 2 LLM calls per task):
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -QuickSmoke -LlmConfig cmhh/configs/llm/llm_config.local.json
+```
+
+#### B. Chạy Benchmark chính thức (3–5 Seeds độc lập):
+```powershell
+# Chạy 3 seeds độc lập (Seeds 1, 2, 3):
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3 -LlmConfig cmhh/configs/llm/llm_config.local.json
+
+# Chạy đầy đủ 5 seeds độc lập (Seeds 1, 2, 3, 4, 5):
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3,4,5 -LlmConfig cmhh/configs/llm/llm_config.local.json
+```
+
+#### C. Phục hồi nếu bị gián đoạn mạng hoặc tắt máy (-Resume):
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3 -Resume
+```
+
+---
+
+## 6. Giám Sát Thời Gian Thực (Live Monitoring)
+
+Trong khi thí nghiệm đang chạy, mở một cửa sổ PowerShell thứ hai và chạy:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\watch_phase1_tsp_run.ps1
+```
+Màn hình sẽ hiển thị trực tiếp:
+- Tiến độ hoàn thành các task ($k / N$).
+- Ma trận hiệu năng thời gian thực $R_{i,j}$ (`performance_matrix.csv`).
+- Nhật ký sự kiện bộ nhớ (`events.jsonl`).
+- Điểm đánh giá Zero-shot probe trước và sau khi học.
+
+---
+
+## 7. Đọc Hiểu Báo Cáo Kết Quả (Result Interpretation)
+
+Toàn bộ kết quả được lưu tại: `HeurAgenix/cmhh/results/<run_id>/`
+
+### 7.1 Cấu trúc file kết quả:
 ```text
-my_first_cmhh_run/
-├── performance_matrix.csv     <-- File quan trọng nhất: Ma trận hiệu năng (Relative Gap)
-├── metrics.json               <-- Điểm tổng hợp cho paper: AF, BWT, FWT
-├── events.jsonl               <-- Nhật ký toàn bộ sự kiện (schema_version = 1)
-├── memory/
-│   ├── memory.jsonl           <-- Kho bộ nhớ dài hạn
-│   └── diagnostics.json       <-- Chẩn đoán sức khỏe bộ nhớ & lineage đào thải
-└── checkpoints/
-    └── latest.json            # File dùng để resume nếu đứt đoạn
+cmhh/results/<stream_id>_<timestamp>_<condition>_seed<seed>/
+├── performance_matrix.csv     <-- Ma trận hiệu năng R_{i,j} (Relative Gap)
+├── metrics.json               <-- Chỉ số Continual Learning (AF, BWT, FWT)
+├── events.jsonl               <-- Nhật ký toàn bộ sự kiện của hệ thống (audit trail)
+├── pre_learning_scores.json   <-- Điểm probe zero-shot trước khi tiến hóa
+└── memory/
+    ├── memory.jsonl           <-- Kho heuristics được lưu trữ trong bộ nhớ
+    └── diagnostics.json       <-- Thống kê tỷ lệ tái sử dụng, đào thải và lineage
 ```
 
----
+### 7.2 Cách đọc ma trận `performance_matrix.csv`:
+Quy ước điểm: $\text{Score} = -\text{Relative Gap} = -\frac{\text{Heuristic Cost} - \text{Optimal Cost}}{\text{Optimal Cost}}$ (Càng gần `0.0` càng tốt).
 
-### 4.2 Cách đọc file `performance_matrix.csv` (Dễ hiểu nhất)
-
-File này lưu Ma trận Hiệu năng $R_{k,j}$ chứa **Khoảng cách tương đối so với nghiệm tối ưu (Relative Gap)**.
-- **Quy ước điểm:** Điểm $= - \text{Relative Gap} = - \frac{\text{Kết quả Heuristic} - \text{Nghiệm Tối ưu}}{\text{Nghiệm Tối ưu}}$
-- **Nguyên tắc:** Điểm càng gần `0.0` càng tốt (ví dụ: `-0.02` tức là chỉ cách nghiệm tối ưu $2\%$).
-
-#### Mẫu file `performance_matrix.csv`:
 ```csv
-after_task,tsp_20,tsp_50,tsp_100,tsp_200
-tsp_20,-0.012,,
-tsp_50,-0.015,-0.035,,
-tsp_100,-0.018,-0.038,-0.062,
-tsp_200,-0.021,-0.040,-0.065,-0.098
+after_task,tsp_n20_uniform,tsp_n50_uniform,tsp_n100_uniform,tsp_n200_uniform
+tsp_n20_uniform,-0.120787,,,
+tsp_n50_uniform,-0.120787,-0.223088,,
+tsp_n100_uniform,-0.120787,-0.223088,-0.237938,
+tsp_n200_uniform,-0.120787,-0.223088,-0.237938,-0.253197
 ```
+- **Đường chéo chính:** Hiệu năng đạt được ngay sau khi học xong từng bài toán.
+- **Theo cột (từ trên xuống dưới):** Nếu điểm giữ nguyên qua các hàng $\implies$ **Zero Forgetting (Không quên tri thức cũ)**.
 
-#### Hướng dẫn soi ma trận:
-- **Đường chéo chính (`-0.012`, `-0.035`, `-0.062`, `-0.098`)**: Kết quả đạt được trên từng bài toán **ngay sau khi học xong** bài toán đó.
-- **Nhìn theo Cột (ví dụ cột `tsp_20`)**:
-  - Khi mới học xong `tsp_20`: điểm là `-0.012`.
-  - Sau khi học tiếp `tsp_50`: điểm `tsp_20` thành `-0.015`.
-  - Sau khi học tiếp `tsp_200`: điểm `tsp_20` thành `-0.021`.
-  $\Rightarrow$ Điểm giảm nhẹ nghĩa là có hiện tượng quên nhẹ qua thời gian. Nếu điểm giữ nguyên `-0.012` $\implies$ **Zero Forgetting** (Hoàn hảo!).
-
----
-
-### 4.3 Cách đọc file `metrics.json` (Các con số đưa vào Paper)
-
-```json
-{
-  "average_final_performance": -0.056,
-  "backward_transfer": -0.007,
-  "forward_transfer": 0.042
-}
-```
-
-1. **`average_final_performance` ($AF$)**: Điểm trung bình của hệ thống trên tất cả các task ở **thời điểm kết thúc stream**. ($AF$ càng gần $0.0$ càng tốt).
-2. **`backward_transfer` ($BWT$)**: Đánh giá khả năng "giữ nét" bài học cũ:
-   - $BWT = 0$: Không bị quên bài cũ.
-   - $BWT < 0$: Bị quên bài cũ (Quên chức năng).
-   - $BWT > 0$: Học bài mới giúp giải bài cũ **tốt hơn nữa** (Học hỗ trợ ngược).
-3. **`forward_transfer` ($FWT$)**: Khả năng "học một biết mười" (Zero-shot transfer) khi gặp bài toán mới hoàn toàn so với việc học từ đầu. ($FWT > 0$ nghĩa là bộ nhớ giúp giải task mới tốt hơn ngay từ đầu).
-
----
-
-### 4.4 Cách đọc file `memory/diagnostics.json` (Sức khỏe Bộ nhớ)
-
-```json
-{
-  "schema_version": 1,
-  "retrieval_coverage": 0.416,
-  "duplicate_key_rate_mean": 0.0,
-  "post_reuse_validation_delta_mean": 0.038,
-  "eviction_lineage": [
-    {
-      "memory_id": "mem_12345",
-      "task_id": "tsp_100",
-      "timestamp": "2026-08-20T00:15:30.123456+00:00"
-    }
-  ],
-  "failure_mode_labels": []
-}
-```
-
-- **`retrieval_coverage`**: Tỷ lệ phần trăm bộ nhớ từng được lấy ra tái sử dụng.
-- **`post_reuse_validation_delta_mean`**: Mức độ cải thiện kết quả khi tái sử dụng bộ nhớ (Delta $> 0$ là bộ nhớ có ích).
-- **`eviction_lineage`**: Danh sách truy vết chính xác thuật toán nào đã bị xóa, xóa ở task nào và vào lúc nào.
-- **`failure_mode_labels`**: Tự động cảnh báo nếu bộ nhớ gặp sự cố (ví dụ `harmful_reuse`: tái sử dụng gây hại, `retrieval_pollution`: rác bộ nhớ).
-
----
-
-## 5. Các Tình Huống Thường Gặp & Cách Xử Lý (Troubleshooting)
-
-### Q1: Đang chạy stream thì bị mất mạng / đứt API key giữa chừng?
-**Trả lời:** Đừng lo! CMHH tự động lưu checkpoint sau mỗi task. Bạn chỉ cần sửa lỗi mạng/API rồi thêm cờ `--resume`:
-```powershell
-python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --run-id my_first_cmhh_run --resume --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/my_llm.json
-```
-
-### Q2: Làm sao để so sánh CMHH với các phương pháp Baseline khác?
-**Trả lời:** Để vẽ biểu đồ so sánh pilot, bạn chạy baseline/prototype đã có với các file cấu hình experiment tương ứng:
-1. **`isolated_tsp.yaml`**: Học từng task độc lập (Cold start).
-2. **`population_carryover_tsp.yaml`**: Bê nguyên quần thể cũ sang task mới (Không có bộ nhớ dài hạn).
-3. **`naive_memory_tsp.yaml`**: Lưu bộ nhớ thô (Không có Archivist lọc và bảo vệ).
-4. **`archivist_tsp.yaml` / `archivist_managed.yaml`**: Managed Archivist prototype (Có Archivist & WorkingBuffer). Chưa gọi là full CM-HH nếu chưa có transfer pipeline đầy đủ.
-5. **`h1_naive_unbounded.yaml`**: Naive memory không giới hạn capacity, dùng để chẩn đoán capacity pressure.
-6. **`eoh_cold_start.yaml`**: Official EOH cold-start baseline.
-
----
-
-## 6. Lời Kết & Liên Hệ
-
-Hệ thống CMHH đã được thiết kế sẵn sàng, chuẩn hóa 100% theo các tiêu chí nghiên cứu khoa học nghiêm ngặt. Nếu bạn gặp khó khăn trong quá trình chạy, hãy kiểm tra file `events.jsonl` hoặc chạy lệnh `audit-run` để nhận thông báo hướng dẫn chi tiết!
+### 7.3 Cách đọc `metrics.json`:
+- **`average_final_performance` ($AF$):** Điểm trung bình hàng cuối cùng của ma trận.
+- **`backward_transfer` ($BWT$):** Chênh lệch hiệu năng các bài cũ trước và sau khi học bài mới ($BWT \ge 0$ là không bị quên).
+- **`forward_transfer` ($FWT$):** Mức độ hỗ trợ giải bài mới nhờ tri thức cũ so với cold-start ban đầu ($FWT > 0$ là học nhanh hơn).

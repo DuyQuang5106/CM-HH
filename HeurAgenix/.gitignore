@@ -163,10 +163,8 @@ cython_debug/
 #.idea/
 
 output/
-data/
-!src/cmhh/data/
-!src/cmhh/data/**
-src/cmhh/data/__pycache__/
 cmhh/results/
-tools/concorde/
+tools/concorde/cygwin-cache/
+tools/concorde/cygwin32/
 cmhh/configs/llm/llm_config.local.json
+

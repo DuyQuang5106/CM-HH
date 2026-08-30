@@ -1,0 +1,405 @@
+{
+  "records": [
+    {
+      "instance_id": "tsp_n20_uniform_test_000",
+      "instance_sha256": "5d30fd4acbb107844a61eb7108fa7bb4bc53a1caacab3c4d6fb0141a6c1417db",
+      "objective": 27989.0,
+      "runtime_seconds": 0.1088956000021426,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_000.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_001",
+      "instance_sha256": "433744f481e7c4bb9f5a95b04d0ebf02e09fd323dbc07bc33d360133a87786ad",
+      "objective": 40736.0,
+      "runtime_seconds": 0.17160269999294542,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_001.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_002",
+      "instance_sha256": "59a291854059b5d01db664ed9b1f74532317650935257b08878d60df12dc10e5",
+      "objective": 40725.0,
+      "runtime_seconds": 0.16591300000436604,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_002.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_003",
+      "instance_sha256": "55084e98896df96e7867caa5f68e79d9f6f2971c84facc78c3792228324a5091",
+      "objective": 39942.0,
+      "runtime_seconds": 0.08526680000068154,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_003.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_004",
+      "instance_sha256": "b347d85f992465d5ebe4c734e9c65d55be02352add789406fb910e20556f91ed",
+      "objective": 37552.0,
+      "runtime_seconds": 0.18573040000046603,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_004.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_005",
+      "instance_sha256": "f2af8b11f7b2cb3bcc0e62fda3c736d4daab839667718a5b87cf01fdbdbeb3bc",
+      "objective": 39277.0,
+      "runtime_seconds": 0.10286690000793897,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_005.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_006",
+      "instance_sha256": "a94be920bde0ebcaa5549396440817831efea639ac542ad56de6bc9e861dd739",
+      "objective": 39766.0,
+      "runtime_seconds": 0.16783170000417158,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_006.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_007",
+      "instance_sha256": "651f3464531b6b224ecc35349d0e507ee710f5907984e69d86a6f1cc5c8d807a",
+      "objective": 36518.0,
+      "runtime_seconds": 0.09543489999487065,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_007.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_008",
+      "instance_sha256": "c549d6a96a3ac6431718965f842e3e3f5757525ad51fe0a2a2eac13d2eb941b6",
+      "objective": 37044.0,
+      "runtime_seconds": 0.13038570000207983,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_008.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_009",
+      "instance_sha256": "7e392dc3e3adcb0b89a579f8369f35b1a92d84e5b45f2fe31f4c801b688c3033",
+      "objective": 38979.0,
+      "runtime_seconds": 0.13038889999734238,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_009.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_010",
+      "instance_sha256": "1078a65ea1d2db80c6c3afc05396eca546806a2af8f6744baa5f09036ae71a54",
+      "objective": 38074.0,
+      "runtime_seconds": 0.1494749999983469,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_010.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_011",
+      "instance_sha256": "9bb05aa92f54fa9229c3a4ee6a7fcf57ce6d8795594204469b22e2c85f4f344a",
+      "objective": 38374.0,
+      "runtime_seconds": 0.13221599999815226,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_011.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_012",
+      "instance_sha256": "f278c5374ae9936dd2c7caef30e215d28452826ac7a066f23b3c717a7f8b02df",
+      "objective": 39820.0,
+      "runtime_seconds": 0.12173489999258891,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_012.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_013",
+      "instance_sha256": "a1e55aaed13a510395e4335c193fa0f2e8956569c43a47b08e825ef765050c50",
+      "objective": 33348.0,
+      "runtime_seconds": 0.08624340000096709,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_013.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_014",
+      "instance_sha256": "698faaf1d7c8ddcbc537cad7a7d9f9d03cbe006d5d0ca11145e2c5d18dfe0450",
+      "objective": 29593.0,
+      "runtime_seconds": 0.1305455000110669,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_014.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_015",
+      "instance_sha256": "fcbb1a15b24b7cc79152fcd2c29b725a6b3d522491f74484eeb07b2d501646e5",
+      "objective": 38871.0,
+      "runtime_seconds": 0.08697319999919273,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_015.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_016",
+      "instance_sha256": "b8e9bdb11bc6809e1c955be33202d63945d03ac875291821ddc5bebe3d778b91",
+      "objective": 33059.0,
+      "runtime_seconds": 0.13504640001337975,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_016.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_017",
+      "instance_sha256": "2c95e519ab6a4baa898d6902e95b0dd2efc7c5a4f5f7cc27415ca910754bdfa6",
+      "objective": 41413.0,
+      "runtime_seconds": 0.10781990000396036,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_017.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_018",
+      "instance_sha256": "b4f3704efbcacfed066df564d12e1da2c97b3d553cdccc4011753e592ea9182c",
+      "objective": 33651.0,
+      "runtime_seconds": 0.13240509999741334,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_018.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_019",
+      "instance_sha256": "c58200a7600c2ab04f827c1c37733e17087af2feb5da746b248fcad122d83384",
+      "objective": 39693.0,
+      "runtime_seconds": 0.10939769999822602,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_019.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_020",
+      "instance_sha256": "01bbc58d7d95b97efacd6d6702c972392b39031a0e882c961f6d1acbcff94b1f",
+      "objective": 37773.0,
+      "runtime_seconds": 0.08198040000570472,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_020.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_021",
+      "instance_sha256": "e64f7b508469bf791262c2fcbc61be841f824407410099a119e12d3bf02607f0",
+      "objective": 39662.0,
+      "runtime_seconds": 0.10219180000422057,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_021.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_022",
+      "instance_sha256": "6e119247ae6aec0f5f3545d603a8b303bf2a98cc5816f278c0b67ad17ff9ff4c",
+      "objective": 35302.0,
+      "runtime_seconds": 0.12554150000505615,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_022.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_023",
+      "instance_sha256": "abca9ad007b675efc708dc11e67350a6f66a0db9d531c95811d106d057e15e3a",
+      "objective": 38282.0,
+      "runtime_seconds": 0.12049420000403188,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_023.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_024",
+      "instance_sha256": "d2a92cd45873323cc1c289b109667e358def9f288e0fe7aa3efee49217b0ee9e",
+      "objective": 35643.0,
+      "runtime_seconds": 0.1340903999953298,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_024.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_025",
+      "instance_sha256": "4f8632441f1de0a8ee382c353bc07cec31a104fc066600472e4e21005ad3d095",
+      "objective": 40822.0,
+      "runtime_seconds": 0.11464020000130404,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_025.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_026",
+      "instance_sha256": "61b278abe60de25e0382de009620728772ff05953d5f6032b481cf5962adbcd9",
+      "objective": 40238.0,
+      "runtime_seconds": 0.12496240000473335,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_026.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_027",
+      "instance_sha256": "d67523073ed2df7b1b7439eb1163d646d9de56053f60f6a17ee611ff1b692471",
+      "objective": 40570.0,
+      "runtime_seconds": 0.0984762000007322,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_027.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_028",
+      "instance_sha256": "a5d19d7f5497f93fb7d3b92809e7e767db326ab9bb18685d1d66b666baab9c96",
+      "objective": 41336.0,
+      "runtime_seconds": 0.12830830000166316,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_028.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_test_029",
+      "instance_sha256": "debc75a77519db055941b710a98969ab1f18fa58267f19f954b27aeca13b15e4",
+      "objective": 32848.0,
+      "runtime_seconds": 0.10086859999864828,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_test_029.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_000",
+      "instance_sha256": "2fcf35a16d518536ddff49c8cb09fcd7861b246abd1565581e3e86dc94d5e916",
+      "objective": 41903.0,
+      "runtime_seconds": 0.18327789999602828,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_000.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_001",
+      "instance_sha256": "5590c6f1b9b7f3dad95140833ee882120deed06dd2f47c70a297d4e37026fc08",
+      "objective": 38280.0,
+      "runtime_seconds": 0.14132840000092983,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_001.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_002",
+      "instance_sha256": "3f04fd691e1850159c47c6782ff9e347a6ffba6fc8f30ad0ab114b07d50c1001",
+      "objective": 35177.0,
+      "runtime_seconds": 0.13957840000512078,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_002.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_003",
+      "instance_sha256": "f9ec95bd57faa68b9d6fcc3fc723fc3638d75d29b52cc97c9732fb4c240dfed4",
+      "objective": 43555.0,
+      "runtime_seconds": 0.12068799999542534,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_003.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_004",
+      "instance_sha256": "32faf8a2ec3354081a2dc39d2ad902ee402a17a843c29147bb84f4fee0f424a0",
+      "objective": 41318.0,
+      "runtime_seconds": 0.1320253000012599,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_004.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_005",
+      "instance_sha256": "71514b89e72455ad6ea9e37ef85b566829d74b26d0a8423cafbae6d080c89cb4",
+      "objective": 39765.0,
+      "runtime_seconds": 0.13099570000485983,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_005.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_006",
+      "instance_sha256": "2fbdd695bbed6bc332ae8a8364ef06cd8bf7e53b6cc7b4b89349c8a504641a9a",
+      "objective": 38585.0,
+      "runtime_seconds": 0.09782160000759177,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_006.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_007",
+      "instance_sha256": "8fd71247ecc6cd4121849b6454908877e469e562b261336bc0b5673f7631b5bf",
+      "objective": 39886.0,
+      "runtime_seconds": 0.14036119999946095,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_007.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_008",
+      "instance_sha256": "7a6e45eb25847ab2978a4fa54937c84670d2b30d11d9da0f3d2322f47c3f8bd3",
+      "objective": 35145.0,
+      "runtime_seconds": 0.12107639999885578,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_008.tour"
+    },
+    {
+      "instance_id": "tsp_n20_uniform_validation_009",
+      "instance_sha256": "57cf81b13447dba48b92ca9fd69905868c061110aaa9c9dab4a22c16f91b2a5f",
+      "objective": 37541.0,
+      "runtime_seconds": 0.13505469998926856,
+      "solver": "concorde",
+      "solver_exit_code": 255,
+      "status": "optimal",
+      "tour_path": "C:\\Users\\LENOVO\\Projects\\CM_HH\\HeurAgenix\\cmhh\\data\\references\\tsp_n20_uniform\\tours\\tsp_n20_uniform_validation_009.tour"
+    }
+  ],
+  "task_id": "tsp_n20_uniform"
+}

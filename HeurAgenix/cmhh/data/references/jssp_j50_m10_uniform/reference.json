@@ -1,0 +1,405 @@
+{
+  "records": [
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_000",
+      "instance_sha256": "9cf7f9cd1e0ed2774f9e83f63ee65e997e0705551f067071a8dd2dcabb9c4a2e",
+      "objective": 3035.0,
+      "runtime_seconds": 0.09430880000581965,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_001",
+      "instance_sha256": "f516f297be7aa19f8528d7d7d5ca0449daa7c29610e39629f8659f1d5d7552dd",
+      "objective": 2910.0,
+      "runtime_seconds": 0.15855440000450471,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_002",
+      "instance_sha256": "31897e7f97deabbd0330f4fa61f60550ae320453fae6449e8c6c6caa98e6c59a",
+      "objective": 3229.0,
+      "runtime_seconds": 0.142484299998614,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_003",
+      "instance_sha256": "056374fb27929fd384e22bc1455141e9de771e6e3f80c9e5201280ae3d7f9639",
+      "objective": 2997.0,
+      "runtime_seconds": 0.15507709999656072,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_004",
+      "instance_sha256": "28a129ccdcb717cb093e5a0338084ca2f8f78068d8279a6462c7a4178df89f51",
+      "objective": 2937.0,
+      "runtime_seconds": 0.20119800000247778,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_005",
+      "instance_sha256": "e70fdda0a551d2dc3b45bbc2bb41120f2b0b33cee45ac789b8b6d10be8b1b3e5",
+      "objective": 2860.0,
+      "runtime_seconds": 0.1570415000023786,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_006",
+      "instance_sha256": "efa1d6dfe7c059c3023da93491deeef6d4b5426b635a171205c21ee6904a347f",
+      "objective": 2811.0,
+      "runtime_seconds": 0.14293139999790583,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_007",
+      "instance_sha256": "01f7d99958e561b30d790d2b62e5ac6b50f39eb72ffc5f52a647d4712b1de7e0",
+      "objective": 3027.0,
+      "runtime_seconds": 0.15986749999865424,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_008",
+      "instance_sha256": "d7f8251530374db3b92bbd10eaba9d8158f723ef80658da2fc1145cf1b239ccb",
+      "objective": 2975.0,
+      "runtime_seconds": 0.12894059999962337,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_009",
+      "instance_sha256": "a238d7b1cc2a376a8bf0e81c1e3c69ae9490d99b3d1c35225164fb1c58e66744",
+      "objective": 2890.0,
+      "runtime_seconds": 0.1602924000035273,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_010",
+      "instance_sha256": "34feddd88df2cb226049305303e3e71a4e34b4ce2e755e3162c41ee245792e78",
+      "objective": 2991.0,
+      "runtime_seconds": 0.15969870000117226,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_011",
+      "instance_sha256": "d3b060fd9d328d293c96f0cdff97ffe63495de5fd913aeac789b979ef8cac8fe",
+      "objective": 2933.0,
+      "runtime_seconds": 0.15898230000311742,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_012",
+      "instance_sha256": "fb5b14fecaa32e20d731bfbcd596ffc537ab0a46730d753b98487ea5e6a4f37b",
+      "objective": 2887.0,
+      "runtime_seconds": 0.15623860000050627,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_013",
+      "instance_sha256": "bbf973bbbe80664f92021a4016d71b17ca7aaa3d92f393bc6549f164c421a27e",
+      "objective": 2815.0,
+      "runtime_seconds": 0.1606245000002673,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_014",
+      "instance_sha256": "5ad087d42dda7a83bc74ab2fdac064da2aa5e54e891592eabc4d120ee65eed4e",
+      "objective": 2808.0,
+      "runtime_seconds": 0.16445460000250023,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_015",
+      "instance_sha256": "84e8d0c264b69a7c6da1de18160f270a0a08e6490ca0ee46f6ed88944d4a15aa",
+      "objective": 2768.0,
+      "runtime_seconds": 0.16057529999670805,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_016",
+      "instance_sha256": "13198851e03c0a40cc6f916e3e7591ab61cb62c495716eb4ac5aebcae87280a2",
+      "objective": 3138.0,
+      "runtime_seconds": 0.15801099999953294,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_017",
+      "instance_sha256": "4a0885db10fa7bdb6d2ab315f7b32976c76461c28fcb37653ad541436886d779",
+      "objective": 2688.0,
+      "runtime_seconds": 0.15878900000097929,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_018",
+      "instance_sha256": "0fa679c4d5b18e837f0bdb497f7a1beff3a0e8450f333ff1b21f37f6dcd10567",
+      "objective": 2708.0,
+      "runtime_seconds": 0.1613874999966356,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_019",
+      "instance_sha256": "0d7aa4487de665e8e167dadf72e499f13e225d8445dfb4dd1269effa24c2fc5c",
+      "objective": 2913.0,
+      "runtime_seconds": 0.1594349000006332,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_020",
+      "instance_sha256": "72d5b3e67d9764cef29d6e6e10cb5b6565f17d1fc8828537e084a7305d467d7a",
+      "objective": 2732.0,
+      "runtime_seconds": 0.15985090000322089,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_021",
+      "instance_sha256": "0e12d86246a023033822db05b35b20377495480b3809fd0ca06c0922d06c6d77",
+      "objective": 3140.0,
+      "runtime_seconds": 0.1626451000047382,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_022",
+      "instance_sha256": "3efc7dbea7d9e3dcc402f020f0437556d1df41da18f27e083dc5d5841eaf7e8f",
+      "objective": 2901.0,
+      "runtime_seconds": 0.16052299999864772,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_023",
+      "instance_sha256": "4c16c371a6f15ce44be78fbca57099b31af97706a017966a66775c89bec89035",
+      "objective": 2810.0,
+      "runtime_seconds": 0.20775549999962095,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_024",
+      "instance_sha256": "3a4dd35e597ab968657605d4b070edcc06781d8a0b649b553c2e59a0132879e4",
+      "objective": 2666.0,
+      "runtime_seconds": 0.16738349999650382,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_025",
+      "instance_sha256": "e3ff08a82f1f33b08757cfb3fab665bcc398f1d743a746fa661f728deffefce9",
+      "objective": 2975.0,
+      "runtime_seconds": 0.18299000000115484,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_026",
+      "instance_sha256": "74173f2df76c4f0b208a0c61fbd44e323c9e9b88a4e299a8c55eb951e60a7393",
+      "objective": 2859.0,
+      "runtime_seconds": 0.15771810000296682,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_027",
+      "instance_sha256": "bdae5c49d61c1a0cdcad81e7ae13ef0efb759de88b867b566a2b1a12c6d10f8e",
+      "objective": 2808.0,
+      "runtime_seconds": 0.123858899998595,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_028",
+      "instance_sha256": "da3764e595c988138bac4570e390ce52107a7c01f8edd1755358953d0d89481d",
+      "objective": 3001.0,
+      "runtime_seconds": 0.1587017999991076,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_test_029",
+      "instance_sha256": "390d68ce3be2270fcb0476cc30b36821b2437c3f6ba12e553f7816108a264f12",
+      "objective": 2761.0,
+      "runtime_seconds": 0.12582359999942128,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_000",
+      "instance_sha256": "95b0bc1bede1322c622e57319e8df7621b31fd2f142dd1cd4ec7ad465ab3c9b1",
+      "objective": 3052.0,
+      "runtime_seconds": 0.07662699999491451,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_001",
+      "instance_sha256": "f68a5ba2611033c9dcf10330e46e5850a54cbfd9d725b36562da2b28db6e85f6",
+      "objective": 3078.0,
+      "runtime_seconds": 0.15172410000377567,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_002",
+      "instance_sha256": "844aafb5decf019778ac268ca12d2d05e6bcf8b8fb8f002d8b1f7bf0b9142684",
+      "objective": 2881.0,
+      "runtime_seconds": 0.21279800000047544,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_003",
+      "instance_sha256": "f730cb79baccdd942f125f2c06e47fb3cbd2c54eaf2389a27b56b38790510898",
+      "objective": 2883.0,
+      "runtime_seconds": 0.15400729999964824,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_004",
+      "instance_sha256": "a07d5383d0a996c0a9e342c23d59f1b3556dd5c9d5a5b6de10d87e2d57e4325a",
+      "objective": 2903.0,
+      "runtime_seconds": 0.11824699999851873,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_005",
+      "instance_sha256": "4704890d93b0a2833ba64b8fa1c6ef8ebcb63e03527f357aaccaca29f949e3a5",
+      "objective": 3097.0,
+      "runtime_seconds": 0.1582609999968554,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_006",
+      "instance_sha256": "b2908a7254ebdcb4fbfd4525432bcdef6aff829f6d6d30414cbb3eeace950a51",
+      "objective": 2795.0,
+      "runtime_seconds": 0.13509069999417989,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_007",
+      "instance_sha256": "997e2895bf09a269384fb8600d0172de2e72bbb2872b02602eff0ae2663c73a7",
+      "objective": 2938.0,
+      "runtime_seconds": 0.15513510000164388,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_008",
+      "instance_sha256": "3b0b9d07b5f0138bb9fff23b5c9984550d43d261ead4d78d801e3b4ca5a0e979",
+      "objective": 2979.0,
+      "runtime_seconds": 0.15525239999988116,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "jssp_j50_m10_uniform_validation_009",
+      "instance_sha256": "5c41fb11ee1fb8de70eadbf7756c81d4f92fd26e398378ad8a54b9e1ed2cbf9c",
+      "objective": 2871.0,
+      "runtime_seconds": 0.15739700000267476,
+      "solver": "jssp_active_schedule_search",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    }
+  ],
+  "task_id": "jssp_j50_m10_uniform"
+}

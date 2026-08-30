@@ -1,0 +1,52 @@
+{
+  "records": [
+    {
+      "instance_id": "cvrp_n20_uniform_validation_000-k4",
+      "instance_sha256": "9bf84839c6cedec669fde02f196cb3979f6a5dae9c5b8f5a4f6e6120f83eda09",
+      "metadata": {
+        "capacity": 46,
+        "iterations": null,
+        "num_routes": 3,
+        "routes": [
+          [
+            19,
+            2,
+            18,
+            8,
+            7
+          ],
+          [
+            11,
+            6,
+            10,
+            20,
+            17,
+            14,
+            5
+          ],
+          [
+            16,
+            15,
+            4,
+            12,
+            9,
+            13,
+            3
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 4
+      },
+      "objective": 51462.08138058281,
+      "runtime_seconds": 60.00941850000527,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    }
+  ],
+  "task_id": "cvrp_n20_uniform"
+}

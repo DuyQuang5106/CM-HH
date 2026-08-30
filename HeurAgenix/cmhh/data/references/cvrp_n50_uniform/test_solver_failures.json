@@ -1,0 +1,186 @@
+{
+  "failures": [
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_000-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_001-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_002-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_003-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_004-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_005-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_006-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_007-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_008-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_009-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_010-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_011-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_012-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_013-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_014-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_015-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_016-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_017-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_018-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_019-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_020-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_021-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_022-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_023-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_024-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_025-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_026-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_027-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_028-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    },
+    {
+      "error": "PyVRP is required for CVRP reference generation. Run `uv sync` to install all managed dependencies.",
+      "instance_id": "cvrp_n50_uniform_test_029-k10",
+      "runtime_seconds": 0.0,
+      "status": "error"
+    }
+  ],
+  "split": "test",
+  "task_id": "cvrp_n50_uniform"
+}
