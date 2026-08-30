@@ -3,6 +3,19 @@
 Phase 0 builds and verifies the experimental machinery; it does not test a
 research hypothesis.
 
+## Architecture note
+
+The full CM-HH memory path is:
+
+```text
+CandidateExtractor -> Archivist -> MemoryStore -> Retriever
+    -> TransferPolicy -> PopulationBuilder -> evolution -> transfer feedback
+```
+
+The current managed condition is a runnable prototype. It becomes full CM-HH
+only after transfer planning, memory-aware population construction,
+validation-only transfer feedback, and child-memory lineage are implemented.
+
 ## Data isolation
 
 - `train`: material available to heuristic generation/evolution.

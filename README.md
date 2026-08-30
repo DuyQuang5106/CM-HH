@@ -8,6 +8,25 @@ Official implementation of **CMHH (Continual Multi-Agent Hyper-Heuristics)** —
 
 ---
 
+## 2026-08-29 Architecture Status
+
+CM-HH memory is now documented as a full transfer pipeline:
+
+```text
+CandidateExtractor -> Archivist -> MemoryStore -> Retriever
+    -> TransferPolicy -> PopulationBuilder -> evolution -> transfer feedback
+```
+
+The current `archivist_managed` experiment is a runnable managed-memory
+prototype. Treat it as "full CM-HH" only after `CandidateExtractor`,
+`TransferPolicy`, `PopulationBuilder`, validation-only transfer feedback, and
+child-memory lineage are implemented and audited.
+
+See `IDEA/source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`
+for the authoritative architecture and pseudocode.
+
+---
+
 ## 📚 Documentation Index (Tài Liệu Hướng Dẫn)
 
 | File Documentation | Mục đích & Nội dung | Đối tượng |
@@ -16,7 +35,7 @@ Official implementation of **CMHH (Continual Multi-Agent Hyper-Heuristics)** —
 | 📌 [**`CMHH_STEP_BY_STEP_EXECUTION_GUIDE.md`**](CMHH_STEP_BY_STEP_EXECUTION_GUIDE.md) | **Lộ trình chạy từng bước có đánh số (từ 1 đến 8)** kèm các câu lệnh PowerShell copy-paste trực tiếp | Người trực tiếp chạy thí nghiệm |
 | 📊 [**`CMHH_EXPERIMENT_GUIDE.md`**](CMHH_EXPERIMENT_GUIDE.md) | **Hướng dẫn thử nghiệm chuyên sâu & đọc chỉ số**, giải thích chi tiết $R_{k,j}$, $AF$, $BWT$, $FWT$, `diagnostics.json` và `eviction_lineage` | PhD / ML Research Engineers |
 | 🛠️ [**`CMHH_ENGINEERING_HANDOFF_REVIEW.md`**](CMHH_ENGINEERING_HANDOFF_REVIEW.md) | **Báo cáo kiểm định kiến trúc & lịch sử tái cấu trúc hệ thống**, phân tích 5 giai đoạn hoàn thiện codebase | Core Maintainers / Code Auditors |
-| 📄 [**`IDEA/Idea/CMHH_Research_Specification.md`**](IDEA/Idea/CMHH_Research_Specification.md) | **Tài liệu đặc tả bài báo nghiên cứu (Research Specs)** | Scientific Research Team |
+| 📄 [**`IDEA/source_of_truth/CMHH_Research_Specification.md`**](IDEA/source_of_truth/CMHH_Research_Specification.md) | **Tài liệu đặc tả bài báo nghiên cứu (Research Specs)** | Scientific Research Team |
 
 ---
 
@@ -132,14 +151,16 @@ CMHH bao gồm 5 thành phần chính hoạt động phối hợp:
 
 ---
 
-## 🔬 4 Điều Kiện Thử Nghiệm Baseline (Experimental Conditions)
+## 🔬 Baseline / Prototype Experimental Conditions
 
-Để đánh giá hiệu quả của hệ thống bộ nhớ CMHH trong bài báo, bạn chạy so sánh **4 điều kiện**:
+Để đánh giá hiệu quả của hệ thống bộ nhớ CMHH trong pilot, bạn chạy so sánh các điều kiện:
 
 1. **`isolated`**: Cold-start từng task độc lập (không chuyển giao tri thức).
 2. **`population_carryover`**: Chuyển giao quần thể sinh ra từ task trước (không có bộ nhớ dài hạn).
 3. **`naive_memory_sequential`**: Bộ nhớ thô FIFO/Score (không có Archivist quản lý).
-4. **`archivist_managed`**: Hệ thống CMHH hoàn chỉnh (Có WorkingBuffer & Archivist).
+4. **`naive_memory_unbounded` / `h1_naive_unbounded`**: Bộ nhớ thô không giới hạn dung lượng, dùng làm capacity/noise diagnostic.
+5. **`archivist_managed`**: Managed Archivist prototype (Có WorkingBuffer & Archivist). Chỉ gọi là full CM-HH sau khi có `CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only transfer feedback, và child-memory lineage.
+6. **`eoh_cold_start`**: Official EOH cold-start baseline.
 
 ---
 

@@ -885,3 +885,147 @@ Commands executed from the HeurAgenix repository root with `PYTHONPATH=src`.
 4. Add matched-capacity naive-vs-managed audit checks.
 5. Add validation-oracle retrieval and controlled pollution diagnostics.
 6. Run a real one-seed TSP managed Archivist pilot against naive bounded memory.
+
+---
+
+## 2026-08-29 - Memory-transfer documentation clarification
+
+Updated the documentation set to make the full CM-HH memory architecture easier
+to operate and implement.
+
+### Design clarification
+
+The source-of-truth memory design now treats CM-HH as an explicit
+memory-transfer pipeline:
+
+```text
+CandidateExtractor -> Archivist -> MemoryStore -> Retriever
+    -> TransferPolicy -> PopulationBuilder -> evolution -> transfer feedback
+```
+
+The clarified design distinguishes:
+
+- evidence evolution vs knowledge evolution;
+- retrieved memory vs transferred memory;
+- zero-shot probe success vs adaptation success;
+- managed-memory prototype vs final full CM-HH.
+
+### Documents updated
+
+- `IDEA/source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`
+- `IDEA/source_of_truth/CMHH_Implementation_Ready_Specification.md`
+- `IDEA/planning/Implementation_plan.md`
+- `IDEA/README.md`
+- `README.md`
+- `CMHH_BEGINNER_WALKTHROUGH.md`
+- `CMHH_EXPERIMENT_GUIDE.md`
+- `CMHH_STEP_BY_STEP_EXECUTION_GUIDE.md`
+- `CMHH_ENGINEERING_HANDOFF_REVIEW.md`
+- `HeurAgenix/docs/cmhh/experimental_protocol.md`
+- `HeurAgenix/docs/cmhh/phase1_experiment_guide.md`
+
+### Current architecture status recorded
+
+The repo is documented as having runnable baseline/prototype support, including
+EOH cold start, HeurAgenix isolated, population carryover, naive bounded,
+naive unbounded, and managed Archivist prototype.
+
+The remaining full-CMHH implementation targets are:
+
+1. first-class `CandidateExtractor`;
+2. `TransferPlan`, `TransferRecord`, and `TransferPolicy`;
+3. `PopulationBuilder` with fixed memory/fresh quotas;
+4. validation-only transfer feedback;
+5. child-memory lineage;
+6. richer transfer diagnostics and event logs.
+
+---
+
+## 2026-08-30 - CM-HH V0 transfer pipeline scaffold
+
+Started implementing the clarified full-CMHH V0 architecture.
+
+### Added modules
+
+1. `src/cmhh/candidate_extractor.py`
+   - Adds `MemoryCandidate`.
+   - Adds `TopKCandidateExtractor`.
+   - Extracts deterministic top-k final-population candidates by validation
+     score.
+
+2. `src/cmhh/transfer.py`
+   - Adds `TransferPlan`.
+   - Adds `TransferRecord`.
+   - Adds `DeterministicTransferPolicy`.
+   - V0 policy: first retrieved executable memory is `direct_reuse`; remaining
+     retrieved items are `refine` context unless quota is exhausted.
+
+3. `src/cmhh/population_builder.py`
+   - Adds `MemoryAwarePopulationBuilder`.
+   - Adds `PopulationBuildResult`.
+   - Builds initial population from explicit transfer plans plus existing
+     carryover/baseline seeds.
+
+### Runner integration
+
+- Replaced direct memory-context handoff with:
+
+```text
+retrieve -> transfer plan -> population build -> generator
+```
+
+- Added event logs:
+  - `memory_transfer_planned`
+  - `memory_inserted_into_population`
+  - `memory_candidate_extracted`
+  - `memory_admitted`
+  - `archivist_transaction_committed`
+  - `memory_transfer_feedback`
+
+- Memory writes now pass through `TopKCandidateExtractor` rather than archiving
+  the full ranked population directly.
+- Candidate extraction carries `parent_memory_ids`, and Archivist transactions
+  preserve those ids in admitted child memories.
+
+### Memory feedback
+
+- Extended `MemoryMetadata` with:
+  - `transfer_history`
+  - `updated_at`
+- Added `MemoryStore.record_transfer_feedback(...)`.
+- Transfer feedback updates are validation-only and reject `split="test"`.
+
+### Diagnostics
+
+`memory/diagnostics.json` now tracks:
+
+- transfer plan events;
+- transfer action distribution;
+- memory units inserted as seeds;
+- memory units included in context;
+- transfer feedback events;
+- retrieval-to-seed rate;
+- retrieval-to-context rate.
+
+### Tests added
+
+- `test_candidate_extractor_uses_deterministic_top_k`
+- `test_transfer_policy_and_population_builder_make_reuse_explicit`
+- `test_transfer_feedback_is_validation_only`
+- `test_candidate_extractor_preserves_parent_memory_lineage`
+
+### Verification performed
+
+Commands executed from `HeurAgenix/` with `PYTHONPATH=src`.
+
+1. `python -m compileall -q src/cmhh tests/cmhh`
+   - passed.
+2. `python -m unittest tests.cmhh.test_cmhh_v0_transfer_pipeline -v`
+   - 3 tests passed.
+3. `python -m unittest tests.cmhh.test_end_to_end_stream -v`
+   - 3 tests passed.
+4. `python -m unittest discover -s tests/cmhh -v`
+   - 46 tests passed.
+
+W&B emitted local AppData permission warnings during the offline tracking test,
+but the test passed and this is not related to the CM-HH V0 transfer changes.

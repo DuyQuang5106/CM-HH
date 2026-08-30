@@ -8,6 +8,10 @@ archive:
   policy: naive_unbounded
   capacity: null
   top_k: 5
+  candidate_top_k: 5
+  memory_seed_quota: 1
+  direct_reuse_quota: 1
+  refine_quota: 4
 data:
   seed: 42
   coordinate_min: 0

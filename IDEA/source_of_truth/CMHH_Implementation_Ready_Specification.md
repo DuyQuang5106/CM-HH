@@ -174,6 +174,104 @@ When this document introduces a value not fixed by the research documents, it is
 
 ---
 
+## 1.4 Clarified memory-transfer architecture
+
+The architecture-level source of truth was clarified on 2026-08-29. Full CMHH
+MUST be implemented as a composed memory-transfer system, not as one monolithic
+Archivist object and not as a prompt-only memory trick.
+
+The required conceptual ownership is:
+
+```text
+completed task
+    |
+    v
+CandidateExtractor
+    answers: what completed-task experience should be considered?
+    output: MemoryCandidate records
+    |
+    v
+Archivist
+    answers: what should be remembered, updated, protected, merged, evicted?
+    output: committed MemoryItem changes
+    |
+    v
+MemoryStore
+    owns durable storage only
+    |
+    v
+Retriever
+    answers: what stored knowledge is relevant now?
+    output: ranked RetrievedMemory items
+    |
+    v
+TransferPolicy
+    answers: should each memory be DIRECT_REUSE, REFINE, or IGNORE?
+    output: TransferPlan records
+    |
+    v
+PopulationBuilder
+    answers: how do transfer plans and fresh generation become P0?
+    output: initial population for the current task
+```
+
+This split is now a software contract. The runner may orchestrate the steps, but
+the following responsibilities MUST remain independently testable:
+
+| Component | Required v0 behavior | Required test/audit signal |
+|---|---|---|
+| `CandidateExtractor` | top-k final population by validation score | extracted candidate IDs and scores |
+| `Archivist` | admit/update/protect/evict using validation-only evidence | admitted/rejected/protected/evicted IDs |
+| `RetrieverV0` | hard compatibility filter plus deterministic utility rerank | query, candidate count, top-k ranking |
+| `TransferPolicy` | `DIRECT_REUSE`, `REFINE`, `IGNORE` | one plan per retrieved memory |
+| `PopulationBuilder` | fixed memory-derived quota plus fresh quota | source of every initial population member |
+| `TransferProbe` | read-only diagnostic execution | score plus before/after state hash |
+
+The implementation MUST log enough information to distinguish:
+
+```text
+retrieved
+included in prompt/context
+inserted into P0
+survived selection
+produced a child artifact
+improved validation performance
+admitted as a new memory
+```
+
+These are not interchangeable. A positive retrieval event alone is not evidence
+of successful transfer.
+
+### 1.4.1 Evidence and lineage contract
+
+Evidence evolution and knowledge evolution MUST be represented separately.
+
+```text
+Evidence evolution:
+    old MemoryItem receives new validation-only reuse evidence
+
+Knowledge evolution:
+    refined code creates a new artifact and, if admitted, a child MemoryItem
+```
+
+The implementation MUST NOT overwrite a parent memory's executable artifact when
+refinement creates new code. The new artifact gets its own id and records
+`parent_memory_ids`.
+
+### 1.4.2 Probe contract
+
+There are two possible probe roles:
+
+| Probe role | Allowed split | Learner-visible mutation |
+|---|---|---|
+| final diagnostic zero-shot / retention measurement | test | forbidden |
+| optional transfer-planning probe | validation/probe split | allowed only if pre-declared |
+
+The current implementation should keep Stage A/C probes diagnostic-only unless a
+validation-only planning probe is explicitly added and budgeted.
+
+---
+
 # 2. Scope
 
 ## 2.1 In scope
@@ -191,9 +289,13 @@ The implementation covered by this specification includes:
 - resumable sequential stream runner;
 - population-carryover baseline;
 - naive persistent-memory baseline;
+- first-class CandidateExtractor;
 - full Archivist;
 - Retriever v0;
 - target hybrid Retriever interface;
+- TransferPolicy;
+- PopulationBuilder / memory-aware initializer;
+- transfer evidence and child-memory lineage tracking;
 - continual performance matrix;
 - BWT / forgetting / FWT / adaptation-efficiency metrics;
 - retrieval diagnostics;

@@ -7,12 +7,23 @@ This guide runs the H1/H1b baseline stack:
    the next task, no external memory.
 3. `h1_naive_sequential`: the same population carryover plus naive external
    memory retrieval.
+4. `h1_naive_unbounded`: the same naive memory policy without capacity pressure.
+5. `archivist_managed`: managed-memory prototype with Archivist admission,
+   task-anchor protection, and capacity-aware eviction.
+6. `eoh_cold_start`: official EOH cold-start baseline where available.
 
 The H1b control is frozen as:
 
 `naive_memory_sequential = population_carryover + naive external memory`.
 
 Naive memory must not replace population carryover.
+
+`archivist_managed` is currently a managed-memory prototype, not yet the final
+full CM-HH architecture. Full CM-HH still requires explicit
+`CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only
+transfer feedback, and child-memory lineage. See
+`../../../IDEA/source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`
+from the repository root for the full design.
 
 ## 1. Environment
 

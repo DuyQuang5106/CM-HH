@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-08-29 Architecture Note
+
+CM-HH experiments should now be interpreted through the full memory-transfer
+pipeline:
+
+```text
+CandidateExtractor -> Archivist -> MemoryStore -> Retriever
+    -> TransferPolicy -> PopulationBuilder -> evolution -> transfer feedback
+```
+
+The experiment must distinguish:
+
+```text
+retrieved memory
+used memory
+memory-derived seed
+surviving seed
+child heuristic
+validation-improving child
+admitted child memory
+```
+
+The current `archivist_managed` condition is a managed-memory prototype. It is
+safe for pilot comparison, but final "full CM-HH" claims require explicit
+`CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only
+transfer feedback, and child-memory lineage.
+
+---
+
 ## 1. Overview & Experimental Protocol
 
 CMHH evaluates continual learning in LLM-based heuristic search across a sequential stream of combinatorial optimization tasks:
@@ -14,8 +43,9 @@ $$
 T_1 \rightarrow T_2 \rightarrow T_3 \rightarrow \dots \rightarrow T_K
 $$
 
-### 1.1 The Four Benchmark Experimental Conditions
-To isolate the contribution of persistent external memory and managed Archivist consolidation, every paper evaluation compares **4 experimental conditions**:
+### 1.1 Benchmark Experimental Conditions
+To isolate the contribution of persistent external memory and managed Archivist
+consolidation, pilot evaluations should compare these conditions:
 
 1. **`isolated` (Cold Start Baseline)**:
    - Each task $T_k$ is solved from scratch using cold-start seed heuristics. No knowledge carryover or memory across tasks.
@@ -23,8 +53,16 @@ To isolate the contribution of persistent external memory and managed Archivist 
    - Final population of evolved heuristics from task $T_{k-1}$ is passed directly as seeds to task $T_k$. No external persistent storage or Archivist.
 3. **`naive_memory_sequential` (Uncurated External Memory Baseline)**:
    - All candidate heuristics surviving validation are written to `MemoryStore` (capacity $C=20$, top-$k=5$). Naive FIFO/score eviction without distillation or anchor protection.
-4. **`archivist_managed` (Full CMHH Managed Memory System)**:
+4. **`naive_memory_unbounded` / `h1_naive_unbounded` (Unbounded Naive Memory Diagnostic)**:
+   - Same uncurated memory policy, but without capacity pressure. This helps separate capacity-driven forgetting from retrieval pollution/noise.
+5. **`archivist_managed` (Managed Archivist Prototype)**:
    - Search candidates pass through `WorkingBuffer`. `DefaultArchivist` applies `elite_validation` admission, anchor protection for top task heuristics, capacity overflow invariant checks, and utility-recency eviction ranking.
+6. **`eoh_cold_start` (Official EOH Cold Start)**:
+   - Official EOH used as an independent cold-start baseline where the adapter and LLM configuration are available.
+
+Do not claim final "full CM-HH" results from `archivist_managed` alone until
+`CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only
+transfer feedback, and child-memory lineage are implemented and audited.
 
 ---
 

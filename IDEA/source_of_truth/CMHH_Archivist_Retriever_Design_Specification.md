@@ -1,887 +1,1022 @@
-# CM-HH Archivist and Retriever — Design Specification
+# CM-HH Archivist, Retriever, and Memory-Transfer Design Specification
 
-## 1. Purpose
+**Document role:** source of truth for CM-HH memory architecture
+**Status:** authoritative research-level architecture
+**Last updated:** 2026-08-29
+**Audience:** research owner, implementation engineer, experiment operator
 
-This document specifies the **final conceptual design decisions** for the Archivist and Retriever components in CM-HH.
-
-The purpose of this specification is to define:
-
-- what the Archivist is responsible for;
-- what information is stored in continual memory;
-- how experience is promoted from transient search history into long-term memory;
-- how the Retriever selects previously stored knowledge for a new task;
-- how forgetting can occur at both the storage and retrieval levels;
-- which decisions belong to the research architecture, and which are intentionally deferred to implementation or experimental ablation.
-
-This document describes the **research-level architecture** rather than a specific software implementation.
+This document defines how continual memory works in CM-HH. It is intentionally
+more specific than the original research idea, but it still avoids fixing
+hyperparameters that must be selected by validation experiments.
 
 ---
 
-## 2. Design Principles
+## 1. One-screen mental model
 
-The Archivist is designed around five principles.
-
-1. **Memory is selective, not a complete log.**  
-   CM-HH should not retain every trajectory or generated heuristic indefinitely.
-
-2. **Long-term memory is distinct from the evolutionary working population.**  
-   The current population supports search on the present task, whereas the Archivist maintains reusable competence across tasks.
-
-3. **Stored knowledge should support both retention and transfer.**  
-   Memory must help preserve competence on previously learned tasks while also providing useful knowledge for future tasks.
-
-4. **Retrieval quality is part of continual-learning performance.**  
-   A useful memory item that is never retrieved, or an irrelevant item that repeatedly interferes with search, can cause functional forgetting even when nothing has been physically deleted.
-
-5. **The architecture should remain interpretable and experimentally isolatable.**  
-   Retriever, consolidation, protection, and eviction mechanisms must be measurable independently through controlled baselines and ablations.
-
----
-
-# 3. System-Level Role of the Archivist
-
-## 3.1 Definition
-
-The **Archivist is a selective continual-memory management mechanism**.
-
-It is **not**:
-
-- a raw experiment logger;
-- a replay buffer containing every search trajectory;
-- the evolutionary population itself;
-- the Retriever itself.
-
-Instead, the Archivist governs the lifecycle of reusable knowledge.
-
-Conceptually:
+CM-HH is not just "save old heuristics and paste them into the next prompt".
+It is a controlled loop with four separate questions:
 
 ```text
-search / evolution
-      |
-      v
-temporary experience
-      |
-      v
-bounded working buffer
-      |
-      v
-+----------------------+
-|      Archivist       |
-|----------------------|
-| evaluate             |
-| distill              |
-| promote / reject     |
-| update               |
-| protect              |
-| consolidate          |
-| evict                |
-+----------------------+
-      |
-      v
-long-term memory
+COMPLETED TASK
+    |
+    v
+final population + search history
+    |
+    v
++--------------------+
+| CandidateExtractor |  What should even be considered?
++--------------------+
+    |
+    v
+memory candidates
+    |
+    v
++-----------+
+| Archivist |          What should be remembered?
++-----------+
+    |
+    v
+Long-Term MemoryStore
+    |
+    | next task arrives
+    v
++-----------+
+| Retriever |          What should be recalled now?
++-----------+
+    |
+    v
+retrieved memories
+    |
+    v
++------------------------------+
+| TransferPolicy               |  How should recalled knowledge be used?
+| PopulationBuilder            |
++------------------------------+
+    |
+    v
+initial population P0
+    |
+    v
+heuristic evolution on current task
 ```
 
-The Archivist therefore acts primarily as a **selective consolidation gate** between transient search experience and persistent multi-task memory.
-
----
-
-## 3.2 Responsibilities
-
-The Archivist is responsible for:
-
-- **admission** — deciding whether an experience deserves long-term storage;
-- **distillation** — extracting reusable knowledge from raw experience;
-- **representation** — converting admitted experience into structured memory units;
-- **update** — updating utility and empirical evidence associated with existing memories;
-- **consolidation** — merging or compressing redundant knowledge;
-- **protection** — preventing important competence from being overwritten or evicted;
-- **capacity management** — maintaining bounded long-term memory;
-- **eviction** — deliberately removing low-value memories when capacity is constrained;
-- **provenance preservation** — maintaining sufficient lineage information for audit and reproducibility;
-- **forgetting diagnosis support** — exposing information needed to distinguish storage loss from retrieval-side interference.
-
-Retrieval itself is delegated to the **Retriever**, although the Archivist maintains the metadata required for retrieval.
-
----
-
-# 4. Memory Lifecycle
-
-The memory lifecycle is:
+The key design boundary is:
 
 ```text
-generated candidate / trajectory
-            |
-            v
-   bounded working buffer
-            |
-            v
-     Archivist assessment
-      /               \
- reject               promote
-                        |
-                        v
-                 distill / link
-                        |
-                        v
-                 long-term memory
-                        |
-                repeated evaluation
-                        |
-              utility / protection update
-                        |
-              consolidate or evict
+CandidateExtractor selects candidate experiences.
+Archivist writes, updates, protects, consolidates, and evicts memory.
+Retriever reads and ranks memory for the current query.
+TransferPolicy decides REUSE / REFINE / IGNORE.
+PopulationBuilder turns the transfer plan into the actual initial population.
 ```
 
-A newly generated experience is therefore **not automatically a memory**.
-
-Before promotion, the Archivist considers whether the experience contains:
-
-- sufficient **novelty** relative to existing memory;
-- sufficient **expected future utility**;
-- meaningful empirical improvement;
-- useful task-transfer information;
-- information required to preserve important lineage or provenance.
-
-This prevents long-term memory from degenerating into an unbounded archive of raw search history.
-
----
-
-# 5. Memory Representation
-
-## 5.1 Three-Layer Memory Architecture
-
-The full Archivist uses three linked forms of long-term knowledge.
-
-### 5.1.1 Episodic Archive
-
-The episodic layer stores compressed records of important search experiences.
-
-Examples include:
-
-- parent heuristic;
-- generated offspring;
-- mutation or generation operator;
-- task context;
-- fitness before and after modification;
-- important reasoning or trajectory fragments;
-- lineage information.
-
-Its main purpose is to preserve **how useful knowledge was discovered**.
-
-It is not intended to retain every raw LLM interaction.
-
----
-
-### 5.1.2 Semantic Knowledge
-
-The semantic layer contains distilled, reusable principles extracted from one or more episodes.
-
-Examples:
+These boundaries are required because CM-HH wants to measure not only whether
+memory helps, but where memory fails:
 
 ```text
-"For larger Euclidean TSP instances, candidate selection based only on
-nearest distance tends to become too myopic; incorporating local
-neighborhood structure improves robustness."
+stored memory bad?
+retrieval bad?
+transfer policy bad?
+population initialization bad?
+evolution failed to exploit transferred knowledge?
 ```
 
-Semantic knowledge is intended to capture information that can transfer beyond one exact heuristic implementation.
+---
 
-Its main purpose is **generalization and cross-task reuse**.
+## 2. Core research principles
+
+1. **Memory is selective, not a raw log.**
+   Search history is evidence. It only becomes long-term memory after an
+   Archivist decision.
+
+2. **Population is not memory.**
+   The evolutionary population is current-task search state. Long-term memory
+   is persistent cross-task knowledge.
+
+3. **Retrieved does not mean transferred.**
+   A memory can be retrieved, omitted from context, inserted as a seed, refined,
+   eliminated, or become the ancestor of a better child heuristic. These are
+   different events.
+
+4. **Zero-shot success is not adaptation success.**
+   A heuristic can perform poorly unchanged but still be a useful parent for
+   fast refinement.
+
+5. **Forgetting can be physical or functional.**
+   A memory can be evicted from storage, or it can remain stored but stop being
+   retrieved or used effectively.
+
+6. **Test probes are read-only.**
+   Test results can measure retained competence, but must never update memory,
+   prompts, retrieval scores, selection thresholds, or future learning state.
+
+7. **All claims require matched budgets.**
+   Naive memory and managed memory must share task stream, seeds, generator,
+   evaluator, candidate budget, LLM budget, capacity, and retrieval top-k unless
+   the changed quantity is explicitly the ablation.
 
 ---
 
-### 5.1.3 Procedural Skill Library
+## 3. Component ownership
 
-The procedural layer stores executable heuristic artifacts.
+| Component | Owns | Must not own |
+|---|---|---|
+| `CandidateExtractor` | selecting notable candidates from completed search | long-term admission, retrieval, generation |
+| `Archivist` | admission, dedup, evidence update, protection, consolidation, eviction | retrieval ranking, population building, future-task prediction |
+| `MemoryStore` | durable add/load/save/query primitives | policy decisions |
+| `Retriever` | read-only filtering/ranking for a query | memory writes, transfer decisions |
+| `TransferProbe` | optional empirical diagnostic of retrieved memories | learner mutation, hidden test adaptation |
+| `TransferPolicy` | REUSE / REFINE / IGNORE planning | memory admission, final evolution selection |
+| `PopulationBuilder` | constructing P0 from memory-derived and fresh candidates | retrieval scoring, Archivist decisions |
+| `StreamRunner` | enforcing A/B/C protocol and logging | hiding policy logic inside orchestration |
 
-Examples include:
-
-- heuristic functions;
-- constructive rules;
-- local-search operators;
-- reusable code fragments;
-- parameterized heuristic templates.
-
-Its main purpose is to preserve **directly executable competence**.
+The runner may orchestrate these components, but it should not become the place
+where memory policy secretly lives.
 
 ---
 
-## 5.2 Logical Memory Unit
+## 4. Memory representation
 
-A useful abstract representation is:
+The logical memory unit is:
 
-\[
-m_i = (h_i, k_i, z_i, \mu_i)
-\]
+```text
+m_i = (h_i, k_i, z_i, mu_i)
+```
 
 where:
 
-- \(h_i\): executable heuristic or procedural artifact;
-- \(k_i\): applicability / retrieval descriptor;
-- \(z_i\): semantic or procedural abstraction associated with the artifact;
-- \(\mu_i\): empirical and lifecycle metadata.
-
-The exact serialized schema may vary in implementation, but these logical roles must remain identifiable.
-
----
-
-## 5.3 Applicability Descriptor \(k_i\)
-
-The applicability descriptor should contain observable task characteristics useful for retrieval.
-
-Initial fields may include:
-
-```yaml
-problem_family: TSP
-problem_size: 100
-distribution: euclidean_uniform
-construction_type: constructive
-objective: minimize
+```text
+h_i   executable procedural artifact
+k_i   applicability / retrieval descriptor
+z_i   semantic or procedural abstraction
+mu_i  empirical, lifecycle, and provenance metadata
 ```
 
-Additional structural descriptors may later be added when justified empirically.
+### 4.1 Minimum `MemoryItem` schema
 
-The key principle is:
+```python
+@dataclass(frozen=True)
+class MemoryItem:
+    memory_id: str
 
-> Retrieval should initially rely on observable and interpretable task information rather than hidden task identifiers.
+    # h_i: executable artifact
+    artifact_id: str
+    code_path: str
+    code_sha256: str
+    heuristic_interface: str
 
----
+    # k_i: applicability descriptor
+    problem_family: str
+    task_id: str
+    size_tier: str | None
+    distribution: str | None
+    task_signature: dict[str, Any]
 
-## 5.4 Metadata \(\mu_i\)
+    # z_i: abstraction
+    abstraction_type: str
+    summary: str
+    prompt_hint: str | None
+    tags: tuple[str, ...]
 
-Metadata may include:
-
-```yaml
-origin_task:
-origin_generation:
-parent_id:
-operator:
-fitness:
-fitness_delta:
-validation_performance:
-transfer_history:
-retrieval_count:
-successful_reuse_count:
-last_used:
-utility:
-novelty:
-protection_status:
-provenance:
+    # mu_i: metadata
+    origin_task_id: str
+    origin_generation: int
+    source_artifact_ids: tuple[str, ...]
+    parent_memory_ids: tuple[str, ...]
+    evidence: tuple[MemoryEvidence, ...]
+    transfer_history: tuple[TransferEvidence, ...]
+    utility_score: float
+    retrieval_count_learning: int
+    retrieval_count_probe: int
+    successful_reuse_count: int
+    protected: bool
+    status: Literal["provisional", "validated", "transferable", "retired"]
+    created_at: str
+    updated_at: str
+    schema_version: int = 1
 ```
 
-These fields support:
+The current implementation may use a smaller subset, but these logical fields
+must remain recoverable or explicitly marked as not-yet-implemented.
 
-- utility estimation;
-- protection;
-- retrieval;
-- eviction;
-- lineage analysis;
-- reproducibility;
-- continual-learning diagnostics.
+### 4.2 Evidence model
 
----
-
-# 6. Working Buffer vs Long-Term Memory
-
-CM-HH explicitly separates two storage timescales.
-
-## Working buffer
-
-Short-lived and bounded.
-
-Contains:
-
-- recent trajectories;
-- current evolutionary evidence;
-- candidate heuristics not yet admitted;
-- temporary context needed for consolidation.
-
-It may contain noisy or redundant information.
-
-## Long-term Archivist memory
-
-Persistent across tasks.
-
-Contains only selected and structured knowledge judged sufficiently useful for future reuse.
-
-This separation is important because:
+Evidence should grow over time without overwriting the original knowledge:
 
 ```text
-working buffer = "what just happened"
+M17 created on TSP20
+    evidence: source_validation(TSP20)
 
-long-term memory = "what is worth remembering"
+M17 reused on TSP50
+    evidence: source_validation(TSP20)
+              direct_transfer(TSP50)
+              refinement_outcome(TSP50)
+
+M17 reused on TSP100
+    evidence: source_validation(TSP20)
+              direct_transfer(TSP50)
+              refinement_outcome(TSP50)
+              direct_transfer(TSP100)
 ```
 
-The evolutionary population is also distinct from both.
+Only train/validation learning evidence may update learner-visible memory. Test
+evidence may be stored in final audit artifacts, but not in fields that affect
+future retrieval, utility, admission, or eviction.
+
+### 4.3 Knowledge evolution vs evidence evolution
+
+Do this:
+
+```text
+M17
+ |
+ | refinement produces new code
+ v
+M31 child memory
+```
+
+Do not do this:
+
+```python
+M17.code = refined_code
+```
+
+The parent memory records reuse evidence. The refined heuristic receives a new
+artifact id and, if admitted, a child memory id with `parent_memory_ids=["M17"]`.
+
+This preserves lineage and lets the experiment answer:
+
+```text
+Did old memory directly solve the new task?
+Did old memory become a useful parent?
+Did evolution discard or amplify transferred knowledge?
+```
 
 ---
 
-# 7. Retriever
+## 5. CandidateExtractor
 
-## 7.1 Role
+After a task finishes, evolution may produce many artifacts. The Archivist
+should not be asked to inspect every noisy candidate unless the budget says so.
 
-The Retriever answers:
+The CandidateExtractor answers:
 
-> Given the current task and current search context, which stored memories are most likely to be useful now?
+```text
+From the completed task, which candidates are worth considering for memory?
+```
 
-Formally:
+### 5.1 V0 extractor
 
-\[
-R(q_t, \mathcal{M}_t, B) \rightarrow S_t
-\]
+The first implementation should be deliberately simple:
 
-where:
+```python
+def extract(result, k):
+    ranked = sort_by_validation_score(result.final_population)
+    return ranked[:k]
+```
 
-- \(q_t\) is the current retrieval query;
-- \(\mathcal{M}_t\) is the current long-term memory;
-- \(B\) is the retrieval budget;
-- \(S_t\) is the selected subset of memory.
+Example:
 
-The Retriever does **not** modify memory.
+```text
+Final population on TSP50:
 
-Its responsibility is selection and ranking.
+H21 gap=2.1%
+H22 gap=2.4%
+H23 gap=2.5%
+H24 gap=4.7%
+H25 gap=5.0%
+
+CandidateExtractor(top_k=3) -> H21, H22, H23
+```
+
+### 5.2 Why this is a separate module
+
+Later extractor variants can use:
+
+```text
+top-k quality
+top-k + exact duplicate removal
+quality + diversity
+quality + complementarity
+Pareto quality/runtime/robustness
+```
+
+Changing candidate extraction must not require rewriting Archivist admission.
 
 ---
 
-# 8. Retriever Design Decision
+## 6. Archivist
 
-## 8.1 Full Target Architecture
+The Archivist is the write-side memory manager.
 
-The final target Retriever is a **hybrid symbolic + semantic retriever**.
+It answers:
 
-The retrieval pipeline is:
+```text
+Which candidates become persistent memory?
+Which existing memories receive new evidence?
+Which memories are protected?
+Which redundant memories are merged?
+Which memories are evicted under capacity pressure?
+```
+
+### 6.1 Archivist transaction
+
+At the end of task `T_k`:
+
+```python
+def process_transaction(task, candidates, memory_store):
+    admitted = []
+    updated = []
+    rejected = []
+    merged = []
+    evicted = []
+
+    for candidate in candidates:
+        duplicate = find_duplicate(candidate, memory_store)
+
+        if duplicate:
+            updated.append(update_evidence(duplicate, candidate))
+            merged.append((candidate.id, duplicate.id))
+            continue
+
+        if should_admit(candidate, memory_store):
+            admitted.append(create_memory_item(candidate))
+        else:
+            rejected.append(candidate)
+
+    protected = update_protection(memory_store, admitted, updated)
+    evicted = enforce_capacity(memory_store, protected)
+
+    commit_atomically(admitted, updated, merged, evicted)
+    return ArchivistTransactionResult(...)
+```
+
+### 6.2 V0 managed Archivist
+
+For the first reliable CM-HH version:
+
+```text
+Admission:
+    admit top validation candidates from CandidateExtractor
+
+Deduplication:
+    exact artifact hash or exact applicability/summary match
+
+Protection:
+    protect the best validation item per completed task as a task anchor
+
+Utility:
+    start from validation score
+    later add validation-only transfer feedback
+
+Eviction:
+    never evict protected anchors
+    evict lowest utility non-protected items
+    deterministic tie-break by created_at then memory_id
+
+Capacity:
+    active MemoryItem count
+```
+
+If the number of protected anchors exceeds capacity, the system must fail with
+an explicit capacity error rather than silently evicting protected competence.
+
+### 6.3 Naive memory baseline
+
+Naive memory is not the Archivist.
+
+```text
+naive_memory_sequential:
+    write raw/top candidates
+    no protection
+    no selective admission beyond simple candidate source
+    no distillation
+    no consolidation
+    FIFO/newest or configured simple capacity policy
+```
+
+This condition is useful exactly because it is less intelligent. It isolates
+whether curation, protection, and utility-aware eviction add value beyond "just
+remember stuff".
+
+---
+
+## 7. Retriever
+
+The Retriever is the read-side memory manager.
+
+It answers:
+
+```text
+Given current task/query and current memory snapshot M, which memories are most
+likely useful now?
+```
+
+Formal form:
+
+```text
+R(q_t, M_t, B) -> S_t
+```
+
+where `B` is the retrieval budget and `S_t` is an ordered list with
+`len(S_t) <= B`.
+
+The Retriever must be read-only. It may emit diagnostic events, but probe
+retrieval counters must not affect future learner-visible utility.
+
+### 7.1 Target Retriever pipeline
 
 ```text
 current task / search context
-          |
-          v
-   structured query
-          |
-          v
-metadata / constraint filtering
-          |
-          v
-candidate memory subset
-          |
-          v
-semantic similarity
-          |
-          v
+    |
+    v
+RetrievalQuery
+    |
+    v
+hard structural filtering
+    |
+    v
+candidate compatible memories
+    |
+    v
+semantic similarity over z_i
+    |
+    v
 utility-aware reranking
-          |
-          v
-Top-k memories
+    |
+    v
+top-k RetrievedMemory
 ```
 
-The important design decision is the ordering:
-
-> **filter structurally first, then perform semantic ranking.**
-
-This prevents semantic similarity alone from retrieving memories that are linguistically similar but operationally incompatible with the current task.
-
----
-
-## 8.2 Stage 1 — Symbolic / Structural Filtering
-
-The first stage uses explicit metadata and applicability constraints.
-
-Possible fields include:
-
-- problem family;
-- task formulation;
-- instance size or size range;
-- distribution;
-- heuristic type;
-- solver interface;
-- operator compatibility;
-- other task constraints.
-
-Example:
+The ordering is fixed:
 
 ```text
-Query:
-TSP / constructive / size=100 / Euclidean
-
-Memory pool:
-10,000 items
-        |
-        v
-structural filter
-        |
-        v
-850 compatible candidates
+filter structurally first, then rank semantically/empirically.
 ```
 
-This stage is intentionally interpretable.
+This avoids retrieving a linguistically similar but executable-incompatible
+memory.
+
+### 7.2 Retriever v0
+
+Initial experiments should use a simple deterministic scan:
+
+```python
+def retrieve_v0(query, memory, top_k, alpha=0.7, beta=0.3):
+    compatible = []
+
+    for item in memory:
+        if item.problem_family != query.problem_family:
+            continue
+        if item.heuristic_interface != query.heuristic_interface:
+            continue
+
+        structural = structural_similarity(query, item)
+        utility = normalized_validation_utility(item)
+        score = alpha * structural + beta * utility
+        compatible.append((score, item))
+
+    return stable_sort(compatible)[:top_k]
+```
+
+No learned retriever, vector database, ANN index, or LLM reranker is required
+for v0.
 
 ---
 
-## 8.3 Stage 2 — Semantic Similarity
+## 8. TransferProbe
 
-After structural filtering, semantic representations may be used to estimate whether the knowledge encoded in a memory item matches the current context.
+A TransferProbe evaluates what a retrieved memory can do before new learning.
 
-Semantic retrieval is primarily associated with \(z_i\), the reusable abstraction attached to a memory item.
+There are two modes:
 
-This allows retrieval to recognize relations that are not captured by exact symbolic fields.
+| Mode | Split | Purpose | Can affect learner? |
+|---|---|---|---|
+| diagnostic/reporting probe | test | final zero-shot measurement | no |
+| planning probe | validation/probe split | optional input to TransferPolicy | yes, if pre-declared |
 
-For example, two heuristics may originate from different task sizes but encode the same useful principle.
+The first implementation should keep probes diagnostic only unless a separate
+validation-only planning protocol is added.
 
----
+### 8.1 Pre-learning probe A
 
-## 8.4 Stage 3 — Utility-Aware Reranking
-
-Semantic relevance alone is insufficient.
-
-A memory may look relevant but historically perform poorly.
-
-Therefore final ranking should consider both:
-
-- estimated relevance;
-- empirical utility.
-
-A general form is:
-
-\[
-score(q,m_i)
-=
-\alpha \cdot similarity(q,m_i)
-+
-\beta \cdot utility(m_i)
-\]
-
-The precise utility function and coefficients are implementation/evaluation decisions.
-
-Utility may later incorporate:
-
-- validation performance;
-- transfer success;
-- successful retrieval history;
-- robustness across tasks;
-- recency;
-- redundancy;
-- computational cost.
-
----
-
-# 9. Retriever v0 for Initial Experiments
-
-The **full Retriever architecture** above is the target system.
-
-However, the initial experimental implementation should remain deliberately simpler so that retrieval effects can be isolated.
-
-Retriever v0 is:
-
-- task-level;
-- bounded-memory;
-- interpretable;
-- based primarily on structured task similarity and empirical utility;
-- implemented with a simple scan over memory followed by Top-\(k\) selection.
-
-Conceptually:
-
-\[
-score(q,m_i)
-=
-\alpha \cdot structural\_similarity(q,k_i)
-+
-\beta \cdot utility(\mu_i)
-\]
-
-Retriever v0 intentionally does **not require**:
-
-- a learned retriever;
-- ANN indexing;
-- a vector database;
-- an LLM reranker;
-- a complex embedding pipeline.
-
-This is an experimental simplification, **not a change to the target Archivist architecture**.
-
-The purpose is to establish whether retrieval itself is useful before adding additional semantic machinery.
-
----
-
-# 10. Retrieval Outputs
-
-Retrieved memory does not need to have a single fixed form.
-
-Depending on the downstream consumer, retrieval may return:
-
-### Insight
-
-A distilled principle from semantic memory.
+Before learning task `T_k`:
 
 ```text
-"Prefer diversity-preserving candidate selection when the current
-population begins converging prematurely."
+state M_{k-1}
+    |
+    v
+retrieve/select compatible retained artifact
+    |
+    v
+execute directly on T_k test split
+    |
+    v
+record Z_k
+    |
+    v
+assert learner-visible state unchanged
 ```
 
-### Skill
-
-An executable heuristic or code artifact.
+`Z_k` is used for zero-shot FWT measurement:
 
 ```text
-heuristic_27.py
+FWT_0(k) = Z_k - cold_start_baseline(k)
 ```
 
-### Evolution Seed
-
-A previously successful heuristic used to initialize or bias the next evolutionary search.
-
-Thus:
+If no compatible executable exists:
 
 ```text
-Retriever
-   |
-   +--> semantic insight
-   |
-   +--> executable skill
-   |
-   +--> evolutionary seed
+Z_k = N/A
 ```
 
----
-
-# 11. Model Allocation
-
-## 11.1 Archivist Model
-
-The default Archivist should use a **small local model** when an LLM-based operation is required.
-
-The motivation is:
-
-- lower cost;
-- offline operation;
-- reproducibility;
-- stable latency;
-- frequent invocation without dominating the experimental budget.
-
-A larger model is reserved only as a fallback for cases such as:
-
-- difficult consolidation;
-- ambiguous distillation;
-- low-confidence decisions.
-
-The research claim should therefore concern the **memory mechanism**, not depend on continuously using the strongest available model.
+Do not create an artificial zero.
 
 ---
 
-## 11.2 Retriever Model
+## 9. TransferPolicy
 
-The Retriever should not require an LLM for every query.
+TransferPolicy decides how retrieved memory influences the next search.
 
-Structured filtering and deterministic ranking remain valid retrieval operations.
-
-Semantic representations may be introduced as part of the full Retriever, but the retrieval mechanism should remain separable from the language model used by the Generator or other agents.
-
----
-
-# 12. Forgetting
-
-CM-HH defines forgetting more broadly than physical deletion.
-
-There are at least two important forms.
-
----
-
-## 12.1 Storage Forgetting
-
-A useful memory is:
-
-- overwritten;
-- evicted;
-- incorrectly consolidated;
-- corrupted;
-- reduced beyond usefulness.
-
-Example:
+It answers:
 
 ```text
-useful skill H_old
-      |
-      v
-memory pressure
-      |
-      v
-evicted
-      |
-      v
-old-task competence decreases
+For each retrieved memory, should we directly reuse it, refine it, or ignore it?
 ```
 
-This is the most direct analogue of losing stored knowledge.
-
----
-
-## 12.2 Retrieval-Induced / Functional Forgetting
-
-The useful knowledge may still exist in memory but fail to influence behavior.
-
-Example:
+### 9.1 V0 actions
 
 ```text
-memory:
-H1  H2  H3  ...  H5000
+DIRECT_REUSE
+    Insert the executable artifact unchanged as a seed.
 
-correct old-task skill = H17
+REFINE
+    Ask the generator/evolver to create a child candidate using the memory as
+    parent/context.
 
-Retriever:
-returns H903, H1102, H2411
-but not H17
+IGNORE
+    Do not insert this memory into the population or prompt context.
 ```
 
-Nothing has been deleted.
+`ADAPT` and `RECOMBINE` can be added later, but they are not required for the
+first full CM-HH implementation.
 
-Nevertheless, the system behaves as though it has forgotten.
+### 9.2 TransferPlan schema
 
-Functional forgetting can arise from:
-
-- retrieval pollution;
-- retrieval dilution;
-- poor ranking;
-- misleading similarity;
-- memory growth;
-- stale utility estimates;
-- interference from newer memories.
-
-Therefore:
-
-> Retention must be evaluated through the current memory and Retriever, not only by checking whether an old artifact still exists in storage.
-
----
-
-# 13. Eviction and Protection
-
-Long-term memory is bounded.
-
-When capacity becomes constrained, the Archivist should apply deliberate eviction rather than uncontrolled overwrite.
-
-The intended policy combines:
-
-- **utility**;
-- **recency**;
-- **redundancy**;
-- **protection status**.
-
-Conceptually:
-
-\[
-eviction\_priority(m_i)
-=
-f(
-low\ utility,
-low\ recency,
-high\ redundancy,
-protection
-)
-\]
-
-High-value or currently active memories may be protected.
-
-Examples include:
-
-- skills responsible for retained competence on earlier tasks;
-- knowledge repeatedly useful across tasks;
-- rare memories with unique coverage;
-- memories currently supporting active tasks.
-
-The exact eviction formula is intentionally left to implementation and ablation.
+```python
+@dataclass(frozen=True)
+class TransferPlan:
+    memory_id: str
+    artifact_id: str
+    action: Literal["direct_reuse", "refine", "ignore"]
+    reason: str
+    retrieval_rank: int
+    retrieval_score: float
+    expected_role: Literal["seed", "prompt_context", "parent", "none"]
+```
 
 ---
 
-# 14. Provenance Preservation
+## 10. PopulationBuilder
 
-Even when an episode or heuristic is compressed or evicted, CM-HH should preserve the minimum provenance required for auditability.
+PopulationBuilder turns transfer plans into the initial population `P0`.
 
-Useful provenance includes:
-
-- memory identifier;
-- origin task;
-- parent;
-- operator;
-- creation time / stage;
-- key performance evidence;
-- lineage relation;
-- consolidation source.
-
-This enables later analysis of questions such as:
+It should keep a fixed quota so comparisons are fair:
 
 ```text
-Where did this skill come from?
-
-Which earlier heuristic produced it?
-
-Why was it promoted?
-
-Why was another memory evicted?
-
-Which retrieved memory caused an observed transfer gain or failure?
+population_size = N
+memory_seed_quota = M
+fresh_quota = N - M
 ```
 
-Provenance is therefore part of the scientific instrumentation of CM-HH, not merely debugging metadata.
-
----
-
-# 15. Separation of Responsibilities
-
-The final architecture should maintain the following conceptual boundaries.
-
-| Component | Primary responsibility |
-|---|---|
-| Evolutionary population | Search on the current task |
-| Working buffer | Temporarily hold recent experience |
-| Archivist | Decide what becomes persistent knowledge and manage its lifecycle |
-| Long-term memory | Store reusable multi-task competence |
-| Retriever | Select relevant stored knowledge for the current context |
-| Generator / evolutionary agents | Produce new heuristic candidates |
-| Evaluator | Measure candidate performance |
-
-The most important distinction is:
+Example for `N=8`, `memory_seed_quota=3`:
 
 ```text
-Archivist decides what the system remembers.
+P0 for TSP50:
 
-Retriever decides what remembered knowledge is used now.
+H21 = direct reuse from M1
+H22 = refinement child from M2
+H23 = refinement child from M3
+H24 = fresh generated
+H25 = fresh generated
+H26 = fresh generated
+H27 = fresh generated
+H28 = fresh generated
 ```
 
----
-
-# 16. Research-Level Decisions vs Implementation Decisions
-
-## Fixed by this specification
-
-The following are research-level design decisions:
-
-- Archivist is a **selective consolidation gate**, not a logger.
-- Working experience is buffered before long-term admission.
-- Long-term memory is distinct from the evolutionary population.
-- Memory contains linked episodic, semantic, and procedural knowledge.
-- Stored items preserve applicability, empirical utility, and provenance.
-- Retrieval is conceptually hybrid:
-  - structural filtering;
-  - semantic matching;
-  - utility-aware reranking.
-- Retriever v0 may intentionally use only structural similarity + utility.
-- Memory is bounded.
-- Forgetting includes both storage loss and retrieval-induced functional forgetting.
-- Important memories may be protected.
-- Eviction is deliberate rather than uncontrolled overwrite.
-- Archivist operations should preferentially use a small local model when an LLM is needed.
-- Provenance required for scientific audit should not be discarded.
-
-## Deferred to implementation / experiments
-
-The following should **not** be fixed prematurely in the conceptual specification:
-
-- exact embedding model;
-- exact small local LLM;
-- embedding dimensionality;
-- exact utility function;
-- exact novelty threshold;
-- exact promotion threshold;
-- exact memory capacity;
-- exact Top-\(k\);
-- exact \(\alpha,\beta\) weighting;
-- exact eviction equation;
-- ANN / vector-database implementation;
-- semantic clustering algorithm;
-- compression method;
-- confidence threshold for large-model fallback.
-
-These should be selected through implementation constraints, validation experiments, or ablation studies.
-
----
-
-# 17. Minimal Formalization
-
-Let the long-term memory after task \(t\) be:
-
-\[
-\mathcal{M}_t = \{m_1,m_2,\ldots,m_N\}
-\]
-
-with:
-
-\[
-m_i=(h_i,k_i,z_i,\mu_i)
-\]
-
-The Retriever is:
-
-\[
-R(q_t,\mathcal{M}_t,B)\rightarrow S_t
-\]
-
-where \(S_t\subseteq\mathcal{M}_t\) and \(|S_t|\le B\).
-
-The Archivist consolidation process can be represented as:
-
-\[
-C(\mathcal{M}_t,E_t)\rightarrow\mathcal{M}_{t+1}
-\]
-
-where \(E_t\) denotes newly observed experience.
-
-The complete continual-memory loop is therefore:
-
-\[
-\boxed{
-E_t
-\xrightarrow{\text{Archivist}}
-\mathcal{M}_{t+1}
-\xrightarrow{\text{Retriever}}
-S_{t+1}
-\xrightarrow{\text{search/use}}
-E_{t+1}
-}
-\]
-
-This loop makes memory an active component of continual heuristic discovery rather than passive storage.
-
----
-
-# 18. Final Design Summary
-
-The finalized CM-HH memory architecture can be summarized as:
+This makes transfer observable:
 
 ```text
-                    CURRENT TASK
-                         |
-                         v
-                 +----------------+
-                 |   RETRIEVER    |
-                 |----------------|
-                 | filter         |
-                 | match          |
-                 | rerank         |
-                 +----------------+
-                         ^
-                         |
-                LONG-TERM MEMORY
-       +----------------------------------+
-       | Episodic | Semantic | Procedural |
-       +----------------------------------+
-                         ^
-                         |
-                 +----------------+
-                 |   ARCHIVIST    |
-                 |----------------|
-                 | admit/reject   |
-                 | distill        |
-                 | consolidate    |
-                 | protect        |
-                 | evict          |
-                 +----------------+
-                         ^
-                         |
-                 WORKING BUFFER
-                         ^
-                         |
-                 SEARCH / EVOLUTION
+retrieved -> planned -> inserted into P0 -> survived selection -> produced child -> improved validation
 ```
 
-The core design principle is:
+---
 
-> **The Archivist controls what deserves to survive across tasks; the Retriever controls which surviving knowledge becomes behaviorally accessible for the current task.**
+## 11. Full end-to-end algorithm
 
-Under this view, continual forgetting in CM-HH is not limited to deleting old heuristics. It can occur whenever previously useful competence becomes unavailable, inaccessible, or harmful under the current memory-management and retrieval process.
+This is the practical algorithm the reader should imagine when reading the
+codebase.
+
+```python
+memory_store = MemoryStore()
+
+for k, task in enumerate(task_stream):
+    # ---------------------------------------------------------
+    # A. PRE-LEARNING PROBE: measurement only
+    # ---------------------------------------------------------
+    before = learner_state_hash()
+
+    zero_shot = run_pre_learning_probe(
+        task=task,
+        memory_store=memory_store,
+        retriever=retriever,
+        split="test",
+        read_only=True,
+    )
+
+    after = learner_state_hash()
+    assert before == after
+    log("pre_learning_probe_completed", score=zero_shot)
+
+    # ---------------------------------------------------------
+    # B1. RETRIEVE FOR LEARNING: validation/search path
+    # ---------------------------------------------------------
+    query = make_retrieval_query(task)
+    retrieved = retriever.retrieve(
+        query=query,
+        memory=memory_store.snapshot(),
+        budget=RetrievalBudget(top_k=K),
+    )
+    log("memory_retrieved", items=retrieved)
+
+    # ---------------------------------------------------------
+    # B2. PLAN TRANSFER
+    # ---------------------------------------------------------
+    plans = transfer_policy.plan(
+        task=task,
+        retrieved=retrieved,
+        validation_probe_results=None,  # optional in later versions
+    )
+    log("memory_transfer_planned", plans=plans)
+
+    # ---------------------------------------------------------
+    # B3. BUILD INITIAL POPULATION
+    # ---------------------------------------------------------
+    initial_population = population_builder.build(
+        task=task,
+        transfer_plans=plans,
+        carried_population=previous_population,
+        fresh_quota=fresh_quota,
+    )
+    log("memory_inserted_into_population", population=initial_population)
+
+    # ---------------------------------------------------------
+    # B4. EVOLVE CURRENT TASK
+    # ---------------------------------------------------------
+    result = evolver.run(
+        task=task,
+        initial_population=initial_population,
+        train_split="train",
+        validation_split="validation",
+        budget=budget,
+    )
+
+    # ---------------------------------------------------------
+    # B5. UPDATE VALIDATION-ONLY TRANSFER EVIDENCE
+    # ---------------------------------------------------------
+    transfer_feedback = extract_transfer_feedback(
+        plans=plans,
+        final_population=result.final_population,
+        validation_history=result.validation_history,
+    )
+    archivist.update_transfer_evidence(
+        feedback=transfer_feedback,
+        memory_store=memory_store,
+        split="validation",
+    )
+    log("memory_transfer_feedback", feedback=transfer_feedback)
+
+    # ---------------------------------------------------------
+    # B6. EXTRACT AND ARCHIVE NEW KNOWLEDGE
+    # ---------------------------------------------------------
+    candidates = candidate_extractor.extract(
+        final_population=result.final_population,
+        history=result.history,
+        top_k=candidate_k,
+    )
+    log("memory_candidate_extracted", candidates=candidates)
+
+    transaction = archivist.process_candidates(
+        task=task,
+        candidates=candidates,
+        memory_store=memory_store,
+    )
+    log("archivist_transaction_committed", transaction=transaction)
+
+    previous_population = result.final_population
+
+    # ---------------------------------------------------------
+    # C. RETENTION PROBE: measurement only
+    # ---------------------------------------------------------
+    before = learner_state_hash()
+
+    for prior_task in task_stream[: k + 1]:
+        retained_score = run_retention_probe(
+            task=prior_task,
+            memory_store=memory_store,
+            retriever=retriever,
+            split="test",
+            read_only=True,
+        )
+        performance_matrix[k, prior_task.index] = retained_score
+
+    after = learner_state_hash()
+    assert before == after
+
+    checkpoint(
+        memory_store=memory_store,
+        performance_matrix=performance_matrix,
+        pre_learning_scores=pre_learning_scores,
+    )
+```
+
+---
+
+## 12. Concrete example: TSP20 -> TSP50 -> TSP100
+
+### Task 1: TSP20
+
+```text
+MemoryStore = {}
+
+Pre-learning probe:
+    no memory -> Z_1 = N/A
+
+Learning:
+    P0 = fresh heuristics only
+    evolution produces H11, H12, H13, ...
+
+CandidateExtractor:
+    top-3 validation candidates = H11, H12, H13
+
+Archivist:
+    H11 -> M1, protected task anchor
+    H12 -> M2
+    H13 -> M3
+
+Retention:
+    retrieve best TSP20 memory from M1/M2/M3
+    evaluate on TSP20 test
+    write A[1,1]
+```
+
+### Task 2: TSP50
+
+```text
+Pre-learning probe:
+    retrieve compatible memories M1/M2/M3
+    execute top retained artifact on TSP50 test
+    write Z_2
+    no memory update
+
+Learning retrieval:
+    M1 rank 1
+    M2 rank 2
+    M3 rank 3
+
+TransferPolicy:
+    M1 -> DIRECT_REUSE
+    M2 -> REFINE
+    M3 -> REFINE
+
+PopulationBuilder:
+    P0 = [H21 from M1, H22 child of M2, H23 child of M3, fresh...]
+
+Evolution:
+    some transferred seeds survive, some die
+
+Archivist evidence update:
+    M1 gets validation-only transfer feedback
+    M2/M3 get refinement feedback
+
+New memory:
+    if child of M3 becomes elite, store it as M4 with parent_memory_ids=[M3]
+
+Retention:
+    evaluate current retained competence on TSP20 and TSP50
+    write A[2,1], A[2,2]
+```
+
+### Task 3: TSP100
+
+```text
+Retriever now sees:
+    M1: strong source, weak direct transfer to TSP50
+    M3: strong source, good refinement on TSP50
+    M4: child from TSP50, strong validation score
+
+Likely ranking:
+    M4 > M3 > M2 > M1
+
+The system can now prefer memories that have evidence of transfer, not only
+memories that were originally good.
+```
+
+This is the continual-memory loop:
+
+```text
+experience -> memory -> transfer -> evidence -> better future retrieval
+```
+
+---
+
+## 13. Required event log vocabulary
+
+The final implementation should emit these events when the corresponding
+behavior exists:
+
+```text
+pre_learning_probe_started
+pre_learning_probe_completed
+memory_retrieved
+memory_probe_started
+memory_probe_finished
+memory_transfer_planned
+memory_inserted_into_population
+memory_refined
+memory_offspring_created
+memory_survived_selection
+memory_eliminated
+memory_transfer_feedback
+memory_candidate_extracted
+memory_admitted
+memory_rejected
+memory_merged
+memory_protected
+memory_evicted
+archivist_transaction_committed
+retention_probe_started
+retention_probe_completed
+probe_read_only_audit_passed
+```
+
+Important distinctions:
+
+```text
+retrieved != included in prompt
+included in prompt != inserted as seed
+inserted as seed != survived evolution
+survived evolution != caused improvement
+```
+
+---
+
+## 14. Memory diagnostics
+
+End-to-end task performance remains the primary evidence. Memory diagnostics
+explain why performance changed.
+
+Recommended diagnostics:
+
+```text
+memory_size
+admission_rate
+rejection_rate
+duplicate_rate
+merge_rate
+eviction_rate
+protected_count
+retrieval_coverage
+retrieval_hit_rate
+retrieval_duplicate_rate
+retrieval_to_survival_rate
+retrieval_to_descendant_success_rate
+positive_transfer_rate
+negative_transfer_rate
+archive_churn
+memory_efficiency
+```
+
+Useful conceptual diagnostic:
+
+```text
+Memory Efficiency = transfer benefit / active memory count
+```
+
+This should be treated as a diagnostic, not automatically as a primary paper
+metric.
+
+---
+
+## 15. Clean baseline story
+
+The first clean experimental progression is:
+
+```text
+EOH cold start
+HeurAgenix cold start / isolated
+population carryover
+naive unbounded memory
+naive bounded memory
+managed Archivist memory
+```
+
+For the managed-memory claim, the most important controlled comparison is:
+
+```text
+naive bounded memory vs managed Archivist
+same stream
+same seed
+same generator
+same budget
+same capacity C
+same retrieval top-k
+```
+
+Unbounded memory is a useful extra baseline because it answers:
+
+```text
+Is capacity pressure itself the cause of failure, or does uncurated memory
+become noisy even when it is not forced to forget physically?
+```
+
+---
+
+## 16. What is already implemented vs target architecture
+
+As of 2026-08-29, the repository has these pieces:
+
+```text
+implemented:
+    MemoryItem / MemoryStore / WorkingBuffer scaffold
+    NaiveMemoryManager
+    DefaultArchivist with elite admission, task-anchor protection, capacity eviction
+    RetrieverV0 interface and deterministic ranking
+    Stage A pre-learning probe with read-only hash check
+    Stage C retention probe read-only hash check
+    naive bounded and unbounded configs
+    managed Archivist condition wiring
+    TSP ascending/descending baseline scripts
+
+still incomplete for full CM-HH:
+    first-class CandidateExtractor module
+    TransferPolicy module
+    PopulationBuilder / memory-aware initializer
+    explicit TransferPlan and TransferRecord schemas
+    validation-only transfer feedback update path
+    child-memory lineage for refined artifacts
+    dedup/consolidation beyond simple current behavior
+    richer event vocabulary and diagnostics
+    probe cost accounting
+```
+
+Therefore, the current `archivist_managed` condition is a runnable managed
+memory prototype, not yet the full CM-HH architecture described above.
+
+---
+
+## 17. V0 implementation target
+
+The next full-CMHH implementation milestone should add exactly these pieces:
+
+```text
+CandidateExtractor
+    top_k(final_population, by=validation_score)
+
+TransferPolicy
+    DIRECT_REUSE / REFINE / IGNORE
+
+PopulationBuilder
+    fixed memory-derived quota
+    fixed fresh quota
+
+Memory evidence
+    update old memory from validation-only reuse outcomes
+
+Knowledge evolution
+    create child MemoryItem for admitted refined heuristics
+
+Logging
+    log retrieved -> planned -> inserted -> survived -> child -> admitted
+```
+
+This is the smallest version that makes the memory system scientifically
+interpretable rather than just "retrieval text inside prompt".
+
+---
+
+## 18. Final summary
+
+The clarified CM-HH architecture is:
+
+```text
+CandidateExtractor decides what evidence deserves inspection.
+Archivist decides what survives.
+Retriever decides what is accessible now.
+TransferPolicy decides how recalled knowledge is used.
+PopulationBuilder makes that use concrete inside evolution.
+Evaluator measures what actually works.
+Runner enforces that measurement never becomes hidden learning.
+```
+
+That separation is the backbone of CM-HH.

@@ -15,8 +15,12 @@ the required implementation contracts.
   - This document wins when a change would affect the meaning of a research
     claim or metric.
 - `source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`
-  - Research-level architecture for memory, Archivist, Retriever, storage vs
-    retrieval-induced forgetting, and managed memory behavior.
+  - Research-level architecture for the full memory-transfer system:
+    `CandidateExtractor`, `Archivist`, `MemoryStore`, `Retriever`,
+    `TransferProbe`, `TransferPolicy`, and `PopulationBuilder`.
+  - Defines memory lifecycle, evidence evolution, child-memory lineage,
+    storage vs retrieval-induced forgetting, clean baseline semantics, and the
+    practical end-to-end pseudocode for full CM-HH.
 - `source_of_truth/CMHH_Implementation_Ready_Specification.md`
   - Engineering contracts, schemas, runner lifecycle, integrity tests,
     acceptance gates, audit requirements, and definition of done.
@@ -68,9 +72,10 @@ For research review:
 
 For implementation work:
 
-1. `planning/Implementation_plan.md`
-2. `source_of_truth/CMHH_Implementation_Ready_Specification.md`
-3. `logs/Implementation_Log.md`
+1. `source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`
+2. `planning/Implementation_plan.md`
+3. `source_of_truth/CMHH_Implementation_Ready_Specification.md`
+4. `logs/Implementation_Log.md`
 
 For historical context:
 

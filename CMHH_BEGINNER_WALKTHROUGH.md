@@ -5,6 +5,37 @@
 
 ---
 
+## 2026-08-29 Architecture Note
+
+The clearest way to understand CM-HH now is as a memory-transfer pipeline:
+
+```text
+completed task
+    -> CandidateExtractor: choose notable heuristics from final population
+    -> Archivist: decide what becomes long-term memory
+    -> MemoryStore: persist selected knowledge
+    -> Retriever: recall relevant memory for the next task
+    -> TransferPolicy: choose DIRECT_REUSE / REFINE / IGNORE
+    -> PopulationBuilder: build P0 from memory-derived and fresh candidates
+    -> evolution: search normally on the current task
+    -> feedback: update memory using validation-only transfer evidence
+```
+
+Important reading rule:
+
+```text
+retrieved != transferred
+transferred != survived evolution
+survived != caused improvement
+```
+
+The current `archivist_managed` condition is a runnable managed-memory
+prototype. It should be called "full CM-HH" only after `CandidateExtractor`,
+`TransferPolicy`, `PopulationBuilder`, validation-only transfer feedback, and
+child-memory lineage are implemented and audited.
+
+---
+
 ## 1. Giới thiệu Dễ hiểu về CMHH (Conceptual Overview)
 
 ### CMHH là gì?
@@ -229,11 +260,13 @@ python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmh
 ```
 
 ### Q2: Làm sao để so sánh CMHH với các phương pháp Baseline khác?
-**Trả lời:** Để vẽ biểu đồ so sánh trong bài báo, bạn chạy 4 điều kiện với 4 file cấu hình experiment:
+**Trả lời:** Để vẽ biểu đồ so sánh pilot, bạn chạy baseline/prototype đã có với các file cấu hình experiment tương ứng:
 1. **`isolated_tsp.yaml`**: Học từng task độc lập (Cold start).
 2. **`population_carryover_tsp.yaml`**: Bê nguyên quần thể cũ sang task mới (Không có bộ nhớ dài hạn).
 3. **`naive_memory_tsp.yaml`**: Lưu bộ nhớ thô (Không có Archivist lọc và bảo vệ).
-4. **`archivist_tsp.yaml`**: CMHH hoàn chỉnh (Có Archivist & WorkingBuffer).
+4. **`archivist_tsp.yaml` / `archivist_managed.yaml`**: Managed Archivist prototype (Có Archivist & WorkingBuffer). Chưa gọi là full CM-HH nếu chưa có transfer pipeline đầy đủ.
+5. **`h1_naive_unbounded.yaml`**: Naive memory không giới hạn capacity, dùng để chẩn đoán capacity pressure.
+6. **`eoh_cold_start.yaml`**: Official EOH cold-start baseline.
 
 ---
 

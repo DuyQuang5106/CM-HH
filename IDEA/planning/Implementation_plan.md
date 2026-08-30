@@ -247,11 +247,63 @@ The implementation plan inherits the following release-blocking integrity requir
 
 # Phase Overview
 
+## Current Full-CMHH Architecture Target
+
+The memory architecture was clarified on 2026-08-29. Full CM-HH is now planned
+as this explicit chain:
+
+```text
+completed task
+    -> CandidateExtractor
+    -> Archivist
+    -> MemoryStore
+    -> Retriever
+    -> TransferPolicy
+    -> PopulationBuilder
+    -> current-task evolution
+    -> transfer feedback
+    -> CandidateExtractor
+    -> Archivist
+```
+
+The current repo already has a runnable foundation:
+
+```text
+done / runnable:
+    TSP ascending and descending streams
+    EOH cold-start adapter
+    HeurAgenix isolated baseline
+    population carryover baseline
+    naive bounded memory baseline
+    naive unbounded memory baseline
+    managed Archivist prototype
+    MemoryItem / MemoryStore / WorkingBuffer scaffold
+    DefaultArchivist / NaiveMemoryManager split
+    RetrieverV0 interface
+    Stage A pre-learning scores
+    read-only probe hash checks
+
+not yet full CM-HH:
+    CandidateExtractor module instead of inline extraction
+    TransferPolicy with DIRECT_REUSE / REFINE / IGNORE
+    PopulationBuilder with fixed memory/fresh quota
+    TransferPlan and TransferRecord schemas
+    validation-only transfer feedback update
+    child-memory lineage for refined artifacts
+    richer memory events and diagnostics
+    probe cost accounting
+```
+
+The next implementation work should focus on making transfer observable, not on
+adding a larger LLM or a more complex retriever.
+
+---
+
 | Phase | Theme | Research role | Implementation-ready gates | Current status |
 |---|---|---|---|---|
-| Phase 0 | Reproducible experimental foundation | Build a trustworthy A/B/C continual substrate before any hypothesis test | Gate 0 + RI-1/2/3 foundation | `[~]` Core code mostly present; references, live LLM, resume, probe/audit gates remain |
-| Phase 1 | RQ1 / H1 sequential baselines | Establish whether simple continuity causes forgetting/interference and establish strong simple retention baselines | Gate 1 + Gate 2 subset + RI-4 | `[ ]` Planned |
-| Phase 2 | RQ2 / H2 managed memory | Test whether bounded managed memory improves stability–plasticity over naive/simple persistence | Gate 2 + Gate 3 + Gate 4 + RI-5/6 | `[ ]` Planned |
+| Phase 0 | Reproducible experimental foundation | Build a trustworthy A/B/C continual substrate before any hypothesis test | Gate 0 + RI-1/2/3 foundation | `[~]` TSP data/references, CLI, probes, metrics, and audit scaffolding are runnable; final paper-grade audit still needs tightening |
+| Phase 1 | RQ1 / H1 sequential baselines | Establish whether simple continuity causes forgetting/interference and establish strong simple retention baselines | Gate 1 + Gate 2 subset + RI-4 | `[~]` EOH, HeurAgenix isolated, population carryover, naive bounded, and naive unbounded runs are available for pilots |
+| Phase 2 | RQ2 / H2 managed memory | Test whether bounded managed memory improves stability–plasticity over naive/simple persistence | Gate 2 + Gate 3 + Gate 4 + RI-5/6 | `[~]` `archivist_managed` is runnable as a managed-memory prototype; full transfer policy/population-builder lineage remains |
 | Phase 3 | RQ3 / H3 forward transfer | Measure zero-shot transfer and adaptation efficiency using the already-existing A/B/C lifecycle | Gate 5 preparation | `[ ]` Planned |
 | Phase 4 | Secondary extensions and paper study | Stress tests: distribution shift, task order/curriculum, selected cross-problem transfer, final reporting | Gate 5 final | `[ ]` Optional / secondary |
 
@@ -1116,6 +1168,58 @@ Only after this gate may results be described as final paper evidence.
 ---
 
 # Immediate Next Actions
+
+> **Current override, 2026-08-29:** the repo now has runnable
+> baseline/prototype support. The next work is to make the full CM-HH transfer
+> pipeline explicit and auditable. This override supersedes older items in this
+> section where they conflict.
+
+1. **Keep running baseline pilots for smoke/debug evidence.**
+   - Run TSP ascending and descending streams.
+   - Compare EOH cold start, HeurAgenix isolated, population carryover, naive
+     bounded, naive unbounded, and managed prototype.
+   - Treat these as pilot results until the full transfer pipeline below is
+     implemented and audited.
+
+2. **Implement `CandidateExtractor`.**
+   - Move final-population top-k extraction out of `StreamRunner`.
+   - Persist extracted candidate IDs, validation scores, source task,
+     generation, artifact hash, and parent artifact IDs.
+   - Unit-test deterministic top-k and tie-breaking.
+
+3. **Implement `TransferPlan`, `TransferRecord`, and `TransferPolicy`.**
+   - Support `DIRECT_REUSE`, `REFINE`, and `IGNORE`.
+   - Log retrieved memory -> planned action.
+   - Keep the first policy deterministic and simple.
+
+4. **Implement `PopulationBuilder` / memory-aware initializer.**
+   - Use a fixed memory-derived quota and fresh-generation quota.
+   - Record the source of every initial population member.
+   - Ensure naive bounded and managed Archivist use matched quotas when
+     compared.
+
+5. **Add validation-only transfer feedback.**
+   - Update old memories from learning-stage validation outcomes only.
+   - Never update learner-visible memory from Stage A/C test probes.
+   - Split learning/probe/diagnostic retrieval counters.
+
+6. **Add child-memory lineage.**
+   - Refinement creates a new artifact.
+   - Admitted refined artifacts become child `MemoryItem`s.
+   - Parent memory code is never overwritten.
+
+7. **Upgrade logging and diagnostics.**
+   - Add events for candidate extraction, transfer planning, population
+     insertion, survival, offspring creation, feedback, admission, rejection,
+     merge, and eviction.
+   - Export retrieval-to-survival and retrieval-to-descendant-success metrics.
+
+8. **Then rerun clean matched experiments.**
+   - Naive bounded vs managed with same capacity and top-k.
+   - Naive unbounded as a capacity/noise diagnostic.
+   - Report AP, BWT/forgetting, FWT0, adaptation curves, and memory diagnostics.
+
+## Older carryover notes
 
 1. **Finish Phase 0 acceptance gate.**
    - generate and verify full TSP validation/test references;

@@ -5,6 +5,19 @@
 
 ---
 
+## 2026-08-29 Architecture Note
+
+The run commands in this guide are valid for pilot experiments. The
+`archivist_managed` condition is currently a managed-memory prototype. It should
+be reported as full CM-HH only after explicit `CandidateExtractor`,
+`TransferPolicy`, `PopulationBuilder`, validation-only transfer feedback, and
+child-memory lineage are implemented and audited.
+
+Authoritative design:
+`IDEA/source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`
+
+---
+
 ## 📋 Sơ Đồ Lộ Trình Chạy Thử Nghiệm (Workflow Roadmap)
 
 ```text
@@ -21,7 +34,7 @@
 
 [Giai đoạn 2: Chạy Stream Thực Nghiệm Theo Kịch Bản Nghiên Cứu]
   └─► Lựa chọn Stream (Scale-Shift, Domain-Shift, hoặc Curriculum Control)
-  └─► Chạy 4 điều kiện: Isolated -> Population Carryover -> Naive Memory -> CMHH Archivist
+  └─► Chạy baseline/prototype: EOH, Isolated, Population Carryover, Naive bounded/unbounded, Managed Archivist
 
 [Giai đoạn 3: Phục Hồi & Kiểm Định Kết Quả]
   └─► Bước 7: Phục hồi luồng nếu bị ngắt gián đoạn (--resume)
@@ -142,9 +155,9 @@ Bạn chọn một trong **8 file Stream YAML** (`HeurAgenix/cmhh/configs/stream
 
 ---
 
-### 2.2 Quy Trình Chạy 4 Điều Kiện Thí Nghiệm Cho Mỗi Stream
+### 2.2 Quy Trình Chạy Baseline/Prototype Cho Mỗi Stream
 
-Để phục vụ cho các bảng số liệu trong bài báo, đối với mỗi Stream đã chọn ở trên (ví dụ chọn `tsp_size_ascending.yaml`), bạn lần lượt chạy **4 lệnh đại diện cho 4 điều kiện thử nghiệm**:
+Để phục vụ cho các bảng số liệu pilot, đối với mỗi Stream đã chọn ở trên (ví dụ chọn `tsp_size_ascending.yaml`), bạn lần lượt chạy các baseline/prototype đã có:
 
 ---
 
@@ -193,8 +206,8 @@ python -m cmhh.cli --repo-root HeurAgenix run-stream `
 
 ---
 
-#### BƯỚC 6.4: Chạy Điều Kiện 4 — `archivist_managed` (Full CMHH System)
-*Ý nghĩa:* Hệ thống CMHH hoàn chỉnh với `WorkingBuffer`, `DefaultArchivist` (Admission Gate, Anchor Protection, Eviction Policy).
+#### BƯỚC 6.4: Chạy Điều Kiện 4 — `archivist_managed` (Managed Archivist Prototype)
+*Ý nghĩa:* Managed-memory prototype với `WorkingBuffer`, `DefaultArchivist` (Admission Gate, Anchor Protection, Eviction Policy). Chưa gọi là full CM-HH cho báo cáo cuối nếu chưa có `CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only transfer feedback, và child-memory lineage.
 
 ```powershell
 python -m cmhh.cli --repo-root HeurAgenix run-stream `
