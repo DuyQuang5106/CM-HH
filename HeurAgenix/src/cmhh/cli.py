@@ -135,7 +135,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     references = subparsers.add_parser("generate-references")
     _add_config_arguments(references)
-    references.add_argument("--solver-config", default="cmhh/configs/solvers/concorde.yaml")
+    references.add_argument("--solver-config", default=None, help="Path to solver config YAML (concorde.yaml, pyvrp.yaml, ortools_cpsat.yaml)")
     references.add_argument("--split", action="append", choices=("validation", "test"), default=None)
     references.add_argument("--task", action="append")
     references.add_argument("--pilot-count", type=int)
@@ -160,12 +160,17 @@ def _resolve(path: str, root: Path) -> Path:
         return value.resolve()
     if (root / value).exists():
         return (root / value).resolve()
+    if (root / "HeurAgenix" / value).exists():
+        return (root / "HeurAgenix" / value).resolve()
     return root / value
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     root = Path(args.repo_root).resolve()
+    if not (root / "cmhh" / "configs").exists() and (root / "HeurAgenix" / "cmhh" / "configs").exists():
+        root = (root / "HeurAgenix").resolve()
+
     experiment = load_experiment_config(_resolve(args.experiment, root), root)
     stream = load_stream_config(_resolve(args.stream, root))
     registry = load_task_registry(repo_root=root)
@@ -198,17 +203,52 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "generate-references":
-        solver = load_concorde_config(_resolve(args.solver_config, root), root)
-        try:
-            validate_solver_command(solver)
-        except FileNotFoundError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
-            return 2
+        solver_cfg_path = _resolve(args.solver_config, root) if args.solver_config else None
+        explicit_solver_config = None
+        if solver_cfg_path and solver_cfg_path.exists():
+            from cmhh.config import load_yaml
+            raw_yaml = load_yaml(solver_cfg_path)
+            solver_dict = raw_yaml.get("solver", raw_yaml)
+            s_name = str(solver_dict.get("name", "")).lower()
+            if s_name == "concorde" or solver_dict.get("command_prefix"):
+                try:
+                    explicit_solver_config = load_concorde_config(solver_cfg_path, root)
+                except Exception:
+                    explicit_solver_config = solver_dict
+            else:
+                explicit_solver_config = solver_dict
+
         task_ids = tuple(args.task) if args.task else stream.task_ids
         splits = tuple(args.split) if args.split else ("test",)
         total_failures = 0
         for task_id in task_ids:
             task = registry.get(task_id)
+            # Determine solver config for task
+            if explicit_solver_config is not None:
+                solver = explicit_solver_config
+            else:
+                # Default problem-specific solver config
+                default_cfgs = {
+                    "tsp": "cmhh/configs/solvers/concorde.yaml",
+                    "cvrp": "cmhh/configs/solvers/pyvrp.yaml",
+                    "jssp": "cmhh/configs/solvers/ortools_cpsat.yaml",
+                }
+                cfg_rel = default_cfgs.get(task.problem.lower())
+                cfg_path = _resolve(cfg_rel, root) if cfg_rel else None
+                if cfg_path and cfg_path.exists():
+                    from cmhh.config import load_yaml
+                    raw_yaml = load_yaml(cfg_path)
+                    solver_dict = raw_yaml.get("solver", raw_yaml)
+                    if task.problem.lower() == "tsp":
+                        try:
+                            solver = load_concorde_config(cfg_path, root)
+                        except Exception:
+                            solver = solver_dict
+                    else:
+                        solver = solver_dict
+                else:
+                    solver = None
+
             for split in splits:
                 records, failures = generate_task_references(
                     task, split, solver, pilot_count=args.pilot_count

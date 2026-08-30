@@ -46,3 +46,7 @@ wandb/
 .pytest_cache/
 .coverage
 htmlcov/
+test_eval_result.json
+scratch/
+HeurAgenix/scratch/
+

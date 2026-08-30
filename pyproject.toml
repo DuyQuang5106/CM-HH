@@ -19,6 +19,8 @@ dependencies = [
     "tqdm>=4.65.0",
     "requests>=2.28.0",
     "wandb>=0.16.0",
+    "pyvrp>=0.11.3",
+    "ortools>=9.15.6755",
 ]
 
 [project.scripts]

@@ -248,6 +248,29 @@ python -m cmhh.cli --repo-root HeurAgenix audit-run --run-id run_4_cmhh_archivis
 
 ---
 
+## ⚡ CHẠY TỰ ĐỘNG TẤT CẢ 13 STREAM (All Streams Runner)
+
+Dự án cung cấp script `HeurAgenix/scripts/run_all_streams_no_eoh.ps1` để tự động chạy qua toàn bộ **13 Stream** và **5 điều kiện thực nghiệm**:
+
+### 1. Kiểm tra nhanh trước khi bàn giao (Smoke Check):
+- **Zero-LLM (~1-2 phút, 0 LLM token)**:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -SmokeOnly
+  ```
+- **Quick-LLM (~5-10 phút, 1 gen / 2 LLM calls per task)**:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -QuickSmoke -LlmConfig cmhh/configs/llm/llm_config.local.json
+  ```
+
+### 2. Chạy Benchmark sản phẩm chính thức (Full Budget):
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3 -LlmConfig cmhh/configs/llm/llm_config.local.json
+```
+
+*Xem tài liệu hướng dẫn bàn giao chi tiết tại:* `HeurAgenix/docs/CMHH_RUN_ALL_STREAMS_HANDOFF_GUIDE.md`
+
+---
+
 ## 📊 VỊ TRÍ ĐỌC KẾT QUẢ
 
 Kết quả của từng lượt chạy được lưu tại: `HeurAgenix/cmhh/results/<run_id>/`
@@ -256,3 +279,4 @@ Kết quả của từng lượt chạy được lưu tại: `HeurAgenix/cmhh/re
 2. **Chỉ số tổng hợp ($AF, BWT, FWT$)**: `HeurAgenix/cmhh/results/<run_id>/metrics.json`
 3. **Chẩn đoán bộ nhớ & Lineage đào thải**: `HeurAgenix/cmhh/results/<run_id>/memory/diagnostics.json`
 4. **Nhật ký audit toàn bộ sự kiện**: `HeurAgenix/cmhh/results/<run_id>/events.jsonl`
+

@@ -142,14 +142,25 @@ def load_task_registry(
 
 def _resolve_repo_path(path: str | Path, repo_root: Path) -> Path:
     path = Path(path)
-    return path if path.is_absolute() else repo_root / path
+    if path.is_absolute():
+        return path
+    if (repo_root / path).exists():
+        return repo_root / path
+    if (repo_root / "HeurAgenix" / path).exists():
+        return repo_root / "HeurAgenix" / path
+    return repo_root / path
 
 
 def _find_repo_root(start: Path) -> Path:
     for candidate in [start, *start.parents]:
         if (candidate / DEFAULT_TASK_REGISTRY).exists():
             return candidate
+        if (candidate / "HeurAgenix" / DEFAULT_TASK_REGISTRY).exists():
+            return candidate / "HeurAgenix"
         if (candidate / ".git").exists() and (candidate / "src").exists():
             return candidate
+        if (candidate / ".git").exists() and (candidate / "HeurAgenix" / "src").exists():
+            return candidate / "HeurAgenix"
     return start
+
 

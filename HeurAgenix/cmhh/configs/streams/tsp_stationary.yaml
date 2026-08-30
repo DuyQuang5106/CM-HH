@@ -1,0 +1,8 @@
+version: 1
+stream_id: tsp_stationary
+description: TSP stationary stream over independent n50 variants (A -> B -> C -> D).
+task_ids:
+  - tsp_n50_a_uniform
+  - tsp_n50_b_uniform
+  - tsp_n50_c_uniform
+  - tsp_n50_d_uniform

@@ -64,6 +64,39 @@ Do not claim final "full CM-HH" results from `archivist_managed` alone until
 `CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only
 transfer feedback, and child-memory lineage are implemented and audited.
 
+### 1.2 Main Experiment Streams
+
+The main stream suite is documented in `docs/experiment_streams.md`. Current
+main streams cover TSP order sensitivity, CVRP/JSSP scale transfer, cross-problem
+transfer, revisit probes, and stationary same-size controls. `tsp_20_50_100`
+is retained only as a short/debug stream and should not be used as main evidence
+unless explicitly reported as a pilot.
+
+### 1.3 Frozen Full-Experiment Budget
+
+Use the same budget for every compared non-EOH condition:
+
+```yaml
+search:
+  generations: 100
+  candidates_per_generation: 5
+  max_llm_calls: 500
+evaluation:
+  instance_timeout_seconds: 30
+  batch_timeout_seconds: 900
+```
+
+The primary stopping budget is `max_llm_calls`. `generations: 100` is set high
+enough that normal runs should hit the LLM-call budget before exhausting the
+generation limit. The previous `2 x 3 / 10 LLM calls` budget is a smoke-test
+budget only. It is too small for competitive solution quality and too noisy for
+memory-strategy claims.
+
+Start with 500 LLM calls per task. If runtime, API stability, and generated-code
+quality look good, the next stronger budget is 1000 LLM calls per task with the
+same matched-budget rule across conditions. `phase0_tsp.yaml` remains a
+development config; use `h1_*` and `archivist_managed.yaml` for report runs.
+
 ---
 
 ## 2. Environment & LLM Configuration Setup
@@ -111,10 +144,10 @@ Create or edit your LLM configuration file (e.g. `HeurAgenix/cmhh/configs/llm/vl
 Verify that all task manifests and experiment configurations are intact:
 
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix validate-config --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml
+$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix validate-config --experiment HeurAgenix/cmhh/configs/experiments/h1_isolated.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml
 ```
 
-*Expected output:* `Validated 12 tasks; stream has 4 tasks` (Exit code 0).
+*Expected output:* `Validated 22 tasks; stream has 4 tasks` (Exit code 0).
 
 ---
 
@@ -122,19 +155,28 @@ $env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix vali
 Generate deterministic train, validation, test, and smoke TSPLIB instance files for the task stream:
 
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-data --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
+$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-data --experiment HeurAgenix/cmhh/configs/experiments/h1_isolated.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
 ```
 
 ---
 
-### Step 3: Generate & Verify Reference Exact Tour Solutions (Concorde)
-To compute relative optimality gaps, generate exact ground-truth tours using the Concorde solver:
+### Step 3: Generate & Verify Reference Solutions
+To compute relative gaps, generate reference solutions with the solver assigned
+to each problem. TSP uses Concorde proven-optimal references. CVRP uses PyVRP
+best-known references. JSSP uses OR-Tools CP-SAT references: `optimal` when
+CP-SAT proves optimality, otherwise `best_known` when it only proves feasibility.
 
 ```powershell
-# 1. Generate exact tours for validation and test splits
+# TSP: proven optimal references with Concorde
 $env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-references --solver-config HeurAgenix/cmhh/configs/solvers/concorde.yaml --split test --split validation
 
-# 2. Verify reference checksums and tour correctness
+# CVRP: best-known references with PyVRP
+$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-references --stream HeurAgenix/cmhh/configs/streams/cvrp_size_ascending.yaml --solver-config HeurAgenix/cmhh/configs/solvers/pyvrp.yaml --split test --split validation
+
+# JSSP: optimal or best-known references with OR-Tools CP-SAT
+$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix generate-references --stream HeurAgenix/cmhh/configs/streams/jssp_size_ascending.yaml --solver-config HeurAgenix/cmhh/configs/solvers/ortools_cpsat.yaml --split test --split validation
+
+# Verify reference checksums and status labels
 $env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix verify-references --split test --split validation
 ```
 
@@ -156,7 +198,7 @@ Execute the stream runner for your target experimental run:
 
 ```powershell
 # Run Managed Archivist Condition
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/vllm_local.json --seed 42 --run-id run_archivist_seed42
+$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/archivist_managed.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/vllm_local.json --seed 42 --run-id run_archivist_seed42
 ```
 
 To run baseline conditions, specify the experiment YAML config corresponding to the desired condition:
@@ -171,7 +213,7 @@ To run baseline conditions, specify the experiment YAML config corresponding to 
 If a run is interrupted by hardware failure or API timeout, resume seamlessly from the latest checkpoint:
 
 ```powershell
-$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --run-id run_archivist_seed42 --resume --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/vllm_local.json
+$env:PYTHONPATH="HeurAgenix/src"; python -m cmhh.cli --repo-root HeurAgenix run-stream --experiment HeurAgenix/cmhh/configs/experiments/archivist_managed.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --run-id run_archivist_seed42 --resume --generator heuragenix --llm-config HeurAgenix/cmhh/configs/llm/vllm_local.json
 ```
 
 ---

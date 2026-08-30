@@ -1,6 +1,6 @@
 version: 1
 stream_id: tsp_20_50_100
-description: TSP scale-shift stream (n20 -> n50 -> n100).
+description: Short/debug TSP scale stream; use tsp_size_ascending for the main experiment.
 task_ids:
   - tsp_n20_uniform
   - tsp_n50_uniform

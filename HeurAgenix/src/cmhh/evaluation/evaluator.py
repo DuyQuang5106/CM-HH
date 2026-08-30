@@ -14,6 +14,9 @@ from cmhh.models import EvaluationBudget, EvaluationResult, HeuristicArtifact, I
 from cmhh.tasks import TaskSpec
 
 
+from cmhh.evaluation.problem_adapter import ProblemRegistry
+
+
 class Evaluator:
     def __init__(self, repo_root: str | Path, budget: EvaluationBudget) -> None:
         self.repo_root = Path(repo_root).resolve()
@@ -28,7 +31,9 @@ class Evaluator:
         split_path = getattr(task.splits, split)
         if split_path is None or not split_path.exists():
             raise FileNotFoundError(f"Missing {split} data for {task.task_id}: {split_path}")
-        instances = sorted(path for path in split_path.iterdir() if path.suffix.lower() == ".tsp")
+        adapter = ProblemRegistry.get(task.problem)
+        instances = adapter.discover_instances(split_path)
+
         references = self._load_references(task)
         started = time.monotonic()
         results: list[InstanceEvaluation] = []
@@ -73,8 +78,16 @@ class Evaluator:
                 "--result", str(result_path),
             ]
             environment = dict(__import__("os").environ)
+            repo_path = str(self.repo_root)
             source_path = str(self.repo_root / "src")
-            environment["PYTHONPATH"] = source_path + __import__("os").pathsep + environment.get("PYTHONPATH", "")
+            environment["PYTHONPATH"] = (
+                repo_path
+                + __import__("os").pathsep
+                + source_path
+                + __import__("os").pathsep
+                + environment.get("PYTHONPATH", "")
+            )
+
             try:
                 completed = subprocess.run(
                     command,
@@ -106,7 +119,12 @@ class Evaluator:
                 "Reference checksum does not match the evaluated instance",
             )
         objective = raw.get("objective")
-        gap = relative_gap(float(objective), reference.objective) if objective is not None and reference else None
+        gap = (
+            relative_gap(float(objective), reference.objective, objective=task.metric.objective)
+            if objective is not None and reference
+            else None
+        )
+
         return InstanceEvaluation(
             instance_id=instance.stem,
             status=raw["status"],

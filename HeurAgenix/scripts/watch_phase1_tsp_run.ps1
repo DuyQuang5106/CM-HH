@@ -12,14 +12,21 @@ $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
 Set-Location $RepoRoot
 
 function Get-LatestRunPrefix {
-    $latest = Get-ChildItem "cmhh/results" -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -match "^(phase1_tsp_\d{8}_\d{6})_" } |
+    $latestLog = Get-ChildItem "cmhh/results" -File -Filter "*_driver.log" -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1
-    if (-not $latest) {
-        throw "No phase1_tsp_* run directory found under cmhh/results"
+    if ($latestLog) {
+        return ($latestLog.BaseName -replace "_driver$", "")
     }
-    return [regex]::Match($latest.Name, "^(phase1_tsp_\d{8}_\d{6})_").Groups[1].Value
+
+    $latestRun = Get-ChildItem "cmhh/results" -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match "^(.+)_seed\d+$" } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if (-not $latestRun) {
+        throw "No run directory or *_driver.log found under cmhh/results"
+    }
+    return [regex]::Match($latestRun.Name, "^(.+)_seed\d+$").Groups[1].Value
 }
 
 function Show-RunStatus {
@@ -45,6 +52,7 @@ function Show-RunStatus {
         $checkpointPath = Join-Path $run.FullName "checkpoints/latest.json"
         $matrixPath = Join-Path $run.FullName "performance_matrix.csv"
         $metricsPath = Join-Path $run.FullName "metrics.json"
+        $manifestPath = Join-Path $run.FullName "manifest.json"
         $preLearningPath = Join-Path $run.FullName "pre_learning_scores.json"
         $eventsPath = Join-Path $run.FullName "events.jsonl"
         $memoryDiagPath = Join-Path $run.FullName "memory/diagnostics.json"
@@ -54,22 +62,33 @@ function Show-RunStatus {
 
         $completed = "-"
         $currentTask = "-"
+        $taskIds = @()
+        if (Test-Path $manifestPath) {
+            $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+            if ($manifest.task_ids) {
+                $taskIds = @($manifest.task_ids)
+            }
+        }
         if (Test-Path $checkpointPath) {
             $checkpoint = Get-Content $checkpointPath -Raw | ConvertFrom-Json
             $completed = [string]$checkpoint.completed_tasks
-            $taskIds = @("tsp_n20_uniform", "tsp_n50_uniform", "tsp_n100_uniform", "tsp_n200_uniform")
             $idx = [int]$checkpoint.completed_tasks
-            if ($idx -lt $taskIds.Count) {
+            if ($taskIds.Count -gt 0 -and $idx -lt $taskIds.Count) {
                 $currentTask = $taskIds[$idx]
-            } else {
+            } elseif ($taskIds.Count -gt 0) {
                 $currentTask = "complete"
             }
+        }
+        if ($taskIds.Count -gt 0) {
+            $taskCount = $taskIds.Count
+        } else {
+            $taskCount = "?"
         }
 
         $status = if (Test-Path $metricsPath) { "complete" } elseif (Test-Path $checkpointPath) { "running/partial" } else { "starting" }
         Write-Host $run.Name -ForegroundColor Cyan
         Write-Host "  status          : $status"
-        Write-Host "  completed tasks : $completed / 4"
+        Write-Host "  completed tasks : $completed / $taskCount"
         Write-Host "  current task    : $currentTask"
         if ($latestChild) {
             Write-Host "  last file write : $($latestChild.LastWriteTime)"

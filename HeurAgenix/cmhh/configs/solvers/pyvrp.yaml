@@ -1,0 +1,12 @@
+version: 1
+solver:
+  name: pyvrp
+  problem: cvrp
+  time_limit_seconds: 60
+  seed: 1
+  max_workers: 2
+  timeouts:
+    n20: 60
+    n50: 120
+    n100: 300
+    n200: 600

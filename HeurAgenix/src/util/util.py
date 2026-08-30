@@ -6,6 +6,8 @@ import hashlib
 import numpy as np
 import pandas as pd
 import difflib
+from pathlib import Path
+
 
 
 def extract(message: str, key: str, sep=None) -> list[str]:
@@ -69,11 +71,12 @@ def load_function(file:str, problem: str="base", function_name: str=None) -> cal
         code = file
 
     if function_name is None:
-        function_name = file.split(os.sep)[-1].split(".")[0]
+        function_name = Path(file).stem
 
     exec(code, globals())
-    assert function_name in globals()
+    assert function_name in globals(), f"Function '{function_name}' not defined in {file}"
     return eval(function_name)
+
 
 def load_framework_description(component_code: str) -> tuple[str, str]:
     """ Load framework description for the problem from source code, including solution design and operators design."""

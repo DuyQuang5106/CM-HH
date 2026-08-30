@@ -1,0 +1,12 @@
+version: 1
+solver:
+  name: ortools_cpsat
+  problem: jssp
+  time_limit_seconds: 60
+  num_workers: 1
+  seed: 1
+  max_workers: 2
+  timeouts:
+    j10_m5: 60
+    j20_m5: 120
+    j50_m10: 300

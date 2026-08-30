@@ -1,0 +1,7 @@
+version: 1
+stream_id: related_pair_tsp_cvrp_tsp
+description: Related-problem transfer pair (TSP20 -> CVRP50 -> TSP100).
+task_ids:
+  - tsp_n20_uniform
+  - cvrp_n50_uniform
+  - tsp_n100_uniform

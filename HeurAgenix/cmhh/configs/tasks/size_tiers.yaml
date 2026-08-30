@@ -8,6 +8,8 @@ size_tiers:
       jobs: 20
     obp:
       items: 20
+    cvrp:
+      nodes: 20
   n50:
     label: medium
     tsp:
@@ -16,6 +18,8 @@ size_tiers:
       jobs: 50
     obp:
       items: 50
+    cvrp:
+      nodes: 50
   n100:
     label: large
     tsp:
@@ -24,6 +28,8 @@ size_tiers:
       jobs: 100
     obp:
       items: 100
+    cvrp:
+      nodes: 100
   n200:
     label: xlarge
     tsp:
@@ -32,4 +38,22 @@ size_tiers:
       jobs: 200
     obp:
       items: 200
+    cvrp:
+      nodes: 200
+  j10_m5:
+    label: small
+    jssp:
+      jobs: 10
+      machines: 5
+  j20_m5:
+    label: medium
+    jssp:
+      jobs: 20
+      machines: 5
+  j50_m10:
+    label: large
+    jssp:
+      jobs: 50
+      machines: 10
+
 

@@ -22,10 +22,10 @@ data:
     test: 30
     smoke: 2
 search:
-  generations: 2
-  candidates_per_generation: 3
-  max_llm_calls: 10
+  generations: 100
+  candidates_per_generation: 5
+  max_llm_calls: 500
 evaluation:
-  instance_timeout_seconds: 10
-  batch_timeout_seconds: 300
+  instance_timeout_seconds: 30
+  batch_timeout_seconds: 900
   invalid_policy: fail_batch

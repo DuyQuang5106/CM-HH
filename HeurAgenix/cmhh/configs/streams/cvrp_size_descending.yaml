@@ -1,0 +1,7 @@
+version: 1
+stream_id: cvrp_size_descending
+description: CVRP within-problem reverse scale stream (n100 -> n50 -> n20).
+task_ids:
+  - cvrp_n100_uniform
+  - cvrp_n50_uniform
+  - cvrp_n20_uniform

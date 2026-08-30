@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,8 +27,14 @@ def validate_configuration(
     report = ValidationReport()
     root = Path(repo_root).resolve()
 
-    if len(stream.task_ids) != len(set(stream.task_ids)):
-        report.errors.append(f"Stream {stream.stream_id} contains duplicate task IDs")
+    repeated_task_ids = [
+        task_id for task_id, count in Counter(stream.task_ids).items()
+        if count > 1
+    ]
+    if repeated_task_ids:
+        report.warnings.append(
+            f"Stream {stream.stream_id} revisits task IDs: {', '.join(repeated_task_ids)}"
+        )
 
     known_ids = set(registry.list_task_ids())
     for task_id in stream.task_ids:
@@ -69,6 +76,8 @@ def validate_configuration(
             report.errors.append(
                 f"{task.task_id}: size tier {task.size_tier} has no {task.problem} definition"
             )
+        if task.task_id not in stream.task_ids:
+            continue
         if not task.implemented_in_heuragenix:
             report.warnings.append(f"{task.task_id}: adapter is not implemented")
         missing = task.validate_artifact_paths()

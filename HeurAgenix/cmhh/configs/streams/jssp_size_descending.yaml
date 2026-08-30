@@ -1,0 +1,7 @@
+version: 1
+stream_id: jssp_size_descending
+description: JSSP within-problem reverse scale stream (50x10 -> 20x5 -> 10x5).
+task_ids:
+  - jssp_j50_m10_uniform
+  - jssp_j20_m5_uniform
+  - jssp_j10_m5_uniform

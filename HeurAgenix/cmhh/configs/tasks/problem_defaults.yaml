@@ -26,4 +26,21 @@ problems:
     default_distribution: uniform_item_sizes
     default_heuristic_dir: basic_heuristics
     adapter_status: missing
+  cvrp:
+    display_name: Capacitated Vehicle Routing Problem
+    heuragenix_problem: cvrp
+    objective: minimize
+    key_item: total_current_cost
+    default_metric: relative_gap
+    default_distribution: euclidean_uniform
+    default_heuristic_dir: basic_heuristics
+  jssp:
+    display_name: Job Shop Scheduling Problem
+    heuragenix_problem: jssp
+    objective: minimize
+    key_item: current_makespan
+    default_metric: relative_gap
+    default_distribution: uniform_processing_times
+    default_heuristic_dir: basic_heuristics
+
 

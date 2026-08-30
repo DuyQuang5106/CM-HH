@@ -1,0 +1,8 @@
+version: 1
+stream_id: tsp_revisit
+description: TSP forward scale stream with revisit probe (n20 -> n50 -> n100 -> n20).
+task_ids:
+  - tsp_n20_uniform
+  - tsp_n50_uniform
+  - tsp_n100_uniform
+  - tsp_n20_uniform

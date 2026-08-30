@@ -1,10 +1,9 @@
-from __future__ import annotations
-
+import os
+import re
+import shutil
 import subprocess
 import tempfile
 import time
-import shutil
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +12,11 @@ from cmhh.data.manifest import sha256_file
 from cmhh.data.references import ReferenceRecord
 from cmhh.data.tsp_io import read_euc2d_coordinates
 from cmhh.references.tour import parse_concorde_tour, tour_objective, write_normalized_tour
+
+
+class ConcordeNotFoundError(FileNotFoundError):
+    """Raised when the Concorde executable cannot be located with actionable guidance."""
+    pass
 
 
 @dataclass(frozen=True)
@@ -31,28 +35,131 @@ class SolverFailure:
     runtime_seconds: float
 
 
-def load_concorde_config(path: str | Path, repo_root: str | Path) -> ConcordeConfig:
+def resolve_concorde_executable(
+    explicit_path: str | Path | None = None,
+    repo_root: str | Path | None = None,
+) -> Path:
+    """Resolves the Concorde executable path according to the resolution hierarchy:
+    
+    1. Explicit config path (`executable:` or `command_prefix[0]`)
+    2. CONCORDE_PATH / CONCORDE_EXECUTABLE environment variable
+    3. System PATH lookup (`shutil.which("concorde")`)
+    4. Known local tools directory (`tools/concorde/concorde.exe`)
+    5. Actionable ConcordeNotFoundError if missing.
+    """
+    root = Path(repo_root).resolve() if repo_root else Path.cwd().resolve()
+    checked_locations: list[str] = []
+
+    # 1. Explicit config path
+    if explicit_path and str(explicit_path).strip() and str(explicit_path).lower() != "null":
+        p = Path(explicit_path)
+        if p.is_absolute() and p.exists():
+            return p.resolve()
+        candidate = root / p
+        checked_locations.append(f"explicit config: {p} (resolved: {candidate})")
+        if candidate.exists():
+            return candidate.resolve()
+        if p.exists():
+            return p.resolve()
+    else:
+        checked_locations.append("explicit config: <not specified>")
+
+    # 2. Environment variable
+    env_path = os.environ.get("CONCORDE_PATH") or os.environ.get("CONCORDE_EXECUTABLE")
+    if env_path:
+        checked_locations.append(f"CONCORDE_PATH: {env_path}")
+        ep = Path(env_path)
+        if ep.exists():
+            return ep.resolve()
+        if (root / ep).exists():
+            return (root / ep).resolve()
+    else:
+        checked_locations.append("CONCORDE_PATH: <not set>")
+
+    # 3. System PATH lookup
+    which_names = ["concorde", "concorde.exe"] if os.name == "nt" else ["concorde"]
+    found_in_path = None
+    for name in which_names:
+        w = shutil.which(name)
+        if w:
+            found_in_path = Path(w).resolve()
+            return found_in_path
+    checked_locations.append(f"system PATH: {', '.join(which_names)} (not found in PATH)")
+
+    # 4. Known local tools directory
+    local_candidates = [
+        root / "tools" / "concorde" / "concorde.exe",
+        root / "tools" / "concorde" / "concorde",
+        root / "HeurAgenix" / "tools" / "concorde" / "concorde.exe",
+        root / "HeurAgenix" / "tools" / "concorde" / "concorde",
+        Path.cwd() / "tools" / "concorde" / "concorde.exe",
+        Path.cwd() / "tools" / "concorde" / "concorde",
+    ]
+    for lc in local_candidates:
+        checked_locations.append(f"local tool: {lc}")
+        if lc.exists() and lc.is_file():
+            return lc.resolve()
+
+    # 5. Build actionable error message
+    details = "\n".join(f"  - {loc}" for loc in checked_locations)
+    error_msg = (
+        "Concorde executable was not found.\n\n"
+        "TSP reference generation requires Concorde to compute proven optimal reference solutions.\n\n"
+        "Checked:\n"
+        f"{details}\n\n"
+        "To fix this:\n"
+        "  1. Install or download Concorde (https://www.math.uwaterloo.ca/tsp/concorde.html).\n"
+        "  2. Set the CONCORDE_PATH environment variable:\n"
+        "     PowerShell:  $env:CONCORDE_PATH=\"C:\\path\\to\\concorde.exe\"\n"
+        "     Bash / Unix: export CONCORDE_PATH=\"/usr/local/bin/concorde\"\n"
+        "  3. Or configure `executable:` in cmhh/configs/solvers/concorde.yaml.\n\n"
+        "CVRP (PyVRP) and JSSP (OR-Tools CP-SAT) reference solvers do not require external binaries;\n"
+        "they are installed automatically through `uv sync`."
+    )
+    raise ConcordeNotFoundError(error_msg)
+
+
+def load_concorde_config(path: str | Path, repo_root: str | Path | None = None) -> ConcordeConfig:
     raw = load_yaml(path)["solver"]
-    root = Path(repo_root).resolve()
-    prefix = list(raw["command_prefix"])
-    first = Path(prefix[0])
-    if not first.is_absolute():
-        prefix[0] = str(root / first)
+    root = Path(repo_root).resolve() if repo_root else Path.cwd().resolve()
+    
+    explicit_exe = raw.get("executable")
+    prefix = list(raw.get("command_prefix", []))
+    candidate = explicit_exe or (prefix[0] if prefix else None)
+
+    try:
+        resolved_exe = resolve_concorde_executable(candidate, root)
+        if prefix:
+            prefix[0] = str(resolved_exe)
+        else:
+            prefix = [str(resolved_exe)]
+    except ConcordeNotFoundError:
+        if prefix:
+            first = Path(prefix[0])
+            if not first.is_absolute() and (root / first).exists():
+                prefix[0] = str(root / first)
+            elif first.exists():
+                prefix[0] = str(first.resolve())
+            else:
+                prefix[0] = str(candidate or "concorde.exe")
+        else:
+            prefix = [str(candidate or "concorde.exe")]
+
     return ConcordeConfig(
         command_prefix=tuple(prefix),
-        arguments=tuple(str(item) for item in raw["arguments"]),
+        arguments=tuple(str(item) for item in raw.get("arguments", ["-x", "-o", "{tour_path}", "{instance_path}"])),
         max_workers=max(1, int(raw.get("max_workers", 1))),
-        timeouts={key: float(value) for key, value in raw["timeouts"].items()},
+        timeouts={key: float(value) for key, value in raw.get("timeouts", {"n20": 60, "n50": 300, "n100": 900, "n200": 1800}).items()},
     )
 
 
-def validate_solver_command(config: ConcordeConfig) -> None:
+def validate_solver_command(config: ConcordeConfig, repo_root: str | Path | None = None) -> None:
+    if not config.command_prefix:
+        resolve_concorde_executable(None, repo_root)
     executable = Path(config.command_prefix[0])
     if not executable.exists():
-        raise FileNotFoundError(
-            f"Concorde executable was not found: {executable}. "
-            "Update command_prefix in the solver config."
-        )
+        resolve_concorde_executable(config.command_prefix[0], repo_root)
+
 
 
 def solve_instance(

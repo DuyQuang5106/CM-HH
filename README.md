@@ -35,6 +35,7 @@ for the authoritative architecture and pseudocode.
 | 📌 [**`CMHH_STEP_BY_STEP_EXECUTION_GUIDE.md`**](CMHH_STEP_BY_STEP_EXECUTION_GUIDE.md) | **Lộ trình chạy từng bước có đánh số (từ 1 đến 8)** kèm các câu lệnh PowerShell copy-paste trực tiếp | Người trực tiếp chạy thí nghiệm |
 | 📊 [**`CMHH_EXPERIMENT_GUIDE.md`**](CMHH_EXPERIMENT_GUIDE.md) | **Hướng dẫn thử nghiệm chuyên sâu & đọc chỉ số**, giải thích chi tiết $R_{k,j}$, $AF$, $BWT$, $FWT$, `diagnostics.json` và `eviction_lineage` | PhD / ML Research Engineers |
 | 🛠️ [**`CMHH_ENGINEERING_HANDOFF_REVIEW.md`**](CMHH_ENGINEERING_HANDOFF_REVIEW.md) | **Báo cáo kiểm định kiến trúc & lịch sử tái cấu trúc hệ thống**, phân tích 5 giai đoạn hoàn thiện codebase | Core Maintainers / Code Auditors |
+| 🎯 [**`docs/reference_solvers.md`**](docs/reference_solvers.md) | **Reference Solvers (Concorde, PyVRP, OR-Tools CP-SAT)**: Ma trận solver, quy tắc optimality semantics, cách cấu hình path & generate references | ML / Optimization Engineers |
 | 📄 [**`IDEA/source_of_truth/CMHH_Research_Specification.md`**](IDEA/source_of_truth/CMHH_Research_Specification.md) | **Tài liệu đặc tả bài báo nghiên cứu (Research Specs)** | Scientific Research Team |
 
 ---
@@ -42,36 +43,44 @@ for the authoritative architecture and pseudocode.
 ## ⚡ Setup & Quickstart với `uv`
 
 ### 1. Cài đặt môi trường với `uv`
-Repo sử dụng `pyproject.toml` và `uv` để quản lý dependencies nhanh và ổn định:
+Repo sử dụng `pyproject.toml` và `uv` để quản lý dependencies nhanh và tự động:
 
 ```powershell
-# Cài đặt toàn bộ dependencies vào virtual environment .venv
+# Cài đặt toàn bộ dependencies (bao gồm PyVRP & OR-Tools) vào virtual environment .venv
 uv sync
+
+# Kiểm tra tình trạng reference solvers
+uv run python scripts/check_reference_solvers.py
 ```
 
-### 2. Chạy thử nghiệm qua `uv` (Console Script hoặc Module)
-```powershell
-# Kiểm tra cấu hình hệ thống
-uv run cmhh --repo-root HeurAgenix validate-config
+### 2. Reference Solver Matrix
 
-# Hoặc dùng python module:
-uv run python -m cmhh.cli --repo-root HeurAgenix validate-config
-```
+| Bài toán | Reference Solver | Cài đặt | Reference Semantics |
+| :--- | :--- | :--- | :--- |
+| **TSP** | **Concorde** | External binary (`$env:CONCORDE_PATH`) | `optimal` (proven optimal) |
+| **CVRP** | **PyVRP** | Tự động qua `uv sync` | `best_known` (state-of-the-art metaheuristic) |
+| **JSSP** | **OR-Tools CP-SAT** | Tự động qua `uv sync` | `optimal` (nếu proven) / `best_known` (nếu feasible) |
 
-### 3. Sinh dữ liệu benchmark & nghiệm tối ưu chuẩn
+### 3. Sinh dữ liệu benchmark & nghiệm chuẩn (Reference Generation)
 ```powershell
 # Sinh dữ liệu bài toán TSPLIB
-uv run cmhh --repo-root HeurAgenix generate-data --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
+uv run python -m cmhh generate-data --experiment cmhh/configs/experiments/phase0_tsp.yaml --stream cmhh/configs/streams/tsp_size_ascending.yaml --seed 42
 
-# Sinh nghiệm tối ưu tuyệt đối bằng Concorde exact solver
-uv run cmhh --repo-root HeurAgenix generate-references --solver-config HeurAgenix/cmhh/configs/solvers/concorde.yaml --split validation --split test
+# TSP: Sinh nghiệm tối ưu bằng Concorde exact solver
+uv run python -m cmhh generate-references --stream cmhh/configs/streams/tsp_size_ascending.yaml --solver-config cmhh/configs/solvers/concorde.yaml --split validation --split test
+
+# CVRP: Sinh nghiệm chuẩn bằng PyVRP
+uv run python -m cmhh generate-references --stream cmhh/configs/streams/cvrp_size_ascending.yaml --solver-config cmhh/configs/solvers/pyvrp.yaml --split validation --split test
+
+# JSSP: Sinh nghiệm chuẩn bằng OR-Tools CP-SAT
+uv run python -m cmhh generate-references --stream cmhh/configs/streams/jssp_size_ascending.yaml --solver-config cmhh/configs/solvers/ortools_cpsat.yaml --split validation --split test
 ```
 
 ### 4. Chạy luồng học liên tục (Continual Stream Run)
 ```powershell
-uv run cmhh --repo-root HeurAgenix run-stream `
-  --experiment HeurAgenix/cmhh/configs/experiments/phase0_tsp.yaml `
-  --stream HeurAgenix/cmhh/configs/streams/tsp_size_ascending.yaml `
+uv run python -m cmhh run-stream `
+  --experiment cmhh/configs/experiments/phase0_tsp.yaml `
+  --stream cmhh/configs/streams/tsp_size_ascending.yaml `
   --generator heuragenix `
   --llm-config HeurAgenix/data/llm_config/cmhh_phase1.json `
   --seed 42 `

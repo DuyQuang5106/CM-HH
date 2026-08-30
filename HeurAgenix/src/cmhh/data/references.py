@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -17,18 +17,20 @@ class ReferenceRecord:
     runtime_seconds: float
     tour_path: str | None = None
     solver_exit_code: int | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "ReferenceRecord":
         return cls(
             instance_id=raw["instance_id"],
-            objective=float(raw["objective"]),
-            status=raw["status"],
+            objective=float(raw["objective"]) if raw.get("objective") is not None else float("nan"),
+            status=raw.get("status", "best_known"),
             solver=raw.get("solver", "unknown"),
-            instance_sha256=raw["instance_sha256"],
+            instance_sha256=raw.get("instance_sha256", ""),
             runtime_seconds=float(raw.get("runtime_seconds", 0.0)),
             tour_path=raw.get("tour_path"),
             solver_exit_code=raw.get("solver_exit_code"),
+            metadata=raw.get("metadata", {}),
         )
 
 

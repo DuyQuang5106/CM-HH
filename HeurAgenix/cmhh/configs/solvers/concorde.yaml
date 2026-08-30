@@ -1,6 +1,8 @@
 version: 1
 solver:
   name: concorde
+  problem: tsp
+  executable: null
   command_prefix:
     - tools/concorde/concorde.exe
   arguments: [-x, -o, "{tour_path}", "{instance_path}"]
@@ -10,4 +12,3 @@ solver:
     n50: 300
     n100: 900
     n200: 1800
-

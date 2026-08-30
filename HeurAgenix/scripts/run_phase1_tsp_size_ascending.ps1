@@ -8,7 +8,8 @@ param(
     [switch]$Resume,
     [switch]$SkipEOH,
     [switch]$SkipManaged,
-    [int]$EohEvaluationTimeoutSeconds = 180
+    [int]$EohEvaluationTimeoutSeconds = 180,
+    [double]$EvolutionTimeoutSeconds = 21600
 )
 
 Set-StrictMode -Version Latest
@@ -51,6 +52,7 @@ function Run-Isolated {
         "--llm-config", $LlmConfig,
         "--run-id", $RunId,
         "--seed", "$Seed",
+        "--evolution-timeout", "$EvolutionTimeoutSeconds",
         "--no-wandb"
     )
     Invoke-Cmhh $args
@@ -74,6 +76,7 @@ function Run-Stream {
         "--run-id", $RunId,
         "--seed", "$Seed",
         "--cold-start-scores", $ColdStartScores,
+        "--evolution-timeout", "$EvolutionTimeoutSeconds",
         "--no-wandb"
     )
     if ($Resume) {

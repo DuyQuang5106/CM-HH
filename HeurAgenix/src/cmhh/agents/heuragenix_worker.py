@@ -11,6 +11,7 @@ import traceback
 import types
 from pathlib import Path
 
+from cmhh.evaluation.problem_adapter import ensure_tsplib95_fallback
 from cmhh.llm.budgeted_client import BudgetedLLMClient
 from cmhh.llm.config import load_llm_config
 
@@ -63,36 +64,9 @@ def _format_memory_unit(unit: dict) -> str:
     return f"- {unit.get('id', '<unknown>')} [{value_type}]: {content} Applicability: {applicability}"
 
 
-def _ensure_tsplib95_fallback() -> None:
-    if "tsplib95" in sys.modules:
-        return
-    try:
-        __import__("tsplib95")
-        return
-    except ModuleNotFoundError:
-        pass
-
-    import networkx as nx
-    import numpy as np
-
-    from cmhh.data.tsp_io import load_euc2d_graph
-
-    fallback = types.ModuleType("tsplib95")
-
-    class FallbackProblem:
-        def __init__(self, path: str) -> None:
-            self._graph = nx.from_numpy_array(np.asarray(load_euc2d_graph(path), dtype=float))
-
-        def get_graph(self):
-            return self._graph
-
-    fallback.load = lambda path: FallbackProblem(path)
-    sys.modules["tsplib95"] = fallback
-
-
 def run(args) -> dict:
-    if args.problem == "tsp":
-        _ensure_tsplib95_fallback()
+    if args.problem in ("tsp", "cvrp"):
+        ensure_tsplib95_fallback()
 
     from src.pipeline.heuristic_evolver import HeuristicEvolver
     from src.util.llm_client.get_llm_client import get_llm_client
@@ -174,4 +148,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
