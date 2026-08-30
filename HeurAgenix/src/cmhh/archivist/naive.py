@@ -59,6 +59,7 @@ class NaiveMemoryManager(Archivist):
                     validation_after=summary,
                     code_hashes=(artifact.code_hash,),
                 ),
+                parent_memory_ids=tuple(exp.get("parent_memory_ids", ())),
             )
             memory_store.upsert(unit)
             admitted_ids.append(unit.id)

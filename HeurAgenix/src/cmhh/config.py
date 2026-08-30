@@ -22,6 +22,10 @@ class ArchiveConfig:
     policy: str = "naive_overwrite"
     capacity: int | None = 20
     top_k: int = 5
+    candidate_top_k: int | None = None
+    memory_seed_quota: int = 1
+    direct_reuse_quota: int = 1
+    refine_quota: int | None = None
 
 
 @dataclass(frozen=True)
@@ -91,6 +95,16 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
         policy=archive_raw.get("policy", "naive_overwrite"),
         capacity=capacity,
         top_k=int(archive_raw.get("top_k", 5)),
+        candidate_top_k=(
+            None if archive_raw.get("candidate_top_k") is None
+            else int(archive_raw["candidate_top_k"])
+        ),
+        memory_seed_quota=int(archive_raw.get("memory_seed_quota", 1)),
+        direct_reuse_quota=int(archive_raw.get("direct_reuse_quota", 1)),
+        refine_quota=(
+            None if archive_raw.get("refine_quota") is None
+            else int(archive_raw["refine_quota"])
+        ),
     )
 
     tracking_raw = raw.get("tracking", {})

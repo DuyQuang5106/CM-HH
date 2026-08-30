@@ -113,8 +113,10 @@ class MemoryMetadata:
     validation_summary: dict[str, Any] = field(default_factory=dict)
     retrieval_count: int = 0
     success_count: int = 0
+    transfer_history: tuple[dict[str, Any], ...] = ()
     protected: bool = False
     created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass(frozen=True)
@@ -201,8 +203,10 @@ class MemoryItem:
                     validation_summary=raw["metadata"].get("validation_summary", {}),
                     retrieval_count=raw["metadata"].get("retrieval_count", 0),
                     success_count=raw["metadata"].get("success_count", 0),
+                    transfer_history=tuple(raw["metadata"].get("transfer_history", ())),
                     protected=raw["metadata"].get("protected", False),
                     created_at=raw["metadata"].get("created_at", ""),
+                    updated_at=raw["metadata"].get("updated_at", raw["metadata"].get("created_at", "")),
                 ),
                 schema_version=1,
             )
@@ -237,6 +241,7 @@ class MemoryItem:
                 success_count=unit.policy.success_count,
                 protected=unit.policy.protected,
                 created_at=unit.created_at,
+                updated_at=unit.created_at,
             ),
             schema_version=1,
         )
@@ -261,12 +266,14 @@ class WorkingBuffer:
         artifact: Any,
         validation_summary: dict[str, Any],
         task: Any,
+        parent_memory_ids: tuple[str, ...] = (),
     ) -> None:
         record = {
             "artifact": artifact,
             "validation_summary": validation_summary,
             "task_id": task.task_id,
             "problem": task.problem,
+            "parent_memory_ids": tuple(parent_memory_ids),
             "timestamp": utc_now(),
         }
         self._buffer.append(record)
@@ -339,12 +346,56 @@ class MemoryStore:
                 item.metadata,
                 validation_summary=updated_summary,
                 validation_score=float(updated_summary.get("score", item.metadata.validation_score)),
+                updated_at=utc_now(),
             )
             updated = replace(item, metadata=updated_metadata)
             items[index] = updated
             self.save_all(items)
             return updated
         raise KeyError(f"Unknown memory unit: {memory_id}")
+
+    def record_transfer_feedback(
+        self,
+        memory_ids: list[str],
+        *,
+        split: str,
+        task_id: str,
+        selected_validation_score: float | None,
+        baseline_validation_score: float | None,
+    ) -> list[MemoryItem]:
+        if split != "validation":
+            raise ValueError("Transfer feedback updates must come from the validation split")
+        items = self.load_all()
+        memory_id_set = set(memory_ids)
+        updated_items: list[MemoryItem] = []
+        for index, item in enumerate(items):
+            if item.id not in memory_id_set:
+                continue
+            delta = (
+                None
+                if selected_validation_score is None or baseline_validation_score is None
+                else float(selected_validation_score) - float(baseline_validation_score)
+            )
+            feedback = {
+                "task_id": task_id,
+                "split": split,
+                "selected_validation_score": selected_validation_score,
+                "baseline_validation_score": baseline_validation_score,
+                "validation_delta": delta,
+            }
+            metadata = replace(
+                item.metadata,
+                retrieval_count=item.metadata.retrieval_count + 1,
+                success_count=item.metadata.success_count + (1 if delta is not None and delta > 0 else 0),
+                transfer_history=tuple([*item.metadata.transfer_history, feedback]),
+                updated_at=utc_now(),
+            )
+            updated = replace(item, metadata=metadata)
+            items[index] = updated
+            updated_items.append(updated)
+        if updated_items:
+            self.save_all(items)
+        return updated_items
 
 
 @dataclass(frozen=True)
@@ -400,6 +451,7 @@ def create_memory_unit(
     evidence: MemoryEvidence | None = None,
     policy: MemoryPolicyState | None = None,
     created_at: str | None = None,
+    parent_memory_ids: tuple[str, ...] = (),
 ) -> MemoryItem:
     evidence = evidence or MemoryEvidence()
     val_after = evidence.validation_after
@@ -407,6 +459,7 @@ def create_memory_unit(
     code_path = evidence.source_artifacts[0] if evidence.source_artifacts else ""
     code_hash = evidence.code_hashes[0] if evidence.code_hashes else ""
     policy_state = policy or MemoryPolicyState()
+    timestamp = created_at or utc_now()
     
     item_id = deterministic_memory_id(scope, key, value, evidence)
     return MemoryItem(
@@ -423,18 +476,20 @@ def create_memory_unit(
             abstraction_type=value.type,
             summary=value.content,
         ),
-        metadata=MemoryMetadata(
-            origin_task_id=scope.task_id,
-            origin_generation=scope.generation or 0,
-            validation_score=val_score,
-            validation_summary=val_after if isinstance(val_after, dict) else {},
-            retrieval_count=policy_state.retrieval_count,
-            success_count=policy_state.success_count,
-            protected=policy_state.protected,
-            created_at=created_at or utc_now(),
-        ),
-        schema_version=1,
-    )
+            metadata=MemoryMetadata(
+                origin_task_id=scope.task_id,
+                origin_generation=scope.generation or 0,
+                parent_ids=tuple(parent_memory_ids),
+                validation_score=val_score,
+                validation_summary=val_after if isinstance(val_after, dict) else {},
+                retrieval_count=policy_state.retrieval_count,
+                success_count=policy_state.success_count,
+                protected=policy_state.protected,
+                created_at=timestamp,
+                updated_at=timestamp,
+            ),
+            schema_version=1,
+        )
 
 
 def deterministic_memory_id(

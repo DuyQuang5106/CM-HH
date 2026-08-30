@@ -93,6 +93,7 @@ class DefaultArchivist(Archivist):
                     validation_after=summary,
                     code_hashes=(artifact.code_hash,),
                 ),
+                parent_memory_ids=tuple(exp.get("parent_memory_ids", ())),
             )
             
             if is_best:
@@ -104,8 +105,10 @@ class DefaultArchivist(Archivist):
                     validation_summary=unit.metadata.validation_summary,
                     retrieval_count=unit.metadata.retrieval_count,
                     success_count=unit.metadata.success_count,
+                    transfer_history=unit.metadata.transfer_history,
                     protected=True,
                     created_at=unit.metadata.created_at,
+                    updated_at=unit.metadata.updated_at,
                 )
                 unit = MemoryItem(
                     id=unit.id,

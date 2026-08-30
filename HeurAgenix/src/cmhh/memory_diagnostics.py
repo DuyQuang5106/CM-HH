@@ -14,6 +14,9 @@ def build_memory_diagnostics(
     events = _load_events(Path(run_dir) / "events.jsonl")
     retrieval_events = [event for event in events if event.get("event") == "memory_retrieved"]
     reuse_events = [event for event in events if event.get("event") == "memory_reuse_outcome"]
+    transfer_plan_events = [event for event in events if event.get("event") == "memory_transfer_planned"]
+    population_insert_events = [event for event in events if event.get("event") == "memory_inserted_into_population"]
+    transfer_feedback_events = [event for event in events if event.get("event") == "memory_transfer_feedback"]
     eviction_events = [event for event in events if event.get("event") == "memory_evicted"]
     written_ids = {
         event["memory_id"]
@@ -41,6 +44,32 @@ def build_memory_diagnostics(
         for event in reuse_events
         if event.get("post_reuse_validation_delta") is not None
     ]
+    planned_actions = Counter(
+        plan.get("action")
+        for event in transfer_plan_events
+        for plan in event.get("plans", [])
+        if plan.get("action")
+    )
+    transfer_records = [
+        record
+        for event in population_insert_events
+        for record in event.get("transfer_records", [])
+    ]
+    inserted_memory_ids = [
+        record.get("memory_id")
+        for record in transfer_records
+        if record.get("inserted_as_seed") and record.get("memory_id")
+    ]
+    context_memory_ids = [
+        record.get("memory_id")
+        for record in transfer_records
+        if record.get("included_in_context") and record.get("memory_id")
+    ]
+    feedback_memory_ids = [
+        memory_id
+        for event in transfer_feedback_events
+        for memory_id in event.get("memory_ids", [])
+    ]
     eviction_lineage = [
         {
             "memory_id": event.get("memory_id"),
@@ -64,6 +93,18 @@ def build_memory_diagnostics(
             len(set(retrieved_ids)) / len(written_ids) if written_ids else None
         ),
         "total_retrieved_units": len(retrieved_ids),
+        "transfer_plan_events": len(transfer_plan_events),
+        "transfer_action_distribution": dict(sorted(planned_actions.items())),
+        "memory_units_inserted_as_seed": len(set(inserted_memory_ids)),
+        "memory_units_included_in_context": len(set(context_memory_ids)),
+        "transfer_feedback_events": len(transfer_feedback_events),
+        "memory_units_with_transfer_feedback": len(set(feedback_memory_ids)),
+        "retrieval_to_seed_rate": (
+            len(set(inserted_memory_ids)) / len(set(retrieved_ids)) if retrieved_ids else None
+        ),
+        "retrieval_to_context_rate": (
+            len(set(context_memory_ids)) / len(set(retrieved_ids)) if retrieved_ids else None
+        ),
         "top_k_concentration": (
             max(retrieved_counts.values()) / len(retrieved_ids) if retrieved_ids else 0.0
         ),

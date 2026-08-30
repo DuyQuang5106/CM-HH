@@ -3,11 +3,14 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from cmhh.agents.generator import Generator
 from cmhh.baselines import baseline_artifacts
+from cmhh.candidate_extractor import TopKCandidateExtractor
 from cmhh.checkpoint import load_checkpoint, save_checkpoint
 from cmhh.config import ExperimentConfig, StreamConfig
 from cmhh.data.manifest import write_json_atomic
@@ -32,10 +35,12 @@ from cmhh.metrics.continual import (
     zero_shot_forward_transfer,
 )
 from cmhh.models import HeuristicArtifact
+from cmhh.population_builder import MemoryAwarePopulationBuilder, PopulationBuildResult
 from cmhh.reporting import write_evaluation
-from cmhh.retrieval import RetrievalBudget, RetrievalQuery, Retriever, RetrieverV0
+from cmhh.retrieval import RetrievalBudget, RetrievalQuery, RetrievedItem, Retriever, RetrieverV0
 from cmhh.tasks import TaskRegistry
 from cmhh.tracking import ExperimentTracker, create_tracker
+from cmhh.transfer import DeterministicTransferPolicy, TransferPlan, TransferRecord
 
 
 class StreamRunner:
@@ -54,6 +59,9 @@ class StreamRunner:
         cold_start_scores: dict[int, float] | None = None,
         retriever: Retriever | None = None,
         archivist: Archivist | None = None,
+        candidate_extractor: TopKCandidateExtractor | None = None,
+        transfer_policy: DeterministicTransferPolicy | None = None,
+        population_builder: MemoryAwarePopulationBuilder | None = None,
         tracker: ExperimentTracker | None = None,
     ) -> None:
         self.registry = registry
@@ -66,6 +74,14 @@ class StreamRunner:
         self.cold_start_scores = cold_start_scores
         self.retriever = retriever or RetrieverV0()
         self.archivist = archivist or self._default_memory_manager()
+        self.candidate_extractor = candidate_extractor or TopKCandidateExtractor(top_k=self.memory_candidate_top_k)
+        self.transfer_policy = transfer_policy or DeterministicTransferPolicy(
+            direct_reuse_quota=self.direct_reuse_quota,
+            refine_quota=self.refine_quota,
+        )
+        self.population_builder = population_builder or MemoryAwarePopulationBuilder(
+            memory_seed_quota=self.memory_seed_quota,
+        )
         self.working_buffer = WorkingBuffer(capacity=50)
         self.tracker = tracker or create_tracker(
             getattr(experiment, "tracking", None),
@@ -109,6 +125,10 @@ class StreamRunner:
                 "archive_policy": getattr(self.experiment.archive, "policy", "naive_overwrite"),
                 "archive_capacity": self.naive_memory_capacity,
                 "archive_top_k": self.naive_memory_top_k,
+                "archive_candidate_top_k": self.memory_candidate_top_k,
+                "memory_seed_quota": self.memory_seed_quota,
+                "direct_reuse_quota": self.direct_reuse_quota,
+                "refine_quota": self.refine_quota,
             })
 
             for k in range(int(checkpoint["completed_tasks"]), len(self.stream.task_ids)):
@@ -123,30 +143,62 @@ class StreamRunner:
                     )
                     self._write_pre_learning_scores(pre_learning_scores)
 
-                seeds = self._seed_population(task, carryover_population)
-                memory_context = self._retrieve_memory_context(task) if self._uses_persistent_memory else []
+                base_seeds = self._seed_population(task, carryover_population)
+                retrieved_memory = self._retrieve_memory(task) if self._uses_persistent_memory else []
+                transfer_plans = (
+                    self._plan_memory_transfer(task, retrieved_memory)
+                    if self._uses_persistent_memory else []
+                )
+                population_build = (
+                    self._build_initial_population(task, transfer_plans, retrieved_memory, base_seeds)
+                    if self._uses_persistent_memory
+                    else PopulationBuildResult(
+                        seed_population=list(base_seeds),
+                        memory_context=[],
+                        transfer_records=[],
+                    )
+                )
                 carryover_validation_score = (
-                    self._score_seed_population_on_validation(task, seeds, k)
+                    self._score_seed_population_on_validation(task, base_seeds, k)
                     if self._uses_persistent_memory else None
                 )
                 candidates = self.generator.generate(
                     task,
-                    seeds,
+                    population_build.seed_population,
                     self.experiment.search,
                     self.seed + k,
-                    memory_context=memory_context,
+                    memory_context=population_build.memory_context,
                 )
                 ranked_population, validation_summaries = self._rank_on_validation(task, candidates, k)
                 best = ranked_population[0]
+                transfer_records = self._annotate_transfer_records(
+                    task,
+                    population_build.transfer_records,
+                    ranked_population,
+                    best,
+                    validation_summaries[best.heuristic_id],
+                    carryover_validation_score,
+                )
                 if self._uses_population_carryover:
                     carryover_population = ranked_population
                 if self._uses_persistent_memory:
-                    self._write_memory(task, ranked_population, validation_summaries)
                     self._log_memory_reuse_outcome(
                         task,
-                        memory_context,
+                        transfer_records,
                         validation_summaries[best.heuristic_id],
                         carryover_validation_score,
+                    )
+                    self._update_memory_transfer_feedback(
+                        task,
+                        transfer_records,
+                        validation_summaries[best.heuristic_id],
+                        carryover_validation_score,
+                    )
+                    self._write_memory(
+                        task,
+                        ranked_population,
+                        validation_summaries,
+                        transfer_records,
                     )
                 selected[task.task_id] = best.to_dict()
                 self._event("candidate_selected", task_id=task.task_id, heuristic_id=best.heuristic_id)
@@ -347,6 +399,30 @@ class StreamRunner:
             return self.experiment.archive.top_k
         return self.NAIVE_MEMORY_TOP_K
 
+    @property
+    def memory_candidate_top_k(self) -> int:
+        if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
+            return self.experiment.archive.candidate_top_k or self.experiment.archive.top_k
+        return self.NAIVE_MEMORY_TOP_K
+
+    @property
+    def memory_seed_quota(self) -> int:
+        if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
+            return self.experiment.archive.memory_seed_quota
+        return 1
+
+    @property
+    def direct_reuse_quota(self) -> int:
+        if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
+            return self.experiment.archive.direct_reuse_quota
+        return 1
+
+    @property
+    def refine_quota(self) -> int | None:
+        if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
+            return self.experiment.archive.refine_quota
+        return None
+
     def _default_memory_manager(self) -> Archivist:
         if self._uses_naive_memory:
             return NaiveMemoryManager(max_capacity=self.naive_memory_capacity)
@@ -355,7 +431,7 @@ class StreamRunner:
     def _memory_store(self) -> MemoryStore:
         return MemoryStore(self.run_dir / "memory" / "memory.jsonl")
 
-    def _retrieve_memory_context(self, task) -> list[MemoryUnit]:
+    def _retrieve_memory(self, task) -> list[RetrievedItem]:
         store = self._memory_store()
         query = RetrievalQuery(
             problem=task.problem,
@@ -376,20 +452,136 @@ class StreamRunner:
             retrieval_scores=[item.score for item in retrieved],
             source_tasks=[item.unit.scope.task_id for item in retrieved],
             duplicate_key_rate=duplicate_key_rate,
-            used_in_generation=True,
+            used_in_generation=bool(retrieved),
         )
-        return [item.unit for item in retrieved]
+        return retrieved
+
+    def _plan_memory_transfer(
+        self,
+        task,
+        retrieved_memory: list[RetrievedItem],
+    ) -> list[TransferPlan]:
+        plans = self.transfer_policy.plan(task=task, retrieved=retrieved_memory)
+        self._event(
+            "memory_transfer_planned",
+            task_id=task.task_id,
+            plans=[plan.to_dict() for plan in plans],
+        )
+        return plans
+
+    def _build_initial_population(
+        self,
+        task,
+        transfer_plans: list[TransferPlan],
+        retrieved_memory: list[RetrievedItem],
+        base_seeds: list[HeuristicArtifact],
+    ) -> PopulationBuildResult:
+        result = self.population_builder.build(
+            task=task,
+            transfer_plans=transfer_plans,
+            retrieved_memory=[item.unit for item in retrieved_memory],
+            base_seed_population=base_seeds,
+        )
+        self._event(
+            "memory_inserted_into_population",
+            task_id=task.task_id,
+            seed_heuristic_ids=[artifact.heuristic_id for artifact in result.seed_population],
+            memory_context_ids=[unit.id for unit in result.memory_context],
+            transfer_records=[record.to_dict() for record in result.transfer_records],
+        )
+        return result
+
+    def _annotate_transfer_records(
+        self,
+        task,
+        transfer_records: list[TransferRecord],
+        ranked_population: list[HeuristicArtifact],
+        selected: HeuristicArtifact,
+        selected_validation_summary: dict,
+        baseline_validation_score: float | None,
+    ) -> list[TransferRecord]:
+        if not transfer_records:
+            return []
+
+        ranked_ids = {artifact.heuristic_id for artifact in ranked_population}
+        child_parent_ids = {
+            parent_id
+            for artifact in ranked_population
+            for parent_id in artifact.parent_ids
+        }
+        selected_parent_ids = set(selected.parent_ids)
+        selected_score = selected_validation_summary.get("score")
+        delta = (
+            None
+            if selected_score is None or baseline_validation_score is None
+            else float(selected_score) - baseline_validation_score
+        )
+
+        annotated: list[TransferRecord] = []
+        for record in transfer_records:
+            survived = record.artifact_id in ranked_ids
+            produced_child = record.artifact_id in child_parent_ids or record.memory_id in child_parent_ids
+            produced_selected_child = (
+                record.artifact_id in selected_parent_ids
+                or record.memory_id in selected_parent_ids
+                or selected.heuristic_id == record.artifact_id
+            )
+            updated = replace(
+                record,
+                survived_selection=survived,
+                produced_child=produced_child,
+                produced_selected_child=produced_selected_child,
+                validation_delta=delta if (survived or produced_child or produced_selected_child) else None,
+            )
+            annotated.append(updated)
+            self._event(
+                "memory_survived_selection",
+                task_id=task.task_id,
+                memory_id=updated.memory_id,
+                artifact_id=updated.artifact_id,
+                action=updated.action,
+                survived_selection=updated.survived_selection,
+                produced_child=updated.produced_child,
+                produced_selected_child=updated.produced_selected_child,
+                validation_delta=updated.validation_delta,
+            )
+        return annotated
 
     def _write_memory(
         self,
         task,
         ranked_population: list[HeuristicArtifact],
         validation_summaries: dict[str, dict],
+        transfer_records: list[TransferRecord] | None = None,
     ) -> None:
         self.working_buffer.clear()
-        for artifact in ranked_population:
-            summary = validation_summaries[artifact.heuristic_id]
-            self.working_buffer.add_experience(artifact, summary, task)
+        parent_memory_by_artifact = self._parent_memory_by_artifact(transfer_records or [])
+        memory_candidates = self.candidate_extractor.extract(
+            task=task,
+            final_population=ranked_population,
+            validation_summaries=validation_summaries,
+            parent_memory_by_artifact=parent_memory_by_artifact,
+        )
+        self._event(
+            "memory_candidate_extracted",
+            task_id=task.task_id,
+            candidates=[candidate.to_dict() for candidate in memory_candidates],
+        )
+        for candidate in memory_candidates:
+            if candidate.parent_memory_ids:
+                self._event(
+                    "memory_offspring_created",
+                    task_id=task.task_id,
+                    heuristic_id=candidate.artifact.heuristic_id,
+                    parent_memory_ids=list(candidate.parent_memory_ids),
+                    parent_artifact_ids=list(candidate.parent_artifact_ids),
+                )
+            self.working_buffer.add_experience(
+                candidate.artifact,
+                candidate.validation_summary,
+                task,
+                parent_memory_ids=candidate.parent_memory_ids,
+            )
 
         store = self._memory_store()
         result = self.archivist.process_transaction(self.working_buffer, store, task)
@@ -397,6 +589,12 @@ class StreamRunner:
         for memory_id in result.admitted_ids:
             self._event(
                 "memory_written",
+                task_id=task.task_id,
+                memory_id=memory_id,
+                manager="managed_archivist" if self._uses_managed_memory else "naive",
+            )
+            self._event(
+                "memory_admitted",
                 task_id=task.task_id,
                 memory_id=memory_id,
                 manager="managed_archivist" if self._uses_managed_memory else "naive",
@@ -415,6 +613,30 @@ class StreamRunner:
                 memory_id=memory_id,
                 manager="managed_archivist" if self._uses_managed_memory else "naive",
             )
+        self._event(
+            "archivist_transaction_committed",
+            task_id=task.task_id,
+            admitted_ids=list(result.admitted_ids),
+            protected_ids=list(result.protected_ids),
+            evicted_ids=list(result.evicted_ids),
+            manager="managed_archivist" if self._uses_managed_memory else "naive",
+        )
+
+    def _parent_memory_by_artifact(
+        self,
+        transfer_records: list[TransferRecord],
+    ) -> dict[str, tuple[str, ...]]:
+        mapping: dict[str, list[str]] = {}
+        for record in transfer_records:
+            if not (record.inserted_as_seed or record.included_in_context):
+                continue
+            mapping.setdefault(record.artifact_id, [])
+            if record.memory_id not in mapping[record.artifact_id]:
+                mapping[record.artifact_id].append(record.memory_id)
+        return {
+            artifact_id: tuple(memory_ids)
+            for artifact_id, memory_ids in mapping.items()
+        }
 
     def _score_seed_population_on_validation(
         self,
@@ -445,23 +667,60 @@ class StreamRunner:
     def _log_memory_reuse_outcome(
         self,
         task,
-        memory_context: list[MemoryUnit],
+        transfer_records: list[TransferRecord],
         selected_validation_summary: dict,
         carryover_validation_score: float | None,
     ) -> None:
         selected_score = selected_validation_summary.get("score")
+        used_records = [
+            record
+            for record in transfer_records
+            if record.inserted_as_seed or record.included_in_context
+        ]
         delta = (
             None
-            if not memory_context or carryover_validation_score is None or selected_score is None
+            if not used_records or carryover_validation_score is None or selected_score is None
             else float(selected_score) - carryover_validation_score
         )
         self._event(
             "memory_reuse_outcome",
             task_id=task.task_id,
-            memory_ids=[unit.id for unit in memory_context],
+            memory_ids=[record.memory_id for record in used_records],
+            transfer_records=[record.to_dict() for record in transfer_records],
             selected_validation_score=selected_score,
             carryover_validation_score=carryover_validation_score,
             post_reuse_validation_delta=delta,
+        )
+
+    def _update_memory_transfer_feedback(
+        self,
+        task,
+        transfer_records: list[TransferRecord],
+        selected_validation_summary: dict,
+        carryover_validation_score: float | None,
+    ) -> None:
+        used_memory_ids = [
+            record.memory_id
+            for record in transfer_records
+            if record.inserted_as_seed or record.included_in_context
+        ]
+        if not used_memory_ids:
+            return
+        selected_score = selected_validation_summary.get("score")
+        updated = self._memory_store().record_transfer_feedback(
+            used_memory_ids,
+            split="validation",
+            task_id=task.task_id,
+            selected_validation_score=None if selected_score is None else float(selected_score),
+            baseline_validation_score=carryover_validation_score,
+        )
+        self._event(
+            "memory_transfer_feedback",
+            task_id=task.task_id,
+            memory_ids=[item.id for item in updated],
+            split="validation",
+            selected_validation_score=selected_score,
+            baseline_validation_score=carryover_validation_score,
         )
 
     def _task_signature(self, task) -> dict:
