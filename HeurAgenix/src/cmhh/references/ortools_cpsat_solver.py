@@ -20,7 +20,8 @@ class ORToolsCPSATSolverAdapter(ReferenceSolverAdapter):
         except ImportError as exc:
             raise ImportError(
                 "OR-Tools is required for JSSP reference generation. "
-                "Run `uv sync` to install all managed dependencies."
+                "Create the conda env from `environment.yml` or run "
+                "`python -m pip install ortools` in the active environment."
             ) from exc
 
         started = time.perf_counter()

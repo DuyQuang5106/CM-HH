@@ -23,7 +23,8 @@ class PyVRPSolverAdapter(ReferenceSolverAdapter):
         except ImportError as exc:
             raise ImportError(
                 "PyVRP is required for CVRP reference generation. "
-                "Run `uv sync` to install all managed dependencies."
+                "Create the conda env from `environment.yml` or run "
+                "`python -m pip install pyvrp` in the active environment."
             ) from exc
 
         ensure_tsplib95_fallback()

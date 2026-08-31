@@ -1,178 +1,149 @@
-# Phase 1 Experiment Guide
+# CM-HH Phase 1 experiment guide
 
-This guide runs the H1/H1b baseline stack:
+Phase 1 dung de so sanh cac condition hoc lien tuc tren cac stream TSP/CVRP/JSSP. Cach chay canonical hien nay la:
 
-1. `h1_isolated`: isolated cold-start, no stream memory.
-2. `h1_population_carryover`: sequential stream, final population carries to
-   the next task, no external memory.
-3. `h1_naive_sequential`: the same population carryover plus naive external
-   memory retrieval.
-4. `h1_naive_unbounded`: the same naive memory policy without capacity pressure.
-5. `archivist_managed`: managed-memory prototype with Archivist admission,
-   task-anchor protection, and capacity-aware eviction.
-6. `eoh_cold_start`: official EOH cold-start baseline where available.
+```powershell
+uv run cmhh run-suite ...
+```
 
-The H1b control is frozen as:
+Khong can tu viet vong lap PowerShell hoac goi tung subcommand cap thap cho tung condition nua. `run-suite` se xu ly stream, seed, condition, run id, prepare reference/data va ghi `resolved_config.yaml`.
 
-`naive_memory_sequential = population_carryover + naive external memory`.
+---
 
-Naive memory must not replace population carryover.
+## 1. Setup
 
-`archivist_managed` is currently a managed-memory prototype, not yet the final
-full CM-HH architecture. Full CM-HH still requires explicit
-`CandidateExtractor`, `TransferPolicy`, `PopulationBuilder`, validation-only
-transfer feedback, and child-memory lineage. See
-`../../../IDEA/source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`
-from the repository root for the full design.
-
-## 1. Environment
-
-Run commands from the `HeurAgenix` repository root.
+Chay tu thu muc `HeurAgenix`:
 
 ```powershell
 cd C:\Users\LENOVO\Projects\CM_HH\HeurAgenix
-$env:PYTHONPATH = "src"
+uv sync
+uv run cmhh --help
+uv run cmhh run-suite --help
 ```
 
-If you use the Conda environment:
-
-```powershell
-conda env create -f environment.yml
-conda activate heuragenix
-$env:PYTHONPATH = "src"
-```
-
-## 2. Validate Configs
-
-```powershell
-python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/h1_isolated.yaml
-python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/h1_population_carryover.yaml
-python -m cmhh.cli validate-config --experiment cmhh/configs/experiments/h1_naive_sequential.yaml
-```
-
-Warnings about missing frozen references or unfinished adapters are expected
-until Phase 0 gates are complete. Errors should be fixed before running H1.
-
-## 3. Prepare Data And References
-
-Generate deterministic TSP data:
-
-```powershell
-python -m cmhh.cli generate-data --experiment cmhh/configs/experiments/h1_isolated.yaml --seed 42
-```
-
-Generate and verify reference values. Start with a small pilot:
-
-```powershell
-python -m cmhh.cli generate-references --experiment cmhh/configs/experiments/h1_isolated.yaml --split validation --split test --pilot-count 5
-python -m cmhh.cli verify-references --experiment cmhh/configs/experiments/h1_isolated.yaml --split validation --split test
-```
-
-For a real H1/H1b run, remove `--pilot-count 5` after the pilot succeeds and
-regenerate full validation/test references.
-
-## 4. LLM Config
-
-Copy `cmhh/configs/llm/llm_config.template.json` to a local ignored path, then
-fill in provider URL, model, and API key.
-
-Recommended local path:
+Neu chay voi LLM, cau hinh:
 
 ```text
-data/llm_config/cmhh_phase1.json
+cmhh/configs/llm/llm_config.local.json
 ```
 
-Do not commit the filled config.
+---
 
-## 5. Smoke Run Without LLM
+## 2. Kiem tra config/data/reference
 
-This checks the runner, metrics, checkpointing, and memory artifacts cheaply.
-It is not a scientific H1 result.
+Prepare-only cho mot stream:
 
 ```powershell
-python -m cmhh.cli run-isolated --experiment cmhh/configs/experiments/h1_isolated.yaml --generator baseline --run-id h1_isolated_smoke_seed1 --seed 1
-python -m cmhh.cli run-stream --experiment cmhh/configs/experiments/h1_population_carryover.yaml --generator baseline --run-id h1_population_smoke_seed1 --seed 1 --cold-start-scores cmhh/results/h1_isolated_smoke_seed1/cold_start_scores.json
-python -m cmhh.cli run-stream --experiment cmhh/configs/experiments/h1_naive_sequential.yaml --generator baseline --run-id h1_naive_smoke_seed1 --seed 1 --cold-start-scores cmhh/results/h1_isolated_smoke_seed1/cold_start_scores.json
+uv run cmhh run-suite --streams tsp_size_ascending --conditions isolated --seeds 1 --mode smoke --prepare-only --skip-references --no-wandb
 ```
 
-Audit the stream runs:
+Neu muon validate/generate/verify references, bo `--skip-references`:
 
 ```powershell
-python -m cmhh.cli audit-run --experiment cmhh/configs/experiments/h1_population_carryover.yaml --run-id h1_population_smoke_seed1
-python -m cmhh.cli audit-run --experiment cmhh/configs/experiments/h1_naive_sequential.yaml --run-id h1_naive_smoke_seed1
+uv run cmhh run-suite --streams tsp_size_ascending --conditions isolated --seeds 1 --mode smoke --prepare-only --no-wandb
 ```
 
-## 6. Real Phase 1 Runs
+---
 
-Run the isolated cold-start condition first because it produces
-`cold_start_scores.json` for forward transfer.
+## 3. Smoke run
+
+Smoke nho nhat:
 
 ```powershell
-python -m cmhh.cli run-isolated --experiment cmhh/configs/experiments/h1_isolated.yaml --generator heuragenix --llm-config data/llm_config/cmhh_phase1.json --run-id h1_isolated_seed1 --seed 1
+uv run cmhh run-suite --streams tsp_n20_smoke --conditions isolated --seeds 1 --mode smoke --skip-references --no-wandb
 ```
 
-Run H1 population carryover:
+Smoke cho stream Phase 1:
 
 ```powershell
-python -m cmhh.cli run-stream --experiment cmhh/configs/experiments/h1_population_carryover.yaml --generator heuragenix --llm-config data/llm_config/cmhh_phase1.json --run-id h1_population_carryover_seed1 --seed 1 --cold-start-scores cmhh/results/h1_isolated_seed1/cold_start_scores.json
+uv run cmhh run-suite --streams tsp_size_ascending --conditions isolated,population,managed --seeds 1 --mode smoke --skip-references --no-wandb
 ```
 
-Run H1b naive external memory:
+---
+
+## 4. Pilot run
+
+Pilot voi LLM tren mot stream:
 
 ```powershell
-python -m cmhh.cli run-stream --experiment cmhh/configs/experiments/h1_naive_sequential.yaml --generator heuragenix --llm-config data/llm_config/cmhh_phase1.json --run-id h1_naive_memory_seed1 --seed 1 --cold-start-scores cmhh/results/h1_isolated_seed1/cold_start_scores.json
+uv run cmhh run-suite --streams tsp_size_ascending --conditions isolated,population,managed --seeds 1,2,3 --mode pilot --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
 ```
 
-If a run is interrupted, resume with the same run id:
+Pilot tren tap stream mac dinh:
 
 ```powershell
-python -m cmhh.cli run-stream --experiment cmhh/configs/experiments/h1_naive_sequential.yaml --generator heuragenix --llm-config data/llm_config/cmhh_phase1.json --run-id h1_naive_memory_seed1 --seed 1 --cold-start-scores cmhh/results/h1_isolated_seed1/cold_start_scores.json --resume
+uv run cmhh run-suite --mode pilot --seeds 1,2,3 --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
 ```
 
-## 7. Multi-Seed Loop
+---
 
-After one audited seed succeeds, repeat for seeds 1, 2, and 3.
+## 5. Full Phase 1 benchmark
+
+Full cho TSP ascending:
 
 ```powershell
-foreach ($seed in 1,2,3) {
-  python -m cmhh.cli run-isolated --experiment cmhh/configs/experiments/h1_isolated.yaml --generator heuragenix --llm-config data/llm_config/cmhh_phase1.json --run-id "h1_isolated_seed$seed" --seed $seed
-  python -m cmhh.cli run-stream --experiment cmhh/configs/experiments/h1_population_carryover.yaml --generator heuragenix --llm-config data/llm_config/cmhh_phase1.json --run-id "h1_population_carryover_seed$seed" --seed $seed --cold-start-scores "cmhh/results/h1_isolated_seed$seed/cold_start_scores.json"
-  python -m cmhh.cli run-stream --experiment cmhh/configs/experiments/h1_naive_sequential.yaml --generator heuragenix --llm-config data/llm_config/cmhh_phase1.json --run-id "h1_naive_memory_seed$seed" --seed $seed --cold-start-scores "cmhh/results/h1_isolated_seed$seed/cold_start_scores.json"
-}
+uv run cmhh run-suite --streams tsp_size_ascending --conditions isolated,population,naive-bounded,naive-unbounded,managed --seeds 1,2,3,4,5 --mode full --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
 ```
 
-## 8. Artifacts To Inspect
+Full cho nhieu stream Phase 1:
 
-For every stream run:
+```powershell
+uv run cmhh run-suite --streams tsp_size_ascending,tsp_size_descending,cvrp_size_ascending,cvrp_size_descending,jssp_size_ascending,jssp_size_descending --conditions isolated,population,naive-bounded,naive-unbounded,managed --seeds 1,2,3,4,5 --mode full --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
+```
 
-- `cmhh/results/<run-id>/performance_matrix.csv`
-- `cmhh/results/<run-id>/metrics.json`
-- `cmhh/results/<run-id>/events.jsonl`
-- `cmhh/results/<run-id>/checkpoints/latest.json`
+Resume neu bi gian doan:
 
-For naive-memory runs:
+```powershell
+uv run cmhh run-suite --streams tsp_size_ascending --conditions isolated,population,naive-bounded,naive-unbounded,managed --seeds 1,2,3,4,5 --mode full --resume --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
+```
 
-- `cmhh/results/<run-id>/memory/memory.jsonl`
-- `cmhh/results/<run-id>/memory/diagnostics.json`
-- `cmhh/results/<run-id>/candidates/<task-id>/memory_context.json`
+---
 
-Key diagnostics in `memory/diagnostics.json`:
+## 6. Conditions trong Phase 1
 
-- `retrieval_coverage`
-- `top_k_concentration`
-- `duplicate_key_rate_mean`
-- `source_task_distribution`
-- `memory_age_distribution`
-- `post_reuse_validation_delta_mean`
-- `failure_mode_labels`
+| Condition | Y nghia |
+|---|---|
+| `isolated` | Cold start doc lap tung task |
+| `population` | Population carryover |
+| `naive-bounded` | Naive memory co gioi han |
+| `naive-unbounded` | Naive memory khong gioi han |
+| `managed` | CM-HH Archivist managed |
 
-## 9. Interpretation
+---
 
-H1 compares `h1_isolated` against `h1_population_carryover`.
+## 7. File ket qua can xem
 
-H1b compares `h1_population_carryover` against `h1_naive_sequential`.
+Moi run nam trong:
 
-Use `average_final_performance`, `backward_transfer`, and `forward_transfer`
-from `metrics.json`. Use the naive-memory diagnostics only to explain why H1b
-helped or hurt; do not use test results for memory writing, retrieval scoring,
-candidate selection, or stopping decisions.
+```text
+cmhh/results/<run_id>/
+```
+
+Cac file chinh:
+
+```text
+resolved_config.yaml
+manifest.json
+metrics.json
+performance_matrix.csv
+events.jsonl
+cold_start_scores.json
+memory/
+```
+
+`resolved_config.yaml` la file nen dinh kem hoac luu lai khi tai lap thuc nghiem, vi no ghi cau hinh sau khi da ap dung mode, seed va override runtime.
+
+---
+
+## 8. Lenh cap thap chi dung khi debug
+
+Van co the dung cac subcommand cap thap neu can debug rieng tung buoc:
+
+```powershell
+uv run cmhh validate-config --experiment cmhh/configs/experiments/h1_isolated.yaml
+uv run cmhh generate-data --experiment cmhh/configs/experiments/h1_isolated.yaml --seed 42
+uv run cmhh generate-references --experiment cmhh/configs/experiments/h1_isolated.yaml --split validation --split test --pilot-count 5
+uv run cmhh verify-references --experiment cmhh/configs/experiments/h1_isolated.yaml --split validation --split test
+```
+
+Cho experiment thong thuong, uu tien `run-suite` thay vi ghep nhieu lenh debug thu cong.

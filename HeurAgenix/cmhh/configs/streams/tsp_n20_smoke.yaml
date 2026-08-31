@@ -1,0 +1,5 @@
+version: 1
+stream_id: tsp_n20_smoke
+description: Minimal single-task TSP stream for CLI smoke checks.
+task_ids:
+  - tsp_n20_uniform

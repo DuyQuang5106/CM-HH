@@ -3,6 +3,40 @@ HeurAgenix is a novel framework based on LLM, designed to generate, evolve, eval
 
 ![Framework Overview](doc/framework.png)
 
+## Running CM-HH experiments
+
+The canonical CM-HH interface is now the Python CLI exposed by `uv` from the repository root:
+
+```bash
+uv sync
+uv run cmhh --help
+uv run cmhh run-stream --help
+uv run cmhh run-suite --help
+```
+
+Use YAML for scientific configuration and CLI flags for runtime choices:
+
+```text
+experiment YAML   stream YAML
+       \             /
+        \           /
+         Python CLI + runtime overrides
+                    |
+                    v
+              CM-HH runner
+```
+
+Examples:
+
+```bash
+uv run cmhh run-suite --streams tsp_size_ascending --seeds 1 --mode smoke --skip-references --no-wandb
+uv run cmhh run-suite --streams tsp_size_ascending --seeds 1 --mode pilot --llm-config cmhh/configs/llm/llm_config.local.json
+uv run cmhh run-suite --streams tsp_size_ascending --seeds 1 2 3 4 5 --mode full --llm-config cmhh/configs/llm/llm_config.local.json
+uv run cmhh run-suite --streams tsp_size_ascending --seeds 1 2 3 --mode full --resume --llm-config cmhh/configs/llm/llm_config.local.json
+```
+
+macOS, Linux, Windows, and server environments use the same `uv run cmhh ...` commands. PowerShell scripts in `scripts/` are compatibility wrappers only. See `docs/CMHH_CANONICAL_CLI.md` for the full command map and mode semantics.
+
 # Prepare
 
 ## Set up environment

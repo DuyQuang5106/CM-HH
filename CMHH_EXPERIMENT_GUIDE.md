@@ -1,100 +1,90 @@
-# CMHH — Experiment Execution & Results Analysis Guide
+# CMHH - Experiment execution and results analysis guide
 
-**Project:** Continual Multi-Agent Hyper-Heuristics (CM-HH)  
-**Target Audience:** ML Research Engineers, PhD Researchers, Authors  
-**Repository Root:** `c:\Users\LENOVO\Projects\CM_HH`
+**Project:** Continual Multi-Agent Hyper-Heuristics (CM-HH)
+
+This guide documents the current cross-platform way to run experiments. The canonical command path is:
+
+```powershell
+uv run cmhh run-suite ...
+```
+
+This works on Windows, macOS, Linux, remote servers, and SLURM jobs after `uv sync`. PowerShell scripts are Windows-only compatibility wrappers and are not the recommended execution path.
 
 ---
 
-## 1. Overview & Experimental Protocol
+## 1. Experimental protocol
 
-CM-HH evaluates continual learning in LLM-driven hyper-heuristic search across a sequential stream of combinatorial optimization tasks:
-
-$$
-T_1 \rightarrow T_2 \rightarrow T_3 \rightarrow \dots \rightarrow T_K
-$$
+CM-HH evaluates continual learning across streams of combinatorial optimization tasks:
 
 ```text
-CandidateExtractor -> Archivist Gatekeeper -> MemoryStore -> Retriever Engine
-    -> TransferPolicy -> PopulationBuilder -> Evolution Search -> Transfer Feedback
+T1 -> T2 -> T3 -> ... -> TK
 ```
 
----
+Each benchmark stream should be evaluated across 3-5 independent seeds. Paper tables should report mean +/- std across seeds for:
 
-### 1.1 Benchmark Experimental Conditions (5 Comparison Baselines)
-
-Every benchmark stream is evaluated across **5 conditions** to isolate the causal impact of managed memory consolidation:
-
-1. **`isolated` (Cold-Start Baseline)**:
-   - Each task $T_k$ is solved from scratch. No memory or heuristic transfer across tasks.
-2. **`population_carryover` (Working Population Baseline)**:
-   - The final population of heuristics from task $T_{k-1}$ is passed directly as seeds to task $T_k$. No persistent external memory store.
-3. **`naive_bounded` (Uncurated Bounded Memory Baseline)**:
-   - All heuristics surviving validation are written to a flat `MemoryStore` (capacity $C=20$, top-$k=5$). Naive FIFO/score eviction without anchor protection.
-4. **`naive_unbounded` (Unbounded Memory Diagnostic)**:
-   - Same uncurated memory policy without capacity limits. Disentangles capacity-driven forgetting from retrieval noise.
-5. **`archivist_managed` (CM-HH Managed Archivist)**:
-   - Working buffer candidates pass through `DefaultArchivist` with `elite_validation` admission, anchor protection for top task heuristics, invariant checks, and utility-recency eviction ranking.
+- `AF`: average final performance.
+- `BWT`: backward transfer / forgetting.
+- `FWT`: forward transfer.
 
 ---
 
-### 1.2 The 13 Benchmark Stream Suite
+## 2. Conditions
 
-| Stream ID | Problem Domain | Task Ordering & Distribution Shift |
-|---|---|---|
-| **`tsp_size_ascending`** | TSP | Within-domain scale transfer: $n20 \to n50 \to n100 \to n200$ (Primary Pilot) |
-| **`tsp_size_descending`** | TSP | Within-domain reverse scale: $n200 \to n100 \to n50 \to n20$ |
-| **`tsp_random_perm_1`** | TSP | Randomized scale ordering: $n50 \to n200 \to n20 \to n100$ |
-| **`tsp_random_perm_2`** | TSP | Randomized scale ordering: $n100 \to n20 \to n200 \to n50$ |
-| **`cvrp_size_ascending`** | CVRP | Vehicle routing scale transfer: $n20 \to n50 \to n100$ |
-| **`cvrp_size_descending`** | CVRP | Vehicle routing reverse scale: $n100 \to n50 \to n20$ |
-| **`jssp_size_ascending`** | JSSP | Job-shop scale transfer: $3\times3 \to 6\times6 \to 10\times10$ |
-| **`jssp_size_descending`** | JSSP | Job-shop reverse scale: $50\times10 \to 20\times5 \to 10\times5$ |
-| **`cross_problem_tsp_cvrp_jssp`** | Cross-Domain | Cross-problem transfer: $\text{TSP} \to \text{CVRP} \to \text{JSSP}$ |
-| **`tsp_stationary`** | TSP | Stationary control: $n50 \times 4$ (Stability test) |
-| **`tsp_revisit`** | TSP | Architecture revisit: $n50 \to n100 \to n50 \to n200$ |
-| **`related_pair_tsp_cvrp_tsp`** | Cross-Domain | Related pair cycle: $\text{TSP} \to \text{CVRP} \to \text{TSP}$ |
-| **`unrelated_pair_tsp_jssp_tsp`**| Cross-Domain | Unrelated pair cycle: $\text{TSP} \to \text{JSSP} \to \text{TSP}$ |
+| Condition | Meaning |
+|---|---|
+| `isolated` | Cold-start baseline, no transfer |
+| `population` | Final population carries over to next task |
+| `naive-bounded` | Naive external memory with bounded capacity |
+| `naive-unbounded` | Naive external memory without capacity pressure |
+| `managed` | CM-HH managed memory with Archivist/Retriever/Transfer Policy |
 
 ---
 
-### 1.3 Statistical Protocol: 3 to 5 Independent Seeds Required
+## 3. Streams
 
-> [!IMPORTANT]
-> **Mandatory Statistical Reporting:**
-> To account for LLM stochasticity and evolutionary variance, every stream must be evaluated across **3 to 5 independent runs (Seeds: 1, 2, 3, 4, 5)**.
-> All paper tables report **$\text{Mean} \pm \text{Std}$** across seeds for $AF$, $BWT$, and $FWT$.
-
----
-
-### 1.4 Production Search Budget
-
-```yaml
-search:
-  generations: 100
-  candidates_per_generation: 5
-  max_llm_calls: 500
-evaluation:
-  instance_timeout_seconds: 30
-  batch_timeout_seconds: 900
-```
+| Stream ID | Problem domain |
+|---|---|
+| `tsp_size_ascending` | TSP size ascending |
+| `tsp_size_descending` | TSP size descending |
+| `tsp_random_perm_1` | TSP randomized ordering 1 |
+| `tsp_random_perm_2` | TSP randomized ordering 2 |
+| `cvrp_size_ascending` | CVRP size ascending |
+| `cvrp_size_descending` | CVRP size descending |
+| `jssp_size_ascending` | JSSP size ascending |
+| `jssp_size_descending` | JSSP size descending |
+| `cross_problem_tsp_cvrp_jssp` | TSP -> CVRP -> JSSP |
+| `tsp_stationary` | TSP stationary control |
+| `tsp_revisit` | TSP revisit stream |
+| `related_pair_tsp_cvrp_tsp` | Related cross-domain pair |
+| `unrelated_pair_tsp_jssp_tsp` | Unrelated cross-domain pair |
 
 ---
 
-## 2. Environment & Quickstart Setup
+## 4. Setup
 
-### 2.1 Dependencies Installation
+Run from the `HeurAgenix` directory:
+
 ```powershell
-pip install -e .
+cd C:\Users\LENOVO\Projects\CM_HH\HeurAgenix
+uv sync
+uv run cmhh --help
+uv run cmhh run-suite --help
 ```
 
-### 2.2 LLM Configuration (`HeurAgenix/cmhh/configs/llm/llm_config.local.json`)
+LLM runs need:
+
+```text
+cmhh/configs/llm/llm_config.local.json
+```
+
+Example:
+
 ```json
 {
   "type": "api_model",
   "name": "nvidia-gpt-oss-120b",
   "url": "https://integrate.api.nvidia.com/v1/chat/completions",
-  "api_key": "nvapi-your-api-key-here",
+  "api_key": "your-api-key-here",
   "model": "openai/gpt-oss-120b",
   "temperature": 1,
   "max_tokens": 4096,
@@ -105,58 +95,103 @@ pip install -e .
 
 ---
 
-## 3. Execution Commands
+## 5. Execution commands
 
-### 3.1 Interactive Stream Runner (Recommended)
+Smoke test without LLM:
+
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_menu.ps1
+uv run cmhh run-suite --streams tsp_n20_smoke --conditions isolated --seeds 1 --mode smoke --skip-references --no-wandb
 ```
 
-### 3.2 Running Individual Streams with 3–5 Seeds
+Quick LLM smoke:
+
 ```powershell
-# TSP Ascending (5 seeds):
-powershell -ExecutionPolicy Bypass -File scripts\run_stream_1_tsp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5
-
-# CVRP Ascending (5 seeds):
-powershell -ExecutionPolicy Bypass -File scripts\run_stream_3_cvrp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5
-
-# JSSP Ascending (5 seeds):
-powershell -ExecutionPolicy Bypass -File scripts\run_stream_4_jssp_ascending.ps1 -FullBenchmark -Seeds 1,2,3,4,5
-
-# Cross-Problem Transfer (5 seeds):
-powershell -ExecutionPolicy Bypass -File scripts\run_stream_5_cross_domain.ps1 -FullBenchmark -Seeds 1,2,3,4,5
+uv run cmhh run-suite --streams tsp_size_ascending --conditions isolated --seeds 1 --mode quick-smoke --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
 ```
 
-### 3.3 Automated Full-Suite Multi-Seed Execution
-```powershell
-# 3 Seeds on all 13 streams:
-powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3 -LlmConfig cmhh/configs/llm/llm_config.local.json
+Pilot run:
 
-# 5 Seeds on all 13 streams:
-powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3,4,5 -LlmConfig cmhh/configs/llm/llm_config.local.json
+```powershell
+uv run cmhh run-suite --streams tsp_size_ascending,cvrp_size_ascending,jssp_size_ascending --conditions isolated,population,managed --seeds 1,2,3 --mode pilot --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
 ```
 
-### 3.4 Resuming an Interrupted Benchmark
+Full benchmark for one stream:
+
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 -Seeds 1,2,3,4,5 -Resume
+uv run cmhh run-suite --streams cvrp_size_descending --conditions isolated,population,naive-bounded,naive-unbounded,managed --seeds 1,2,3,4,5 --mode full --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
+```
+
+Full benchmark for all streams:
+
+```powershell
+uv run cmhh run-suite --all-streams --conditions isolated,population,naive-bounded,naive-unbounded,managed --seeds 1,2,3,4,5 --mode full --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
+```
+
+Resume:
+
+```powershell
+uv run cmhh run-suite --all-streams --conditions isolated,population,naive-bounded,naive-unbounded,managed --seeds 1,2,3,4,5 --mode full --resume --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
 ```
 
 ---
 
-## 4. Live Monitoring & Metrics Inspection
+## 6. Server or SLURM example
 
-### 4.1 Real-Time Watcher
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\watch_phase1_tsp_run.ps1
+On a server, the command is the same. Example using one seed from an array job:
+
+```bash
+cd /path/to/CM_HH/HeurAgenix
+uv sync
+uv run cmhh run-suite --streams cvrp_size_descending --conditions isolated,population,managed --seeds "$SLURM_ARRAY_TASK_ID" --mode full --llm-config cmhh/configs/llm/llm_config.local.json --no-wandb
 ```
 
-### 4.2 Reading Output Reports
-Output directories are structured under: `HeurAgenix/cmhh/results/<stream_id>_<timestamp>_<condition>_seed<seed>/`
+---
 
-1. **`performance_matrix.csv`**: Contains relative gap matrix $R_{k,j} = -\frac{\text{Heuristic} - \text{Optimal}}{\text{Optimal}}$.
-2. **`metrics.json`**:
-   - $AF = \frac{1}{K} \sum_{j=1}^K R_{K, j}$
-   - $BWT = \frac{1}{K-1} \sum_{j=1}^{K-1} (R_{K, j} - R_{j, j})$
-   - $FWT = \frac{1}{K-1} \sum_{j=2}^K (R_{j-1, j}^{\text{probe}} - R_{\text{isolated}, j})$
-3. **`memory/diagnostics.json`**: Retrieval coverage, admission/eviction lineage, reuse delta, and failure mode labels.
-4. **`events.jsonl`**: Complete chronological audit log.
+## 7. Outputs
+
+Results are stored under:
+
+```text
+cmhh/results/<run_id>/
+```
+
+Important files:
+
+```text
+resolved_config.yaml
+manifest.json
+metrics.json
+performance_matrix.csv
+events.jsonl
+cold_start_scores.json
+memory/
+```
+
+`resolved_config.yaml` records the exact resolved run settings after applying mode, seed, generator, stream, and budget overrides.
+
+---
+
+## 8. Debug commands
+
+Most experiments should use `run-suite`. These lower-level commands are only for debugging:
+
+```powershell
+uv run cmhh validate-config --experiment cmhh/configs/experiments/h1_isolated.yaml
+uv run cmhh generate-data --experiment cmhh/configs/experiments/h1_isolated.yaml --seed 42
+uv run cmhh generate-references --experiment cmhh/configs/experiments/h1_isolated.yaml --split validation --split test --pilot-count 5
+uv run cmhh verify-references --experiment cmhh/configs/experiments/h1_isolated.yaml --split validation --split test
+uv run cmhh audit-run --run-id <run_id>
+```
+
+---
+
+## 9. Windows compatibility wrappers
+
+These still work on Windows:
+
+```powershell
+.\scripts\run_all_streams_no_eoh.ps1 -Pilot -Seeds 1,2,3
+.\scripts\run_stream_8_cvrp_descending.ps1 -Seed 1
+```
+
+Do not use them in cross-platform documentation, server scripts, or SLURM jobs.

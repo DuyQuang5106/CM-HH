@@ -26,7 +26,7 @@ def check_pyvrp() -> tuple[bool, str]:
             version = getattr(pyvrp, "__version__", "installed")
         return True, f"version: {version}"
     except ImportError as exc:
-        return False, f"ImportError: {exc} (install via `uv sync` or `uv add pyvrp`)"
+        return False, f"ImportError: {exc} (install via `conda env create -f HeurAgenix/environment.yml` or `python -m pip install pyvrp`)"
     except Exception as exc:
         return False, f"Error: {exc}"
 
@@ -42,7 +42,7 @@ def check_ortools() -> tuple[bool, str]:
             version = getattr(ortools, "__version__", "installed")
         return True, f"version: {version}"
     except ImportError as exc:
-        return False, f"ImportError: {exc} (install via `uv sync` or `uv add ortools`)"
+        return False, f"ImportError: {exc} (install via `conda env create -f HeurAgenix/environment.yml` or `python -m pip install ortools`)"
     except Exception as exc:
         return False, f"Error: {exc}"
 
@@ -84,7 +84,7 @@ def main() -> int:
 
     # Managed dependencies (PyVRP, OR-Tools) must succeed
     if not (pyvrp_ok and ortools_ok):
-        print("ERROR: Managed reference solver dependencies are missing. Run `uv sync`.")
+        print("ERROR: Managed reference solver dependencies are missing. Create the conda env from `HeurAgenix/environment.yml` or install the missing packages with pip.")
         return 1
 
     if not concorde_ok:
