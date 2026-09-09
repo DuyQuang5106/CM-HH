@@ -1,0 +1,27 @@
+version: 1
+experiment:
+  name: benchmark_default
+  output_root: cmhh/results
+  seeds: [1, 2, 3, 4, 5]
+data:
+  seed: 42
+  coordinate_min: 0
+  coordinate_max: 10000
+  splits:
+    train: 20
+    validation: 10
+    test: 30
+    smoke: 2
+search:
+  generations: 10
+  candidates_per_generation: 10
+  max_llm_calls: 200
+evaluation:
+  instance_timeout_seconds: 30
+  batch_timeout_seconds: 900
+  invalid_policy: fail_batch
+tracking:
+  wandb:
+    enabled: false
+    project: cmhh
+    mode: online

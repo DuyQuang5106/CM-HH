@@ -92,9 +92,12 @@ def resolve_concorde_executable(
         root / "tools" / "concorde" / "concorde",
         root / "HeurAgenix" / "tools" / "concorde" / "concorde.exe",
         root / "HeurAgenix" / "tools" / "concorde" / "concorde",
-        Path.cwd() / "tools" / "concorde" / "concorde.exe",
-        Path.cwd() / "tools" / "concorde" / "concorde",
     ]
+    if repo_root is None:
+        local_candidates.extend([
+            Path.cwd() / "tools" / "concorde" / "concorde.exe",
+            Path.cwd() / "tools" / "concorde" / "concorde",
+        ])
     for lc in local_candidates:
         checked_locations.append(f"local tool: {lc}")
         if lc.exists() and lc.is_file():

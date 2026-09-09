@@ -1,0 +1,2441 @@
+{
+  "records": [
+    {
+      "instance_id": "cvrp_uniform_n30_test_000-k6",
+      "instance_sha256": "2959abe69b40d23404674caaa801512c65d681e27ad0d15bb8e38f7817eb60fb",
+      "metadata": {
+        "capacity": 37,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            14,
+            20,
+            12,
+            24,
+            16,
+            19,
+            15,
+            28
+          ],
+          [
+            6,
+            4,
+            9,
+            21,
+            26,
+            2
+          ],
+          [
+            7,
+            17,
+            11,
+            13,
+            3,
+            29,
+            5
+          ],
+          [
+            22,
+            30,
+            27,
+            10,
+            23,
+            18,
+            8
+          ],
+          [
+            25
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 63186.789695814965,
+      "runtime_seconds": 60.02258799993433,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_001-k6",
+      "instance_sha256": "f502a9d8847a5f9fecfe3e74444a4315dccd4727262df85df490d5a51b77f69a",
+      "metadata": {
+        "capacity": 33,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            25,
+            3,
+            29,
+            14,
+            7,
+            16,
+            19
+          ],
+          [
+            17,
+            15,
+            4,
+            13,
+            11,
+            20,
+            5
+          ],
+          [
+            12,
+            27,
+            26,
+            30,
+            23,
+            24
+          ],
+          [
+            10,
+            18,
+            2,
+            9,
+            22,
+            6,
+            21,
+            8
+          ],
+          [
+            28
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 82763.12939362829,
+      "runtime_seconds": 60.037085699965246,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_002-k6",
+      "instance_sha256": "0d0bfa09c966115f18110547e56318e78f620c9b0c9b770e046236914eb725fa",
+      "metadata": {
+        "capacity": 42,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            28,
+            17,
+            8,
+            23,
+            19,
+            22,
+            15,
+            27,
+            7,
+            26
+          ],
+          [
+            11,
+            3,
+            24,
+            5,
+            25,
+            21,
+            6
+          ],
+          [
+            9,
+            12,
+            20,
+            10,
+            4
+          ],
+          [
+            14,
+            30,
+            29,
+            18,
+            16,
+            13
+          ],
+          [
+            2
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 74818.81831090966,
+      "runtime_seconds": 60.032202500035055,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_003-k6",
+      "instance_sha256": "499740233e425be46a0cd377cdebf8f1e08dd7f23a552ac0b40b1bab38828a64",
+      "metadata": {
+        "capacity": 43,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            21,
+            18,
+            19,
+            15,
+            17,
+            20,
+            29,
+            23
+          ],
+          [
+            8
+          ],
+          [
+            28,
+            30,
+            27,
+            2,
+            9
+          ],
+          [
+            16,
+            4,
+            11,
+            26,
+            12,
+            3,
+            10,
+            24
+          ],
+          [
+            5,
+            25,
+            14,
+            22,
+            7,
+            13,
+            6
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 63229.647557625256,
+      "runtime_seconds": 60.06203370005824,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_004-k6",
+      "instance_sha256": "ade778ae40adca792f11e40bb8bcff69cf6a8e84700f22121d40fc73a995e3cf",
+      "metadata": {
+        "capacity": 37,
+        "iterations": null,
+        "num_routes": 6,
+        "routes": [
+          [
+            13,
+            18,
+            3,
+            22,
+            30
+          ],
+          [
+            20,
+            10,
+            6,
+            24,
+            14
+          ],
+          [
+            29,
+            23,
+            27,
+            26,
+            9
+          ],
+          [
+            5,
+            21,
+            16,
+            11,
+            7
+          ],
+          [
+            28,
+            4,
+            12,
+            17,
+            25
+          ],
+          [
+            2,
+            15,
+            19,
+            8
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 192934.13908084968,
+      "runtime_seconds": 60.049994500004686,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_005-k6",
+      "instance_sha256": "84bde401fa83a953cccac256194d9ab61b59ca627b8110b2be13762ba019939d",
+      "metadata": {
+        "capacity": 37,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            5,
+            7,
+            19,
+            10,
+            20,
+            15,
+            11,
+            13,
+            23
+          ],
+          [
+            26,
+            2,
+            28,
+            21,
+            25
+          ],
+          [
+            17,
+            30,
+            18,
+            22,
+            4
+          ],
+          [
+            12,
+            3,
+            14,
+            8,
+            24,
+            16,
+            27,
+            6
+          ],
+          [
+            9,
+            29
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 71353.30641788093,
+      "runtime_seconds": 60.04603369999677,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_006-k6",
+      "instance_sha256": "333fe19691b65fb1c3979f8ee8c8865b478c90a6fd8d278cefffa0220c7b241d",
+      "metadata": {
+        "capacity": 37,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            14,
+            12,
+            3,
+            10,
+            7,
+            17,
+            29
+          ],
+          [
+            13,
+            21,
+            30,
+            8,
+            26
+          ],
+          [
+            19,
+            27,
+            22,
+            4,
+            11,
+            18,
+            20,
+            24
+          ],
+          [
+            25,
+            2
+          ],
+          [
+            15,
+            28,
+            9,
+            23,
+            16,
+            6,
+            5
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 83738.04716222621,
+      "runtime_seconds": 60.07241849997081,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_007-k6",
+      "instance_sha256": "af992883f1b2b2da2b56899491c9e4ec02abaecccdb2936635535eacc91c7d0f",
+      "metadata": {
+        "capacity": 41,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            10,
+            30,
+            6,
+            13,
+            20,
+            19
+          ],
+          [
+            15,
+            25,
+            26,
+            4,
+            14,
+            24,
+            18,
+            23
+          ],
+          [
+            11,
+            2,
+            3,
+            29,
+            27,
+            28,
+            7
+          ],
+          [
+            21,
+            16,
+            5,
+            9,
+            17,
+            22,
+            12
+          ],
+          [
+            8
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 65507.4688010316,
+      "runtime_seconds": 60.07100430002902,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_008-k6",
+      "instance_sha256": "c451d7350fbca02f0301cb083ebe3bc3a644818b28fd4af0a06d15b34d0c41af",
+      "metadata": {
+        "capacity": 35,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            11
+          ],
+          [
+            7,
+            5,
+            15,
+            27,
+            14,
+            25,
+            10,
+            3
+          ],
+          [
+            9,
+            28,
+            12,
+            23,
+            16,
+            8
+          ],
+          [
+            20,
+            30,
+            22,
+            21,
+            2,
+            18,
+            13
+          ],
+          [
+            26,
+            29,
+            4,
+            19,
+            17,
+            6,
+            24
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 76074.63108636046,
+      "runtime_seconds": 60.062093600048684,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_009-k6",
+      "instance_sha256": "68b2c4107953b9c3d5375a3e4c9ad901f152df61f55295b78a0a275ac2d6e6b9",
+      "metadata": {
+        "capacity": 42,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            12,
+            28,
+            17,
+            6,
+            21,
+            25,
+            15
+          ],
+          [
+            9,
+            29,
+            10,
+            20,
+            24,
+            13,
+            26,
+            27
+          ],
+          [
+            16,
+            22,
+            2,
+            8,
+            11,
+            14
+          ],
+          [
+            23,
+            7,
+            3,
+            5,
+            30,
+            18
+          ],
+          [
+            19,
+            4
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 74914.77164379458,
+      "runtime_seconds": 60.0543306999607,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_010-k6",
+      "instance_sha256": "f7a67221762413db91907b75b5da5def05656779c21a081343765a1ed3060077",
+      "metadata": {
+        "capacity": 41,
+        "iterations": null,
+        "num_routes": 4,
+        "routes": [
+          [
+            12,
+            10,
+            2,
+            24,
+            6,
+            30
+          ],
+          [
+            14,
+            5,
+            26,
+            25,
+            23,
+            11,
+            19,
+            27
+          ],
+          [
+            29,
+            13,
+            16,
+            17,
+            15,
+            20,
+            21,
+            28,
+            7
+          ],
+          [
+            3,
+            18,
+            22,
+            8,
+            4,
+            9
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 66555.46761127535,
+      "runtime_seconds": 60.070416099973954,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_011-k6",
+      "instance_sha256": "3bb27e013f6be96ef9f17900d7fa09003353cdd123cf5d5efdd75e2cd30d18cd",
+      "metadata": {
+        "capacity": 42,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            25,
+            5,
+            15,
+            10,
+            23,
+            9,
+            8,
+            24
+          ],
+          [
+            11,
+            17,
+            3,
+            2,
+            16,
+            19,
+            18
+          ],
+          [
+            4,
+            27,
+            13,
+            28,
+            7,
+            22
+          ],
+          [
+            12,
+            26,
+            6,
+            21,
+            14,
+            29,
+            30
+          ],
+          [
+            20
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 67517.27152705037,
+      "runtime_seconds": 60.06416710000485,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_012-k6",
+      "instance_sha256": "90c5f010d2f25433b1ca77a346235192327351be4fc8ca9c1a8b83e9e47811f2",
+      "metadata": {
+        "capacity": 44,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            16,
+            14,
+            27,
+            20,
+            28
+          ],
+          [
+            7,
+            29,
+            2,
+            9,
+            11,
+            19,
+            3
+          ],
+          [
+            23,
+            30,
+            22,
+            10,
+            18,
+            24,
+            25
+          ],
+          [
+            5,
+            15,
+            12,
+            17,
+            4,
+            26,
+            6,
+            13,
+            21
+          ],
+          [
+            8
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 65162.255385480756,
+      "runtime_seconds": 60.122898099943995,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_013-k6",
+      "instance_sha256": "1986efae30925d49b38e68a62463af1a14ecd3407db1aebedd5d64c08fd7df48",
+      "metadata": {
+        "capacity": 42,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            28,
+            18,
+            19,
+            2,
+            26,
+            21,
+            20
+          ],
+          [
+            3,
+            11,
+            16,
+            17,
+            10,
+            8,
+            13
+          ],
+          [
+            29,
+            15,
+            12,
+            6,
+            5,
+            27,
+            4,
+            25
+          ],
+          [
+            14,
+            7,
+            30,
+            22,
+            9,
+            23
+          ],
+          [
+            24
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 66740.37330457864,
+      "runtime_seconds": 60.09957270009909,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_014-k6",
+      "instance_sha256": "fb1c4b650e516ca9bf2e8e8353c52949f0952da3857185b896c36a9a1fff2150",
+      "metadata": {
+        "capacity": 45,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            13,
+            29,
+            15,
+            14,
+            20,
+            24,
+            4,
+            27,
+            25
+          ],
+          [
+            9,
+            3,
+            10,
+            26,
+            11,
+            21,
+            19
+          ],
+          [
+            28,
+            23,
+            6,
+            22,
+            30,
+            7
+          ],
+          [
+            2,
+            5,
+            18,
+            16,
+            17,
+            8
+          ],
+          [
+            12
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 71679.43864639748,
+      "runtime_seconds": 60.09303289989475,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_015-k6",
+      "instance_sha256": "d7100a522ca8cd253d441c7b21ba25368141546eb2aa7913a1306d3d042ae378",
+      "metadata": {
+        "capacity": 39,
+        "iterations": null,
+        "num_routes": 4,
+        "routes": [
+          [
+            7,
+            8,
+            27,
+            5,
+            16,
+            14,
+            11,
+            4
+          ],
+          [
+            21,
+            28,
+            30,
+            20,
+            17,
+            22,
+            25,
+            24
+          ],
+          [
+            26,
+            15,
+            19,
+            9,
+            29,
+            2,
+            10
+          ],
+          [
+            18,
+            6,
+            12,
+            3,
+            23,
+            13
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 70009.8088941483,
+      "runtime_seconds": 60.098444500006735,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_016-k6",
+      "instance_sha256": "f37cb7f20f4b0977bd50cefdd1f47433b22621a39c0476bbc616ed7328033dac",
+      "metadata": {
+        "capacity": 36,
+        "iterations": null,
+        "num_routes": 4,
+        "routes": [
+          [
+            2,
+            7,
+            19,
+            12,
+            26,
+            17,
+            6,
+            22
+          ],
+          [
+            13,
+            24,
+            20,
+            21,
+            14,
+            11,
+            30
+          ],
+          [
+            18,
+            25,
+            3,
+            15,
+            27,
+            4
+          ],
+          [
+            8,
+            10,
+            29,
+            23,
+            16,
+            9,
+            5,
+            28
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 76445.8922219855,
+      "runtime_seconds": 60.08962740004063,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_017-k6",
+      "instance_sha256": "930c9c838a85c7c2cec41da04d3b7e952ff43073adb49c463fd9452278ca61db",
+      "metadata": {
+        "capacity": 40,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            13,
+            6,
+            10
+          ],
+          [
+            20,
+            5,
+            18,
+            9,
+            24,
+            29
+          ],
+          [
+            30,
+            11,
+            23,
+            12,
+            14,
+            16,
+            2,
+            28,
+            19
+          ],
+          [
+            4,
+            8,
+            15,
+            25,
+            22,
+            27,
+            17,
+            7
+          ],
+          [
+            26,
+            3,
+            21
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 70951.34311573533,
+      "runtime_seconds": 60.050941099994816,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_018-k6",
+      "instance_sha256": "8d18f1432a24371da2e7ae89575d87984d3b6f07f8caa6c76787383b114aae76",
+      "metadata": {
+        "capacity": 46,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            16
+          ],
+          [
+            25,
+            3,
+            4,
+            9,
+            29,
+            7
+          ],
+          [
+            27,
+            6,
+            15,
+            13,
+            19,
+            30,
+            11
+          ],
+          [
+            12,
+            8,
+            2,
+            21,
+            20,
+            28,
+            10,
+            24
+          ],
+          [
+            14,
+            18,
+            22,
+            23,
+            26,
+            17,
+            5
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 80834.03240548272,
+      "runtime_seconds": 60.06692999997176,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_019-k6",
+      "instance_sha256": "071cac3390a8338d3d5ad91fe63880d09331a18094308fd25051d0719a71c3e4",
+      "metadata": {
+        "capacity": 39,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            6,
+            22,
+            5,
+            3,
+            29,
+            24,
+            17
+          ],
+          [
+            18,
+            19,
+            16,
+            27,
+            4,
+            15
+          ],
+          [
+            25,
+            8,
+            2,
+            7,
+            28,
+            26,
+            14
+          ],
+          [
+            11,
+            9,
+            20,
+            21,
+            12,
+            10,
+            30,
+            13
+          ],
+          [
+            23
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 88715.23190925724,
+      "runtime_seconds": 60.05813500005752,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_020-k6",
+      "instance_sha256": "81f5e17682cee63fedd60f22276a0223cc193eef64af398b3c0bfe661f4e42c4",
+      "metadata": {
+        "capacity": 39,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            22,
+            26,
+            30,
+            8,
+            28,
+            17
+          ],
+          [
+            16,
+            12,
+            29,
+            25,
+            7
+          ],
+          [
+            21,
+            3,
+            2,
+            27,
+            24,
+            11,
+            5,
+            4,
+            19
+          ],
+          [
+            10,
+            15,
+            6,
+            9,
+            20,
+            14,
+            13,
+            23
+          ],
+          [
+            18
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 75505.70875555027,
+      "runtime_seconds": 60.054863000055775,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_021-k6",
+      "instance_sha256": "3e73198e117fe624f5489c1ff3a3e712ac82c1de7b231c173b782464872597ff",
+      "metadata": {
+        "capacity": 37,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            3,
+            24,
+            29,
+            11,
+            16,
+            30,
+            4
+          ],
+          [
+            9,
+            10,
+            18,
+            12,
+            5,
+            26
+          ],
+          [
+            7
+          ],
+          [
+            17,
+            14,
+            20,
+            25,
+            28,
+            22
+          ],
+          [
+            27,
+            15,
+            2,
+            6,
+            13,
+            21,
+            19,
+            8,
+            23
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 65256.37395487025,
+      "runtime_seconds": 60.051062599988654,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_022-k6",
+      "instance_sha256": "21aacc01206596e739048080470574dca4090ef6f88b0ab4e22a3aa1c48a3245",
+      "metadata": {
+        "capacity": 43,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            29,
+            6,
+            8,
+            3,
+            11,
+            15
+          ],
+          [
+            17,
+            10,
+            21,
+            7,
+            18,
+            30,
+            28,
+            23,
+            4
+          ],
+          [
+            14
+          ],
+          [
+            25,
+            22,
+            27,
+            5,
+            13,
+            9,
+            2
+          ],
+          [
+            19,
+            12,
+            26,
+            20,
+            24,
+            16
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 72039.27311726777,
+      "runtime_seconds": 60.046915799961425,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_023-k6",
+      "instance_sha256": "03b0063e7dbd3f0afb0057062e9951acfa48797d1cb8a236dc16e88193df3c08",
+      "metadata": {
+        "capacity": 37,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            20,
+            27,
+            10,
+            19,
+            9,
+            16
+          ],
+          [
+            28,
+            3,
+            22,
+            2,
+            26,
+            17,
+            11
+          ],
+          [
+            23,
+            7,
+            6,
+            21,
+            24,
+            13,
+            14
+          ],
+          [
+            8
+          ],
+          [
+            4,
+            18,
+            25,
+            15,
+            29,
+            12,
+            5,
+            30
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 65323.092912159416,
+      "runtime_seconds": 60.06348889996298,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_024-k6",
+      "instance_sha256": "8029cce6877587500dd90fd34d6726249985aafaf2ec2033d871b6c7e0d29250",
+      "metadata": {
+        "capacity": 40,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            28,
+            23,
+            12,
+            2,
+            18
+          ],
+          [
+            22,
+            5,
+            10,
+            4,
+            7,
+            29,
+            24,
+            27
+          ],
+          [
+            15,
+            19,
+            25,
+            6,
+            13,
+            8,
+            16,
+            14
+          ],
+          [
+            30,
+            21,
+            9,
+            3,
+            26,
+            20,
+            11
+          ],
+          [
+            17
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 83467.47459919468,
+      "runtime_seconds": 60.050060000037774,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_025-k6",
+      "instance_sha256": "c72b3c5b4605502e5d0e4fadab7c7a9293e743e9102a41f787a888be8a9b93e5",
+      "metadata": {
+        "capacity": 42,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            23,
+            15,
+            24,
+            10,
+            22,
+            26,
+            28
+          ],
+          [
+            27,
+            12,
+            14,
+            25,
+            17
+          ],
+          [
+            13,
+            5,
+            11,
+            21,
+            18,
+            2,
+            19,
+            8,
+            6,
+            4,
+            30
+          ],
+          [
+            3,
+            16,
+            29,
+            7,
+            20
+          ],
+          [
+            9
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 73823.71035200685,
+      "runtime_seconds": 60.062289600027725,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_026-k6",
+      "instance_sha256": "1bbe8fd7a9ff9db8ea9fdf76d4d86c0d715050980c3ce234f0bb8627b9f43105",
+      "metadata": {
+        "capacity": 39,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            29,
+            2,
+            7,
+            10,
+            24,
+            27,
+            6,
+            21,
+            20
+          ],
+          [
+            14,
+            5,
+            9,
+            30,
+            4,
+            17,
+            3
+          ],
+          [
+            28
+          ],
+          [
+            15,
+            16,
+            26,
+            25,
+            22,
+            19
+          ],
+          [
+            18,
+            13,
+            12,
+            23,
+            8,
+            11
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 77473.15945119686,
+      "runtime_seconds": 60.06408579996787,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_027-k6",
+      "instance_sha256": "0fdba7edad2b3c7b2b42f205926aeb531d8825df37e0e38b53f056cabd6bd0bc",
+      "metadata": {
+        "capacity": 39,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            24,
+            12,
+            2,
+            7,
+            27,
+            25
+          ],
+          [
+            20,
+            28,
+            4,
+            3,
+            10,
+            13,
+            23
+          ],
+          [
+            14,
+            30,
+            26,
+            15,
+            18,
+            6,
+            11
+          ],
+          [
+            17,
+            16,
+            9,
+            19,
+            5,
+            21,
+            22,
+            8
+          ],
+          [
+            29
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 74953.7648842852,
+      "runtime_seconds": 60.05979460000526,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_028-k6",
+      "instance_sha256": "9859b0e5a5722306e92e2e41fe854f45d82dbd80b89110a67d5c749592b1c91a",
+      "metadata": {
+        "capacity": 40,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            5,
+            15,
+            14,
+            7,
+            21
+          ],
+          [
+            25,
+            4,
+            16,
+            19,
+            9,
+            23
+          ],
+          [
+            11,
+            18,
+            6,
+            24,
+            28,
+            13
+          ],
+          [
+            10,
+            27,
+            8,
+            2,
+            22,
+            17,
+            29,
+            30,
+            12
+          ],
+          [
+            26,
+            3,
+            20
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 62906.032142034084,
+      "runtime_seconds": 60.04682100005448,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_test_029-k6",
+      "instance_sha256": "415ce627c02b35e0224497798b48f26f508d2dccabcb673fa6d6620c2fcfe8ad",
+      "metadata": {
+        "capacity": 45,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            2,
+            10,
+            9,
+            6,
+            17,
+            21
+          ],
+          [
+            11,
+            24,
+            19,
+            27,
+            14,
+            28,
+            4
+          ],
+          [
+            18,
+            3,
+            30,
+            20,
+            26,
+            15
+          ],
+          [
+            8,
+            25,
+            5,
+            16,
+            29,
+            22,
+            13,
+            7,
+            12
+          ],
+          [
+            23
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 75510.88006750481,
+      "runtime_seconds": 60.062542500090785,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_000-k6",
+      "instance_sha256": "f7e38b31d5ed405be79d465a59e0a5c27b952660d17435e2029803ab7e849a6e",
+      "metadata": {
+        "capacity": 40,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            6,
+            12,
+            28,
+            22,
+            3,
+            29
+          ],
+          [
+            4
+          ],
+          [
+            27,
+            17,
+            30,
+            7,
+            16,
+            13,
+            20,
+            14
+          ],
+          [
+            15,
+            21,
+            26,
+            24,
+            2,
+            10,
+            23,
+            18,
+            5
+          ],
+          [
+            11,
+            19,
+            8,
+            9,
+            25
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 68506.20791214929,
+      "runtime_seconds": 60.049342500045896,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_001-k6",
+      "instance_sha256": "b4ce23952f67c35120c1b1abf78759c00e5bd4e2e336b16bf3f6cb9ce5e84e41",
+      "metadata": {
+        "capacity": 36,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            7,
+            17,
+            13,
+            6,
+            24,
+            25
+          ],
+          [
+            20,
+            3,
+            12,
+            30,
+            27
+          ],
+          [
+            10,
+            2,
+            26,
+            4,
+            11,
+            8,
+            23,
+            21
+          ],
+          [
+            18,
+            19,
+            5,
+            14,
+            15,
+            28,
+            16,
+            9,
+            22
+          ],
+          [
+            29
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 56537.326021789035,
+      "runtime_seconds": 60.04794389999006,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_002-k6",
+      "instance_sha256": "ad06abf08e8b5a06f97a70abe560e917a7226a18889b82d21794fb78bb827b2f",
+      "metadata": {
+        "capacity": 42,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            10,
+            25,
+            27,
+            22,
+            7,
+            5,
+            19
+          ],
+          [
+            18,
+            8,
+            4,
+            26,
+            15,
+            11
+          ],
+          [
+            24,
+            9,
+            2,
+            29,
+            28,
+            23
+          ],
+          [
+            21,
+            3,
+            14,
+            13,
+            30,
+            6,
+            20,
+            16
+          ],
+          [
+            12,
+            17
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 78607.65748516032,
+      "runtime_seconds": 60.05200779996812,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_003-k6",
+      "instance_sha256": "008e77f6613c8cffee3f8fa4615810487834a8628b965d72f50dc4faabc961ca",
+      "metadata": {
+        "capacity": 44,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            13,
+            18,
+            5,
+            22,
+            9,
+            15,
+            25,
+            30
+          ],
+          [
+            23
+          ],
+          [
+            4,
+            2,
+            6,
+            8,
+            12,
+            17,
+            20
+          ],
+          [
+            28,
+            3,
+            14,
+            26,
+            11,
+            7,
+            19
+          ],
+          [
+            10,
+            24,
+            16,
+            21,
+            29,
+            27
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 76984.19791580223,
+      "runtime_seconds": 60.05734499997925,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_004-k6",
+      "instance_sha256": "ef8f65de8d3ea24b277799b77fba79bb907ec9f25ae96b69458e465dbc99ae51",
+      "metadata": {
+        "capacity": 42,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            19,
+            26,
+            23,
+            4,
+            18,
+            5,
+            25
+          ],
+          [
+            24,
+            7,
+            16,
+            20,
+            10,
+            29,
+            12,
+            3,
+            17
+          ],
+          [
+            14,
+            2,
+            9,
+            28,
+            22
+          ],
+          [
+            13
+          ],
+          [
+            27,
+            11,
+            30,
+            15,
+            6,
+            21,
+            8
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 62959.936516997295,
+      "runtime_seconds": 60.040303400019184,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_005-k6",
+      "instance_sha256": "2414cfc2c785f1b64b4f3c65e43305da7a74f13d300f3f6610179f9e3dce1c81",
+      "metadata": {
+        "capacity": 38,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            14,
+            7,
+            9,
+            19,
+            11,
+            20,
+            10,
+            3
+          ],
+          [
+            5
+          ],
+          [
+            17,
+            15,
+            28,
+            13,
+            18,
+            8
+          ],
+          [
+            26,
+            2,
+            16,
+            12,
+            24,
+            27
+          ],
+          [
+            29,
+            30,
+            6,
+            4,
+            22,
+            25,
+            21,
+            23
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 66948.99231908901,
+      "runtime_seconds": 60.05387659999542,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_006-k6",
+      "instance_sha256": "ecb0d527a2aceadefbb62c877e60e2742a48cbc01005dd5903379f854eb17f65",
+      "metadata": {
+        "capacity": 31,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            20,
+            15,
+            10,
+            2,
+            7,
+            25,
+            27,
+            5
+          ],
+          [
+            3,
+            8,
+            28,
+            16,
+            22,
+            17,
+            12,
+            23
+          ],
+          [
+            4,
+            29,
+            24,
+            9,
+            18,
+            13,
+            6
+          ],
+          [
+            21,
+            19,
+            11,
+            14,
+            30
+          ],
+          [
+            26
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 85014.21872288654,
+      "runtime_seconds": 60.062091600033455,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_007-k6",
+      "instance_sha256": "f58270885ef05e4b996de5618212daff003368e55dfc0a1e741254929d46e261",
+      "metadata": {
+        "capacity": 40,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            16
+          ],
+          [
+            6,
+            27,
+            19,
+            29
+          ],
+          [
+            24,
+            11,
+            30,
+            8,
+            14,
+            20,
+            9,
+            17,
+            25
+          ],
+          [
+            22,
+            18,
+            7,
+            10,
+            2,
+            12,
+            13,
+            5,
+            28,
+            4
+          ],
+          [
+            21,
+            26,
+            3,
+            15,
+            23
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 69330.99699424703,
+      "runtime_seconds": 60.07161480002105,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_008-k6",
+      "instance_sha256": "2c9ec66ace0a3c9a5c82d489472730a3ce50f82c407f1a98c6980879f27acd14",
+      "metadata": {
+        "capacity": 33,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            19,
+            2,
+            20,
+            18,
+            28
+          ],
+          [
+            30,
+            25,
+            22,
+            7,
+            3,
+            11,
+            27
+          ],
+          [
+            24,
+            13,
+            5,
+            12,
+            4,
+            6,
+            10,
+            17
+          ],
+          [
+            9,
+            23,
+            14,
+            16,
+            26,
+            15,
+            29
+          ],
+          [
+            8,
+            21
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 70282.37248552598,
+      "runtime_seconds": 60.059886000002734,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "cvrp_uniform_n30_validation_009-k6",
+      "instance_sha256": "39f447a232cc1389873c564b23a2860db178715319e3178097456365803de3c3",
+      "metadata": {
+        "capacity": 38,
+        "iterations": null,
+        "num_routes": 5,
+        "routes": [
+          [
+            17,
+            25,
+            8,
+            22,
+            14,
+            27,
+            11,
+            4
+          ],
+          [
+            13,
+            5,
+            28,
+            30,
+            21,
+            7,
+            12,
+            9,
+            20
+          ],
+          [
+            24,
+            10,
+            19,
+            29,
+            26
+          ],
+          [
+            18
+          ],
+          [
+            2,
+            6,
+            15,
+            16,
+            3,
+            23
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 60.0,
+        "vehicle_num": 6
+      },
+      "objective": 66122.22775897462,
+      "runtime_seconds": 60.04912590002641,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    }
+  ],
+  "task_id": "cvrp_uniform_n30"
+}

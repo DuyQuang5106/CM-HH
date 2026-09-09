@@ -2,7 +2,17 @@
   "coordinate_max": 10000,
   "coordinate_min": 0,
   "data_seed": 42,
+  "dataset_seed": 42,
   "distribution": "uniform_processing_times",
+  "metadata": {
+    "jobs": 10,
+    "machines": 5,
+    "stream_families": [
+      "within_problem_size",
+      "cross_problem_same_size",
+      "mixed_problem_size"
+    ]
+  },
   "problem": "jssp",
   "size_tier": "j10_m5",
   "splits": {

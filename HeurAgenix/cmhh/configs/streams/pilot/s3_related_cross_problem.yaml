@@ -1,0 +1,8 @@
+version: 1
+id: s3_related_cross_problem
+shift_type: related_cross_problem
+description: "S3: Related domain transfer across routing problems (TSP50-A -> CVRP50-Medium -> TSP50-B)"
+tasks:
+  - tsp_uniform_n50_a
+  - cvrp_uniform_n50_medium
+  - tsp_uniform_n50_b

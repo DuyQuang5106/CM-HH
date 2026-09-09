@@ -109,8 +109,11 @@ class TaskRegistry:
     def __len__(self) -> int:
         return len(self._tasks)
 
-    def get(self, task_id: str) -> TaskSpec:
-        return self._tasks[task_id]
+    def __contains__(self, task_id: object) -> bool:
+        return task_id in self._tasks
+
+    def get(self, task_id: str, default: Any = None) -> Any:
+        return self._tasks.get(task_id, default)
 
     def list_task_ids(self, problem: str | None = None, size_tier: str | None = None) -> list[str]:
         tasks = self._tasks.values()

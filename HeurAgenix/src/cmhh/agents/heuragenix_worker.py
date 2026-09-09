@@ -68,12 +68,22 @@ def run(args) -> dict:
     if args.problem in ("tsp", "cvrp"):
         ensure_tsplib95_fallback()
 
+    from cmhh.tracking.context import context_from_env, set_current_context
+    from cmhh.tracking.logging_config import configure_logging
     from src.pipeline.heuristic_evolver import HeuristicEvolver
     from src.util.llm_client.get_llm_client import get_llm_client
+
+    ctx = context_from_env()
+    if not ctx.worker_id:
+        ctx.worker_id = f"w_{args.problem}_s{args.seed}"
+    set_current_context(ctx)
+    configure_logging(level=os.environ.get("CMHH_LOG_LEVEL", "INFO"), console=True, run_dir=args.output_root)
 
     repo_root = Path(args.repo_root).resolve()
     config = load_llm_config(args.llm_config)
     config["seed"] = args.seed
+    config["worker_id"] = ctx.worker_id
+
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fp:
         json.dump(config, fp)
         temporary_config = fp.name
@@ -102,7 +112,7 @@ def run(args) -> dict:
             perturbation_time=args.perturbation_time,
             filtered_num=args.candidates_per_generation,
             evolution_round=args.generations,
-            max_refinement_round=max(1, args.candidates_per_generation),
+            max_refinement_round=min(2, max(1, args.candidates_per_generation)),
             smoke_test=False,
             external_memory_context=_format_memory_context(args.memory_context),
         )

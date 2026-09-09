@@ -1,0 +1,7 @@
+version: 1
+stream_id: tsp_variant_revisit_small
+description: "Small-scale pilot stream: Same-problem structural shift and retention (Uniform A -> Clustered -> Uniform B)."
+task_ids:
+  - tsp_uniform_n50_a
+  - tsp_clustered_n50
+  - tsp_uniform_n50_b

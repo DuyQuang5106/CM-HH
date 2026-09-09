@@ -1,0 +1,7 @@
+version: 1
+stream_id: unrelated_pair_small
+description: "Small-scale pilot stream: Unrelated cross-problem transfer (TSP50 A -> JSSP10x5 -> TSP50 B)."
+task_ids:
+  - tsp_uniform_n50_a
+  - jssp_j10_m5
+  - tsp_uniform_n50_b

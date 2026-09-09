@@ -1,0 +1,8 @@
+version: 1
+id: s2_cvrp_constraint
+shift_type: constraint
+description: "S2: Constraint shift on paired instances (CVRP50-Loose -> Medium -> Tight)"
+tasks:
+  - cvrp_uniform_n50_loose
+  - cvrp_uniform_n50_medium
+  - cvrp_uniform_n50_tight

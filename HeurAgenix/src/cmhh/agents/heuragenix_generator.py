@@ -3,16 +3,16 @@ from __future__ import annotations
 import ast
 import json
 import os
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
+from cmhh.agents.subprocess_runner import run_streaming_subprocess
 from cmhh.data.manifest import sha256_file
 from cmhh.llm.config import load_llm_config, write_sanitized_snapshot
 from cmhh.memory import MemoryUnit
 from cmhh.models import HeuristicArtifact, SearchBudget
 from cmhh.tasks import TaskSpec
+from cmhh.tracking.context import context_to_env, get_current_context, update_current_context
 
 
 class HeurAgenixGenerator:
@@ -38,6 +38,7 @@ class HeurAgenixGenerator:
     ) -> list[HeuristicArtifact]:
         if not seed_population:
             raise ValueError("HeurAgenixGenerator requires at least one seed heuristic")
+        chosen_seed_artifact = seed_population[(seed - 1) % len(seed_population)] if seed > 0 else seed_population[0]
         llm_config = load_llm_config(self.llm_config_path)
         invocation_root = self.output_root / task.task_id / f"seed_{seed}"
         invocation_root.mkdir(parents=True, exist_ok=True)
@@ -54,7 +55,7 @@ class HeurAgenixGenerator:
             "--problem", task.problem,
             "--train-dir", str(task.splits.train),
             "--validation-dir", str(task.splits.validation),
-            "--seed-heuristic", str(seed_population[0].code_path),
+            "--seed-heuristic", str(chosen_seed_artifact.code_path),
             "--llm-config", str(self.llm_config_path),
             "--output-root", str(invocation_root),
             "--result", str(result_path),
@@ -66,24 +67,27 @@ class HeurAgenixGenerator:
         ]
         environment = dict(os.environ)
         environment["PYTHONPATH"] = str(self.repo_root / "src") + os.pathsep + environment.get("PYTHONPATH", "")
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=self.repo_root,
-                env=environment,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_seconds,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise TimeoutError(f"HeurAgenix evolution exceeded {self.timeout_seconds}s") from exc
+
+        # Propagate logging context
+        update_current_context(task_id=task.task_id, stage="B", seed=seed, problem=task.problem)
+        environment.update(context_to_env(get_current_context()))
+
+        completed = run_streaming_subprocess(
+            command,
+            cwd=self.repo_root,
+            env=environment,
+            timeout_seconds=self.timeout_seconds,
+            stream_stderr=True,
+        )
+
         if not result_path.exists():
-            detail = (completed.stderr or completed.stdout or "worker produced no result")[-4000:]
-            raise RuntimeError(f"HeurAgenix worker failed: {detail}")
+            detail = ("\n".join(completed.stderr_tail) or completed.stdout or "worker produced no result")[-4000:]
+            raise RuntimeError(f"HeurAgenix worker failed (exit {completed.returncode}): {detail}")
+
         raw = json.loads(result_path.read_text(encoding="utf-8"))
         if raw["status"] != "ok":
             raise RuntimeError(raw.get("error", "HeurAgenix worker failed"))
+
         artifacts: list[HeuristicArtifact] = []
         for index, candidate in enumerate(raw["candidates"]):
             path = Path(candidate["path"])
@@ -95,7 +99,7 @@ class HeurAgenixGenerator:
                 code_path=path,
                 code_hash=sha256_file(path),
                 strategy="HeurAgenix evolved candidate",
-                parent_ids=(seed_population[0].heuristic_id,),
+                parent_ids=(chosen_seed_artifact.heuristic_id,),
                 generation=max(1, index // max(1, budget.candidates_per_generation) + 1),
                 task_id=task.task_id,
                 prompt_hash=raw["prompt_hash"],

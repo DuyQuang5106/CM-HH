@@ -1,9 +1,12 @@
-import os
 import importlib
+import logging
+import multiprocessing
+import os
+import queue as queue_module
 import re
-import pandas as pd
 import traceback
 from io import StringIO
+import pandas as pd
 from src.problems.base.env import BaseEnv
 from src.pipeline.heuristic_generator import HeuristicGenerator
 from src.pipeline.hyper_heuristics.single import SingleHyperHeuristic
@@ -11,13 +14,37 @@ from src.pipeline.hyper_heuristics.perturbation import PerturbationHyperHeuristi
 from src.util.util import df_to_str, extract, filter_dict_to_str, parse_text_to_dict, load_function, extract_function_with_short_docstring, search_file
 from src.util.llm_client.base_llm_client import BaseLLMClient
 
+try:
+    from cmhh.llm.budgeted_client import LLMBudgetExceeded
+except Exception:
+    class LLMBudgetExceeded(RuntimeError):
+        pass
 
-def _data_files(directory: str) -> list[str]:
-    return [
-        os.path.join(directory, name)
-        for name in sorted(os.listdir(directory))
-        if not name.startswith(".") and os.path.isfile(os.path.join(directory, name))
-    ]
+_LOGGER = logging.getLogger("heuragenix.evolver")
+
+DEFAULT_VALIDATION_TIMEOUT_SECONDS = float(os.getenv("CMHH_EVOLVER_VALIDATION_TIMEOUT_SECONDS", "15"))
+
+
+def _data_files(directory: str, problem: str | None = None) -> list[str]:
+    valid_exts = {
+        "tsp": (".tsp",),
+        "cvrp": (".vrp",),
+        "jssp": (".txt",),
+    }
+    allowed = valid_exts.get(problem.lower(), None) if problem else None
+    files = []
+    for name in sorted(os.listdir(directory)):
+        if name.startswith(".") or name.endswith(".meta.json") or name.endswith(".json"):
+            continue
+        path = os.path.join(directory, name)
+        if not os.path.isfile(path):
+            continue
+        if allowed is not None:
+            if any(name.lower().endswith(ext) for ext in allowed):
+                files.append(path)
+        else:
+            files.append(path)
+    return files
 
 
 def _heuristic_docs(heuristic_dir: str, problem: str) -> str:
@@ -39,6 +66,76 @@ def _heuristic_docs(heuristic_dir: str, problem: str) -> str:
     return "\n".join(docs)
 
 
+def _run_validation_worker(problem: str, data_name: str, heuristic_file: str, result_queue) -> None:
+    try:
+        if problem in ("tsp", "cvrp"):
+            try:
+                from cmhh.evaluation.problem_adapter import ensure_tsplib95_fallback
+
+                ensure_tsplib95_fallback()
+            except Exception:
+                pass
+
+        module = importlib.import_module(f"src.problems.{problem}.env")
+        env_cls = getattr(module, "Env")
+        env = env_cls(data_name=data_name)
+        env.reset()
+        hyper_heuristic = SingleHyperHeuristic(heuristic_file, problem=problem)
+        is_complete_valid_solution = hyper_heuristic.run(env)
+        result_queue.put(("ok", env.key_value if is_complete_valid_solution else None))
+    except Exception:
+        result_queue.put(("error", traceback.format_exc()))
+
+
+def _run_validation_case_with_timeout(
+    problem: str,
+    data_name: str,
+    heuristic_file: str,
+    timeout_seconds: float,
+) -> float | None:
+    context = multiprocessing.get_context("spawn")
+    result_queue = context.Queue()
+    process = context.Process(
+        target=_run_validation_worker,
+        args=(problem, data_name, heuristic_file, result_queue),
+    )
+    process.start()
+    process.join(timeout_seconds)
+    if process.is_alive():
+        process.terminate()
+        process.join(2.0)
+        if process.is_alive():
+            process.kill()
+            process.join(2.0)
+        _LOGGER.warning(
+            "[EVOLVE] validation timeout after %.1fs | heuristic=%s | data=%s",
+            timeout_seconds,
+            os.path.basename(heuristic_file),
+            os.path.basename(data_name),
+        )
+        return None
+
+    try:
+        status, payload = result_queue.get(timeout=1.0)
+    except queue_module.Empty:
+        _LOGGER.warning(
+            "[EVOLVE] validation worker exited without result | heuristic=%s | data=%s",
+            os.path.basename(heuristic_file),
+            os.path.basename(data_name),
+        )
+        return None
+
+    if status == "ok":
+        return payload
+    _LOGGER.warning(
+        "[EVOLVE] validation worker failed | heuristic=%s | data=%s | error=%s",
+        os.path.basename(heuristic_file),
+        os.path.basename(data_name),
+        payload,
+    )
+    return None
+
+
 class HeuristicEvolver:
     def __init__(
         self,
@@ -50,8 +147,8 @@ class HeuristicEvolver:
     ) -> None:
         self.llm_client = llm_client
         self.problem = problem
-        self.evolution_cases = _data_files(evolution_dir)
-        self.validation_cases = _data_files(validation_dir)
+        self.evolution_cases = _data_files(evolution_dir, problem=self.problem)
+        self.validation_cases = _data_files(validation_dir, problem=self.problem)
         self.output_root = output_root
         self.get_instance_problem_state = load_function("problem_state.py", problem=self.problem, function_name="get_instance_problem_state")
         self.get_solution_problem_state = load_function("problem_state.py", problem=self.problem, function_name="get_solution_problem_state")
@@ -77,6 +174,7 @@ class HeuristicEvolver:
             instance_problem_state.update(self.get_instance_problem_state(global_data))
             instance_problem_states.append(instance_problem_state)
         self.instance_problem_states_df = pd.DataFrame(instance_problem_states)
+
     def evolve(
             self,
             basic_heuristic_file: str,
@@ -88,7 +186,7 @@ class HeuristicEvolver:
             max_refinement_round: int=5,
             smoke_test: bool=True,
             external_memory_context: str="",
-        ) -> None:
+        ) -> list[tuple[str, float]]:
 
         # Prepare other heuristics' description for this evolution
         heuristic_dir = os.path.dirname(basic_heuristic_file)
@@ -98,23 +196,31 @@ class HeuristicEvolver:
             heuristic_introduction_docs += "\n\n" + external_memory_context
 
         total_heuristic_benchmarks = [(basic_heuristic_file, 0)]
-        for _ in range(evolution_round):
+        for round_idx in range(evolution_round):
+            _LOGGER.info("[EVOLVE] generation=%d/%d started | pool_size=%d", round_idx + 1, evolution_round, len(total_heuristic_benchmarks))
             # Filter the best heuristics
             filtered_heuristic_benchmarks = sorted(total_heuristic_benchmarks, key=lambda x: x[1], reverse=True)[: filtered_num]
             for basic_heuristic_file, _ in filtered_heuristic_benchmarks:
                 for data_name in self.evolution_cases:
-                    evolved_heuristic_with_improvements = self.evolution_single(
-                        evolution_data=data_name,
-                        basic_heuristic_file=basic_heuristic_file,
-                        perturbation_heuristic_file=perturbation_heuristic_file,
-                        all_heuristic_docs=heuristic_introduction_docs,
-                        perturbation_ratio=perturbation_ratio,
-                        perturbation_time=perturbation_time,
-                        max_refinement_round=max_refinement_round,
-                        smoke_test=smoke_test
-                    )
+                    try:
+                        evolved_heuristic_with_improvements = self.evolution_single(
+                            evolution_data=data_name,
+                            basic_heuristic_file=basic_heuristic_file,
+                            perturbation_heuristic_file=perturbation_heuristic_file,
+                            all_heuristic_docs=heuristic_introduction_docs,
+                            perturbation_ratio=perturbation_ratio,
+                            perturbation_time=perturbation_time,
+                            max_refinement_round=max_refinement_round,
+                            smoke_test=smoke_test
+                        )
+                    except LLMBudgetExceeded as exc:
+                        _LOGGER.warning("[EVOLVE] LLM budget exhausted; stopping evolution early: %s", exc)
+                        return sorted(total_heuristic_benchmarks, key=lambda x: x[1], reverse=True)[: filtered_num]
                     total_heuristic_benchmarks.extend(evolved_heuristic_with_improvements)
-        return filtered_heuristic_benchmarks
+            if filtered_heuristic_benchmarks:
+                best_file, best_imp = filtered_heuristic_benchmarks[0]
+                _LOGGER.info("[EVOLVE] generation=%d complete | best=%s | improvement=%.4f", round_idx + 1, os.path.basename(best_file), best_imp)
+        return sorted(total_heuristic_benchmarks, key=lambda x: x[1], reverse=True)[: filtered_num]
 
     def evolution_single(
             self,
@@ -127,6 +233,7 @@ class HeuristicEvolver:
             max_refinement_round: int=5,
             smoke_test: bool=True
     ) -> list[tuple[str, list[float]]]:
+        refined_heuristic_benchmarks = []
         try:
             env = Env(data_name=evolution_data)
             basic_heuristic_name = basic_heuristic_file.split(os.sep)[-1].split(".")[0]
@@ -143,9 +250,8 @@ class HeuristicEvolver:
                 perturbation_time,
             )
 
-            refined_heuristic_benchmarks = []
             if positive_result:
-                print(f"Evolution {basic_heuristic_name} on {evolution_data}")
+                _LOGGER.info("[EVOLVE] evolving %s on %s", basic_heuristic_name, os.path.basename(evolution_data))
 
                 prompt_dict = self.llm_client.load_background(self.problem, "background_with_code")
                 prompt_dict["all_heuristic_docs"] = all_heuristic_docs
@@ -176,8 +282,8 @@ class HeuristicEvolver:
                         output_heuristic_name = suggested_heuristic_file.split(os.sep)[-1].split(".")[0]
                         self.llm_client.dump(f"{basic_heuristic_name}_to_{output_heuristic_name}")
 
-                        suggested_improvement = sum(self.get_improvement(env, basic_heuristic_result, suggested_result)) / len(basic_heuristic_result)
-                        print(f"Improvement for {suggested_heuristic_file}: {suggested_improvement}")
+                        suggested_improvement = self.mean_improvement(env, basic_heuristic_result, suggested_result)
+                        _LOGGER.info("[EVOLVE] candidate %s improvement=%.4f", os.path.basename(suggested_heuristic_file), suggested_improvement)
                         refined_heuristic_benchmarks.append([suggested_heuristic_file, suggested_improvement])
                         # Fine tune the evolved heuristics
                         previous_heuristic_name = basic_heuristic_name
@@ -200,14 +306,14 @@ class HeuristicEvolver:
                                 suggestion_name=suggestion_name,
                                 smoke_test=smoke_test
                             )
-                            if None in refined_result:
-                                print("Error and skip")
+                            if refined_result is None or None in refined_result:
+                                _LOGGER.warning("[EVOLVE] refinement crashed or produced invalid result, skipping")
                                 continue
                             if refined_heuristic_file:
                                 output_heuristic_name = refined_heuristic_file.split(os.sep)[-1].split(".")[0]
                                 self.llm_client.dump(f"{last_heuristic_name}_to_{output_heuristic_name}")
-                                refined_improvement = sum(self.get_improvement(env, basic_heuristic_result, refined_result)) / len(basic_heuristic_result)
-                                print(f"Improvement for {refined_heuristic_file}: {refined_improvement}")
+                                refined_improvement = self.mean_improvement(env, basic_heuristic_result, refined_result)
+                                _LOGGER.info("[EVOLVE] refined %s improvement=%.4f", os.path.basename(refined_heuristic_file), refined_improvement)
                                 refined_heuristic_benchmarks.append([refined_heuristic_file, refined_improvement])
                                 if suggestion is None:
                                     break
@@ -216,9 +322,11 @@ class HeuristicEvolver:
                                 last_suggestion = suggestion
                                 last_heuristic_name = refined_heuristic_file.split(os.sep)[-1].split(".")[0]
                                 last_heuristic_result = refined_result
+        except LLMBudgetExceeded:
+            raise
         except Exception as e:
             trace_string = traceback.format_exc()
-            print(trace_string)
+            _LOGGER.error("[EVOLVE] exception in evolution_single: %s", trace_string)
 
         return refined_heuristic_benchmarks
 
@@ -292,8 +400,16 @@ class HeuristicEvolver:
         bottlenecks = []
         for bottleneck_operation_str in bottleneck_operation_strs:
             # Reproduce the state before bottleneck
-            bottleneck_operation_id, proposed_operation, reason = bottleneck_operation_str.split(";")
-            bottleneck_operation_id = int(re.search(r'\d+', bottleneck_operation_id).group())
+            parts = bottleneck_operation_str.split(";", maxsplit=2)
+            if len(parts) != 3:
+                _LOGGER.warning("[EVOLVE] skipping malformed bottleneck line: %s", bottleneck_operation_str)
+                continue
+            bottleneck_operation_id, proposed_operation, reason = [part.strip() for part in parts]
+            match = re.search(r'\d+', bottleneck_operation_id)
+            if match is None:
+                _LOGGER.warning("[EVOLVE] skipping bottleneck line without operation id: %s", bottleneck_operation_str)
+                continue
+            bottleneck_operation_id = int(match.group())
             bottlenecks.append([bottleneck_operation_id, proposed_operation, reason])
 
         return bottlenecks
@@ -314,7 +430,11 @@ class HeuristicEvolver:
         prompt_dict["proposed_operation"] = proposed_operation
         prompt_dict["reason"] = reason
         negative_trajectory_df = pd.read_csv(StringIO(prompt_dict["negative_trajectory"]), sep="\t")
-        bottleneck_operation = list(negative_trajectory_df[negative_trajectory_df["operation_id"] == bottleneck_operation_id]["operator"])[0]
+        matching_operations = list(negative_trajectory_df[negative_trajectory_df["operation_id"] == bottleneck_operation_id]["operator"])
+        if not matching_operations:
+            _LOGGER.warning("[EVOLVE] bottleneck operation id %s not found in trajectory", bottleneck_operation_id)
+            return None, None, None
+        bottleneck_operation = matching_operations[0]
 
         for previous_operation in negative_trajectory_df[negative_trajectory_df["operation_id"] < bottleneck_operation_id]["operator"]:
             env.run_operator(eval(previous_operation))
@@ -391,9 +511,9 @@ class HeuristicEvolver:
             description = f"Now, based on these suggestions:\n{suggestion}\nUpdate the {last_heuristic_name}."
             env_summarize = prompt_dict["env_summarize"]
             output_heuristic_file = HeuristicGenerator(self.llm_client, self.problem).generate(heuristic_name, description, env_summarize, smoke_test, reminder=False)
-            output_heuristic_name = output_heuristic_file.split(os.sep)[-1].split(".")[0]
-            self.llm_client.dump(f"{previous_heuristic_name}_to_{output_heuristic_name}")
             if output_heuristic_file:
+                output_heuristic_name = output_heuristic_file.split(os.sep)[-1].split(".")[0]
+                self.llm_client.dump(f"{previous_heuristic_name}_to_{output_heuristic_name}")
                 suggested_heuristic_result = self.validation(self.validation_cases, output_heuristic_file)
                 return output_heuristic_file, suggestion, suggested_heuristic_result
         return None, None, None
@@ -401,18 +521,36 @@ class HeuristicEvolver:
     def validation(
             self,
             validation_cases: list[str],
-            heuristic_file: str
+            heuristic_file: str,
+            timeout_seconds: float=DEFAULT_VALIDATION_TIMEOUT_SECONDS,
         ) -> list[float]:
         validation_results = []
         for data_name in validation_cases:
-            env = Env(data_name=data_name)
-            env.reset()
-            hyper_heuristic = SingleHyperHeuristic(heuristic_file, problem=self.problem)
-            is_complete_valid_solution = hyper_heuristic.run(env)
-            result = env.key_value if is_complete_valid_solution else None
+            result = _run_validation_case_with_timeout(
+                self.problem,
+                data_name,
+                heuristic_file,
+                timeout_seconds,
+            )
             validation_results.append(result)
         return validation_results
     
-    def get_improvement(self, env:BaseEnv, baselines: list[float], results: list[float]) -> float:
-        improvements = [round(env.compare(results[index], baselines[index]) / baselines[index], 2) for index in range(len(baselines))]
+    def mean_improvement(self, env: BaseEnv, baselines: list[float], results: list[float]) -> float:
+        improvements = self.get_improvement(env, baselines, results)
+        return sum(improvements) / len(improvements) if improvements else 0
+
+    def get_improvement(self, env:BaseEnv, baselines: list[float], results: list[float]) -> list[float]:
+        if results is None:
+            return [0 for _ in baselines]
+
+        improvements = []
+        for index in range(min(len(baselines), len(results))):
+            baseline = baselines[index]
+            result = results[index]
+            if baseline is None or result is None or baseline == 0:
+                improvements.append(0)
+                continue
+            improvements.append(round(env.compare(result, baseline) / baseline, 2))
+        if len(improvements) < len(baselines):
+            improvements.extend([0] * (len(baselines) - len(improvements)))
         return improvements

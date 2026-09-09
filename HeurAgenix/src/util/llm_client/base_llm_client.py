@@ -3,9 +3,17 @@ import json
 import re
 import base64
 import importlib
+import itertools
+import logging
+import time
 from time import sleep
 from typing import Dict, List, Tuple
+from cmhh.tracking.context import get_current_context
+from cmhh.tracking.llm_call_logger import LLMCallLogger, LLMCallRecord, get_llm_call_logger
 from src.util.util import compress_numbers, extract, load_framework_description, search_file
+
+_CALL_COUNTER = itertools.count(1)
+_LOGGER = logging.getLogger("cmhh.llm")
 
 
 class BaseLLMClient:
@@ -18,6 +26,7 @@ class BaseLLMClient:
         self.prompt_dir = prompt_dir
         self.output_dir = output_dir
         self.config = config
+        self.backend_name = "base"
         
         self.name = config.get("name", "unknown_model")
         self.top_p = config.get("top-p", 0.7)
@@ -27,7 +36,25 @@ class BaseLLMClient:
         self.think = config.get("think", False)
         self.max_attempts = config.get("max_attempts", 50)
         self.sleep_time = config.get("sleep_time", 60)
+        self.current_call_id: str | None = None
+        self.current_attempt: int = 1
         self.reset(output_dir)
+
+    def _next_call_id(self) -> str:
+        ctx = get_current_context()
+        worker_id = ctx.worker_id or self.config.get("worker_id")
+        seq = next(_CALL_COUNTER)
+        if worker_id:
+            return f"{worker_id}#call-{seq}"
+        return f"call-{seq}"
+
+    def _get_call_logger(self) -> LLMCallLogger | None:
+        ctx = get_current_context()
+        if getattr(ctx, "llm_call_logger", None) is not None:
+            return ctx.llm_call_logger
+        if self.output_dir is not None:
+            return get_llm_call_logger(os.path.join(self.output_dir, "llm_calls.jsonl"))
+        return None
 
     def reset(self, output_dir:str=None) -> None:
         self.messages = []
@@ -39,33 +66,76 @@ class BaseLLMClient:
         pass
 
     def chat(self) -> str:
+        call_id = self._next_call_id()
+        self.current_call_id = call_id
+        _LOGGER.info("[LLM] %s request | backend=%s | model=%s", call_id, self.backend_name, self.name)
+
         for index in range(self.max_attempts):
+            self.current_attempt = index + 1
             try:
                 response_content = self.chat_once()
                 self.messages.append({"role": "assistant", "content": [{"type": "text", "text": response_content}]})
                 return response_content
             except Exception as e:
-                print(f"Try to chat {index + 1} time: {e}")
-                sleep_time = self.sleep_time
-                sleep(sleep_time)
+                if index + 1 < self.max_attempts:
+                    _LOGGER.warning(
+                        "[LLM] %s retry %d/%d | %s: %s",
+                        call_id,
+                        index + 1,
+                        self.max_attempts,
+                        type(e).__name__,
+                        e,
+                    )
+                    sleep_time = self.sleep_time
+                    time.sleep(sleep_time)
+                else:
+                    _LOGGER.error(
+                        "[LLM] %s failed permanently | attempts=%d | %s: %s",
+                        call_id,
+                        self.max_attempts,
+                        type(e).__name__,
+                        e,
+                    )
         self.messages.append({"role": "assistant", "content": "Exceeded the maximum number of attempts"})
         self.dump("error")
         return None
 
     def chat_with_tools(self, tools) -> List[Tuple[str, Dict]]:
+        call_id = self._next_call_id()
+        self.current_call_id = call_id
+        _LOGGER.info("[LLM] %s request | backend=%s | model=%s", call_id, self.backend_name, self.name)
+
         for index in range(self.max_attempts):
+            self.current_attempt = index + 1
             try:
                 response_content, function_name_parameters = self.chat_once_with_tools(tools)
                 current_message = response_content + "\n\nChoices:\n" + "\n".join([f"function: {function_name}, parameters: {parameters}" for function_name, parameters in function_name_parameters])
                 self.messages.append({"role": "assistant", "content": [{"type": "text", "text": current_message}]})
                 return function_name_parameters
             except Exception as e:
-                print(f"Try to chat {index + 1} time: {e}")
-                sleep_time = self.sleep_time
-                sleep(sleep_time)
+                if index + 1 < self.max_attempts:
+                    _LOGGER.warning(
+                        "[LLM] %s retry %d/%d | %s: %s",
+                        call_id,
+                        index + 1,
+                        self.max_attempts,
+                        type(e).__name__,
+                        e,
+                    )
+                    sleep_time = self.sleep_time
+                    time.sleep(sleep_time)
+                else:
+                    _LOGGER.error(
+                        "[LLM] %s failed permanently | attempts=%d | %s: %s",
+                        call_id,
+                        self.max_attempts,
+                        type(e).__name__,
+                        e,
+                    )
         self.messages.append({"role": "assistant", "content": "Exceeded the maximum number of attempts"})
         self.dump("error")
         return None
+
 
     def load_chat(self, chat_file: str) -> None:
         if chat_file.split(".")[-1] != "json":

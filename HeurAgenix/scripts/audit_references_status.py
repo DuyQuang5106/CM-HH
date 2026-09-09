@@ -2,7 +2,10 @@ from pathlib import Path
 import json
 import yaml
 
-repo = Path(".")
+repo = Path.cwd()
+if not (repo / "cmhh" / "configs").exists() and (repo / "HeurAgenix" / "cmhh" / "configs").exists():
+    repo = repo / "HeurAgenix"
+
 reg_path = repo / "cmhh/configs/tasks/task_registry.yaml"
 with open(reg_path, "r", encoding="utf-8") as f:
     reg = yaml.safe_load(f)

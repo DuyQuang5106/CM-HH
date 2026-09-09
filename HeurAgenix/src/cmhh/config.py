@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -63,6 +63,13 @@ class StreamConfig:
     description: str = ""
 
 
+@dataclass(frozen=True)
+class ConditionSpec:
+    name: str
+    condition: str
+    archive: ArchiveConfig
+
+
 def load_yaml(path: str | Path) -> dict[str, Any]:
     with Path(path).open("r", encoding="utf-8") as fp:
         raw = yaml.safe_load(fp)
@@ -74,11 +81,24 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
 def load_experiment_config(path: str | Path, repo_root: str | Path) -> ExperimentConfig:
     raw = load_yaml(path)
     root = Path(repo_root).resolve()
-    experiment = raw["experiment"]
-    data = raw["data"]
-    search = raw["search"]
-    evaluation = raw["evaluation"]
-    output_root = Path(experiment["output_root"])
+    experiment = raw.get("experiment", raw)
+    data = raw.get("data", {
+        "seed": 42,
+        "coordinate_min": 0,
+        "coordinate_max": 10000,
+        "splits": {"train": 20, "validation": 10, "test": 30, "smoke": 2},
+    })
+    search = raw.get("search", {
+        "generations": 100,
+        "candidates_per_generation": 5,
+        "max_llm_calls": 500,
+    })
+    evaluation = raw.get("evaluation", {
+        "instance_timeout_seconds": 30,
+        "batch_timeout_seconds": 900,
+        "invalid_policy": "fail_batch",
+    })
+    output_root = Path(experiment.get("output_root", "cmhh/results"))
     if not output_root.is_absolute():
         output_root = root / output_root
 
@@ -88,7 +108,7 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
         capacity = None
     elif capacity is not None:
         capacity = int(capacity)
-        if capacity <= 0:
+        if capacity < 0:
             capacity = None
 
     archive = ArchiveConfig(
@@ -121,10 +141,10 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
     )
 
     return ExperimentConfig(
-        name=experiment["name"],
+        name=experiment.get("name", "benchmark_default"),
         condition=experiment.get("condition", "independent_seed"),
         output_root=output_root,
-        seeds=tuple(int(seed) for seed in experiment["seeds"]),
+        seeds=tuple(int(seed) for seed in experiment.get("seeds", [1, 2, 3])),
         data=DataConfig(
             seed=int(data["seed"]),
             coordinate_min=int(data["coordinate_min"]),
@@ -138,10 +158,147 @@ def load_experiment_config(path: str | Path, repo_root: str | Path) -> Experimen
     )
 
 
-def load_stream_config(path: str | Path) -> StreamConfig:
+def load_base_experiment_config(repo_root: str | Path, path: str | Path | None = None) -> ExperimentConfig:
+    root = Path(repo_root).resolve()
+    if path is None:
+        candidates = [
+            root / "cmhh" / "configs" / "experiments" / "defaults.yaml",
+            root / "HeurAgenix" / "cmhh" / "configs" / "experiments" / "defaults.yaml",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                path = candidate
+                break
+        if path is None:
+            path = candidates[0]
+    return load_experiment_config(path, root)
+
+
+def load_conditions_registry(repo_root: str | Path, path: str | Path | None = None) -> dict[str, ConditionSpec]:
+    root = Path(repo_root).resolve()
+    if path is None:
+        candidates = [
+            root / "cmhh" / "configs" / "conditions.yaml",
+            root / "HeurAgenix" / "cmhh" / "configs" / "conditions.yaml",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                path = candidate
+                break
+        if path is None:
+            path = candidates[0]
+
     raw = load_yaml(path)
+    conditions_dict = raw.get("conditions", raw)
+    registry: dict[str, ConditionSpec] = {}
+    for name, spec in conditions_dict.items():
+        cond_str = spec.get("condition", name)
+        arch_raw = spec.get("archive", {})
+        capacity = arch_raw.get("capacity", 20)
+        if isinstance(capacity, str) and capacity.lower() in {"unbounded", "none", "null", "inf", "infinite"}:
+            capacity = None
+        elif capacity is not None:
+            capacity = int(capacity)
+            if capacity < 0:
+                capacity = None
+
+        archive = ArchiveConfig(
+            policy=arch_raw.get("policy", "naive_overwrite"),
+            capacity=capacity,
+            top_k=int(arch_raw.get("top_k", 5)),
+            candidate_top_k=(
+                None if arch_raw.get("candidate_top_k") is None
+                else int(arch_raw["candidate_top_k"])
+            ),
+            memory_seed_quota=int(arch_raw.get("memory_seed_quota", 1)),
+            direct_reuse_quota=int(arch_raw.get("direct_reuse_quota", 1)),
+            refine_quota=(
+                None if arch_raw.get("refine_quota") is None
+                else int(arch_raw["refine_quota"])
+            ),
+        )
+        registry[name] = ConditionSpec(name=name, condition=cond_str, archive=archive)
+    return registry
+
+
+def compose_experiment_config(
+    *,
+    base: ExperimentConfig,
+    condition_spec: ConditionSpec | None = None,
+    suite: SuiteConfig | None = None,
+    condition_name: str | None = None,
+    overrides: dict[str, Any] | None = None,
+) -> ExperimentConfig:
+    cfg = base
+    if condition_spec is not None:
+        cfg = replace(
+            cfg,
+            name=f"{base.name}_{condition_spec.name}",
+            condition=condition_spec.condition,
+            archive=condition_spec.archive,
+        )
+    elif condition_name is not None:
+        cfg = replace(cfg, condition=condition_name)
+
+    if suite is not None:
+        if suite.splits:
+            new_splits = dict(cfg.data.splits)
+            new_splits.update(suite.splits)
+            cfg = replace(cfg, data=replace(cfg.data, splits=new_splits))
+        if suite.seeds:
+            cfg = replace(cfg, seeds=suite.seeds)
+        if suite.llm_budget_per_task is not None:
+            cfg = replace(cfg, search=replace(cfg.search, max_llm_calls=suite.llm_budget_per_task))
+
+    if overrides:
+        if "search" in overrides:
+            cfg = replace(cfg, search=overrides["search"])
+        if "evaluation" in overrides:
+            cfg = replace(cfg, evaluation=overrides["evaluation"])
+        if "data" in overrides:
+            cfg = replace(cfg, data=overrides["data"])
+        if "output_root" in overrides:
+            cfg = replace(cfg, output_root=Path(overrides["output_root"]))
+        if "seeds" in overrides:
+            cfg = replace(cfg, seeds=tuple(overrides["seeds"]))
+    return cfg
+
+
+def load_stream_config(path: str | Path) -> StreamConfig:
+    p = Path(path)
+    raw = load_yaml(p)
+    stream_id = raw.get("stream_id") or raw.get("id") or p.stem
+    task_ids = raw.get("task_ids") or raw.get("tasks") or ()
     return StreamConfig(
-        stream_id=raw["stream_id"],
-        task_ids=tuple(raw["task_ids"]),
+        stream_id=stream_id,
+        task_ids=tuple(task_ids),
         description=raw.get("description", ""),
+    )
+
+
+@dataclass(frozen=True)
+class SuiteConfig:
+    suite_id: str
+    streams: tuple[str, ...]
+    conditions: tuple[str, ...] = ()
+    seeds: tuple[int, ...] = (1,)
+    mode: str = "pilot"
+    llm_budget_per_task: int | None = None
+    description: str = ""
+    splits: dict[str, int] = field(default_factory=dict)
+    base_experiment: str | None = None
+
+
+def load_suite_config(path: str | Path) -> SuiteConfig:
+    raw = load_yaml(path)
+    return SuiteConfig(
+        suite_id=raw["suite_id"],
+        streams=tuple(raw["streams"]),
+        conditions=tuple(raw.get("conditions", ())),
+        seeds=tuple(int(s) for s in raw.get("seeds", [1])),
+        mode=raw.get("mode", "pilot"),
+        llm_budget_per_task=raw.get("llm_budget_per_task"),
+        description=raw.get("description", ""),
+        splits={k: int(v) for k, v in raw.get("splits", {}).items()},
+        base_experiment=raw.get("base_experiment"),
     )

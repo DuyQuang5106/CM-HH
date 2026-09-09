@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import logging
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -42,6 +43,8 @@ from cmhh.tasks import TaskRegistry
 from cmhh.tracking import ExperimentTracker, create_tracker
 from cmhh.transfer import DeterministicTransferPolicy, TransferPlan, TransferRecord
 
+_LOGGER = logging.getLogger("cmhh.runner")
+
 
 class StreamRunner:
     NAIVE_MEMORY_CAPACITY = 20
@@ -74,7 +77,7 @@ class StreamRunner:
         self.cold_start_scores = cold_start_scores
         self.retriever = retriever or RetrieverV0()
         self.archivist = archivist or self._default_memory_manager()
-        self.candidate_extractor = candidate_extractor or TopKCandidateExtractor(top_k=self.memory_candidate_top_k)
+        self.candidate_extractor = candidate_extractor or TopKCandidateExtractor(top_k=max(1, self.memory_candidate_top_k))
         self.transfer_policy = transfer_policy or DeterministicTransferPolicy(
             direct_reuse_quota=self.direct_reuse_quota,
             refine_quota=self.refine_quota,
@@ -115,6 +118,33 @@ class StreamRunner:
             for index, value in checkpoint.get("pre_learning_scores", {}).items()
         }
 
+        # Startup Configuration Snapshot
+        _LOGGER.info("======================================================================")
+        _LOGGER.info(
+            "[CMHH] run=%s | stream=%s | condition=%s | seed=%d",
+            self.run_dir.name,
+            self.stream.stream_id,
+            self.experiment.condition,
+            self.seed,
+        )
+        _LOGGER.info(
+            "[CMHH] generator=%s | budget_calls=%s | max_generations=%s",
+            type(self.generator).__name__,
+            getattr(self.experiment.search, "max_llm_calls", "N/A"),
+            getattr(self.experiment.search, "generations", "N/A"),
+        )
+        _LOGGER.info("======================================================================")
+
+        self._event(
+            "run_started",
+            run_id=self.run_dir.name,
+            stream_id=self.stream.stream_id,
+            condition=self.experiment.condition,
+            seed=self.seed,
+            generator=type(self.generator).__name__,
+            llm_budget=getattr(self.experiment.search, "max_llm_calls", None),
+        )
+
         try:
             self.tracker.log_config({
                 "experiment_name": self.experiment.name,
@@ -134,7 +164,12 @@ class StreamRunner:
             for k in range(int(checkpoint["completed_tasks"]), len(self.stream.task_ids)):
                 task = self.registry.get(self.stream.task_ids[k])
 
+                _LOGGER.info("======================================================================")
+                _LOGGER.info("[TASK] %d/%d %s", k + 1, len(self.stream.task_ids), task.task_id)
+                _LOGGER.info("======================================================================")
+
                 if k not in pre_learning_scores:
+                    _LOGGER.info("[STAGE A] Pre-learning probe started for %s", task.task_id)
                     pre_learning_scores[k] = self._run_pre_learning_probe(
                         k,
                         task,
@@ -142,7 +177,9 @@ class StreamRunner:
                         carryover_population,
                     )
                     self._write_pre_learning_scores(pre_learning_scores)
+                    _LOGGER.info("[STAGE A] complete | probe_score=%s", pre_learning_scores[k])
 
+                _LOGGER.info("[STAGE B] Continual evolution started for %s", task.task_id)
                 base_seeds = self._seed_population(task, carryover_population)
                 retrieved_memory = self._retrieve_memory(task) if self._uses_persistent_memory else []
                 transfer_plans = (
@@ -171,6 +208,13 @@ class StreamRunner:
                 )
                 ranked_population, validation_summaries = self._rank_on_validation(task, candidates, k)
                 best = ranked_population[0]
+                best_summary = validation_summaries[best.heuristic_id]
+                _LOGGER.info(
+                    "[POP] selected heuristic=%s | score=%.4f (runtime=%.2fs)",
+                    best.heuristic_id,
+                    float(best_summary.get("score", float("nan"))),
+                    float(best_summary.get("runtime_seconds", 0.0)),
+                )
                 transfer_records = self._annotate_transfer_records(
                     task,
                     population_build.transfer_records,
@@ -229,13 +273,27 @@ class StreamRunner:
                     "pre_learning_scores": pre_learning_scores,
                 })
                 self._write_matrix(matrix)
+                _LOGGER.info(
+                    "[TASK] %s complete | validation_score=%.4f",
+                    task.task_id,
+                    float(best_summary.get("score", float("nan"))),
+                )
 
             metrics = self._write_metrics(matrix, pre_learning_scores)
+            self._write_transfer_diagnostics(matrix, pre_learning_scores)
             self.tracker.log_performance_matrix(matrix, self.stream.task_ids)
             if metrics:
                 self.tracker.log_summary(metrics)
             if self._uses_persistent_memory:
                 self._write_memory_diagnostics()
+
+            _LOGGER.info("======================================================================")
+            _LOGGER.info(
+                "[CMHH] Stream %s complete | average_final_performance=%s",
+                self.stream.stream_id,
+                metrics.get("average_final_performance") if metrics else "N/A",
+            )
+            _LOGGER.info("======================================================================")
             return matrix
         finally:
             self.tracker.finish()
@@ -249,31 +307,55 @@ class StreamRunner:
     ) -> float | None:
         before_hash = self._learner_state_hash(selected, carryover_population)
         artifact, retrieved_ids = self._select_probe_artifact(task, selected, carryover_population)
-        self._event(
-            "pre_learning_probe_started",
-            task_id=task.task_id,
-            task_index=k,
-            heuristic_id=artifact.heuristic_id if artifact else None,
-            retrieved_memory_ids=retrieved_ids,
-            read_only=True,
-        )
         score = None
         if artifact is not None:
+            self._event(
+                "pre_learning_probe_started",
+                task_id=task.task_id,
+                task_index=k,
+                heuristic_id=artifact.heuristic_id,
+                retrieved_memory_ids=retrieved_ids,
+                read_only=True,
+            )
             result = self.evaluator.evaluate(artifact, task, "test")
             write_evaluation(
                 self.run_dir / "evaluations" / "pre_learning" / f"{task.task_id}.json",
                 result,
             )
             score = result.mean_score
-        self._event(
-            "pre_learning_probe_completed",
-            task_id=task.task_id,
-            task_index=k,
-            heuristic_id=artifact.heuristic_id if artifact else None,
-            retrieved_memory_ids=retrieved_ids,
-            mean_score=score,
-            read_only=True,
-        )
+            self._event(
+                "pre_learning_probe_completed",
+                task_id=task.task_id,
+                task_index=k,
+                heuristic_id=artifact.heuristic_id,
+                retrieved_memory_ids=retrieved_ids,
+                mean_score=score,
+                status="completed",
+                read_only=True,
+            )
+        else:
+            reason = "problem_interface_mismatch" if k > 0 and carryover_population and carryover_population[0].problem != task.problem else "no_prior_compatible_artifact"
+            probe_record = {
+                "task_id": task.task_id,
+                "probe_type": "direct_executable_transfer",
+                "status": "not_applicable",
+                "reason": reason,
+                "score": None,
+            }
+            probe_path = self.run_dir / "evaluations" / "pre_learning" / f"{task.task_id}.json"
+            probe_path.parent.mkdir(parents=True, exist_ok=True)
+            write_json_atomic(probe_path, probe_record)
+            self._event(
+                "pre_learning_probe_completed",
+                task_id=task.task_id,
+                task_index=k,
+                heuristic_id=None,
+                retrieved_memory_ids=retrieved_ids,
+                mean_score=None,
+                status="not_applicable",
+                reason=reason,
+                read_only=True,
+            )
         after_hash = self._learner_state_hash(selected, carryover_population)
         self._assert_probe_read_only("pre_learning", task.task_id, before_hash, after_hash)
         return score
@@ -290,6 +372,7 @@ class StreamRunner:
         store = self._memory_store() if self._uses_persistent_memory else None
         memory_units = store.load_all() if store else []
 
+        _LOGGER.info("[STAGE C] Retention probe started for %d task(s)", k + 1)
         for j, prior_task_id in enumerate(self.stream.task_ids[: k + 1]):
             prior_task = self.registry.get(prior_task_id)
             artifact = None
@@ -341,7 +424,9 @@ class StreamRunner:
                 mean_score=result.mean_score,
                 read_only=True,
             )
+            _LOGGER.info("[STAGE C] task=%s | score=%.4f", prior_task_id, float(result.mean_score))
 
+        _LOGGER.info("[STAGE C] complete")
         after_hash = self._learner_state_hash(selected, carryover_population)
         self._assert_probe_read_only("retention", self.stream.task_ids[k], before_hash, after_hash)
 
@@ -371,13 +456,21 @@ class StreamRunner:
         return self.experiment.condition in {
             "population_carryover",
             "naive_memory_sequential",
+            "naive_sequential",
+            "naive_memory_unbounded",
+            "naive_unbounded",
             "archivist_managed",
             "managed_archivist",
         }
 
     @property
     def _uses_naive_memory(self) -> bool:
-        return self.experiment.condition == "naive_memory_sequential"
+        return self.experiment.condition in {
+            "naive_memory_sequential",
+            "naive_sequential",
+            "naive_memory_unbounded",
+            "naive_unbounded",
+        }
 
     @property
     def _uses_managed_memory(self) -> bool:
@@ -402,7 +495,9 @@ class StreamRunner:
     @property
     def memory_candidate_top_k(self) -> int:
         if hasattr(self.experiment, "archive") and self.experiment.archive is not None:
-            return self.experiment.archive.candidate_top_k or self.experiment.archive.top_k
+            val = self.experiment.archive.candidate_top_k or self.experiment.archive.top_k
+            if val is not None and val > 0:
+                return int(val)
         return self.NAIVE_MEMORY_TOP_K
 
     @property
@@ -454,6 +549,12 @@ class StreamRunner:
             duplicate_key_rate=duplicate_key_rate,
             used_in_generation=bool(retrieved),
         )
+        _LOGGER.info(
+            "[MEMORY] retrieved=%d/%d (store_size=%d)",
+            len(retrieved),
+            budget.top_k,
+            len(store.load_all()),
+        )
         return retrieved
 
     def _plan_memory_transfer(
@@ -466,6 +567,15 @@ class StreamRunner:
             "memory_transfer_planned",
             task_id=task.task_id,
             plans=[plan.to_dict() for plan in plans],
+        )
+        direct_count = sum(1 for p in plans if p.action == "direct_reuse")
+        refine_count = sum(1 for p in plans if p.action == "refine")
+        ignore_count = sum(1 for p in plans if p.action == "ignore")
+        _LOGGER.info(
+            "[MEMORY] transfer planned: direct_reuse=%d refine=%d ignore=%d",
+            direct_count,
+            refine_count,
+            ignore_count,
         )
         return plans
 
@@ -620,6 +730,13 @@ class StreamRunner:
             protected_ids=list(result.protected_ids),
             evicted_ids=list(result.evicted_ids),
             manager="managed_archivist" if self._uses_managed_memory else "naive",
+        )
+        _LOGGER.info(
+            "[MEMORY] admitted=%d protected=%d evicted=%d (store_size=%d)",
+            len(result.admitted_ids),
+            len(result.protected_ids),
+            len(result.evicted_ids),
+            len(store.load_all()),
         )
 
     def _parent_memory_by_artifact(
@@ -841,6 +958,9 @@ class StreamRunner:
         code_path = Path(unit.evidence.source_artifacts[0])
         if not code_path.exists():
             return None
+        task = self.registry.get(task_id)
+        if unit.scope.problem and unit.scope.problem.lower() != task.problem.lower():
+            return None
         return HeuristicArtifact(
             heuristic_id=unit.scope.heuristic_family or code_path.stem,
             problem=unit.scope.problem,
@@ -910,6 +1030,66 @@ class StreamRunner:
 
         write_json_atomic(self.run_dir / "metrics.json", metrics)
         return metrics
+
+    def _write_transfer_diagnostics(
+        self,
+        matrix: dict[int, dict[int, float]],
+        pre_learning_scores: dict[int, float | None],
+    ) -> None:
+        path = self.run_dir / "transfer_diagnostics.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", newline="", encoding="utf-8") as fp:
+            writer = csv.writer(fp)
+            writer.writerow([
+                "source_task",
+                "target_task",
+                "relationship",
+                "direct_executable",
+                "zero_shot_score",
+                "post_budget_score",
+                "cold_start_score",
+                "adaptation_benefit",
+            ])
+            for k in range(1, len(self.stream.task_ids)):
+                source_id = self.stream.task_ids[k - 1]
+                target_id = self.stream.task_ids[k]
+                source_spec = self.registry.get(source_id)
+                target_spec = self.registry.get(target_id)
+
+                is_same_prob = (source_spec.problem == target_spec.problem)
+                if is_same_prob:
+                    if source_spec.distribution == target_spec.distribution:
+                        if source_spec.size_tier != target_spec.size_tier:
+                            relationship = "same_problem_scale"
+                        else:
+                            relationship = "same_problem_stationary"
+                    else:
+                        relationship = "same_problem_variant_shift"
+                else:
+                    if source_spec.problem in ("tsp", "cvrp") and target_spec.problem in ("tsp", "cvrp"):
+                        relationship = "related_cross_problem"
+                    else:
+                        relationship = "unrelated_cross_problem"
+
+                z_score = pre_learning_scores.get(k)
+                post_score = matrix.get(k, {}).get(k)
+                cold_score = self.cold_start_scores.get(k) if self.cold_start_scores else None
+                adapt_benefit = (
+                    None
+                    if post_score is None or cold_score is None
+                    else post_score - cold_score
+                )
+
+                writer.writerow([
+                    source_id,
+                    target_id,
+                    relationship,
+                    str(is_same_prob).lower(),
+                    "" if z_score is None else f"{z_score:.6f}",
+                    "" if post_score is None else f"{post_score:.6f}",
+                    "" if cold_score is None else f"{cold_score:.6f}",
+                    "" if adapt_benefit is None else f"{adapt_benefit:.6f}",
+                ])
 
     def _write_memory_diagnostics(self) -> None:
         diagnostics = build_memory_diagnostics(self.run_dir, self.stream.task_ids)

@@ -55,13 +55,14 @@ def generate_jssp_splits(task: TaskSpec, experiment: ExperimentConfig, seed: int
     }
     job_count = int(task.metadata.get("jobs", _count_from_size_tier(task.size_tier)))
     machine_count = int(task.metadata.get("machines", 5))
+    effective_seed = int(task.metadata.get("dataset_seed", seed))
 
     for split_name, directory in split_dirs.items():
         if directory is None:
             continue
         directory.mkdir(parents=True, exist_ok=True)
         for index in range(experiment.data.splits[split_name]):
-            instance_seed = _instance_seed(seed, task.task_id, split_name, index)
+            instance_seed = _instance_seed(effective_seed, task.task_id, split_name, index)
             seq, times = generate_jssp_instance(job_count, machine_count, instance_seed)
             name = f"{task.task_id}_{split_name}_{index:03d}.txt"
             write_jssp(directory / name, seq, times)

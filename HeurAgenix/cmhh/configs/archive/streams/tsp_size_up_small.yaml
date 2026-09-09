@@ -1,0 +1,7 @@
+version: 1
+stream_id: tsp_size_up_small
+description: "Small-scale pilot stream: TSP size ascending (20 -> 50 -> 100)."
+task_ids:
+  - tsp_uniform_n20
+  - tsp_uniform_n50_a
+  - tsp_uniform_n100

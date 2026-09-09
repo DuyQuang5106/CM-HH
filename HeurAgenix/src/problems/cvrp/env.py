@@ -21,7 +21,8 @@ class Env(BaseEnv):
 
     def load_data(self, data_path: str) -> None:
         problem = tsplib95.load(data_path)
-        depot = problem.depots[0] - 1
+        depots = getattr(problem, "depots", None)
+        depot = (depots[0] - 1) if (depots and len(depots) > 0) else 0
         if problem.edge_weight_type == "EUC_2D":
             node_coords = problem.node_coords
             node_num = len(node_coords)

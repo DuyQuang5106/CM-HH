@@ -1,0 +1,23 @@
+version: 1
+suite_id: pilot_4streams
+description: "CM-HH Canonical 4-Stream Pilot Suite across 5 Conditions (S1 Scale, S2 Constraint, S3 Related, S4 Unrelated)."
+streams:
+  - s1_tsp_scale
+  - s2_cvrp_constraint
+  - s3_related_cross_problem
+  - s4_unrelated_cross_problem
+conditions:
+  - isolated
+  - population
+  - naive-bounded
+  - naive-unbounded
+  - managed
+seeds:
+  - 1
+  - 2
+  - 3
+splits:
+  train: 10
+  validation: 10
+  test: 20
+  smoke: 2

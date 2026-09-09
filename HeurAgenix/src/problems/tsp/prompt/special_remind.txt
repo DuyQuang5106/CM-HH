@@ -1,2 +1,4 @@
 1. Consider empty solution as input (no last_visited).
 2. Make sure solution is valid, such as: no-revisited.
+3. Keep each heuristic decision at O(N^2) or better for TSP. Do not use exhaustive two-step lookahead with nested loops over every candidate node and every insertion position inside another candidate/position loop.
+4. Prefer local, incremental scoring based on the current tour, unvisited nodes, and distance matrix. If using lookahead, restrict it to a small constant-size sample or neighborhood.

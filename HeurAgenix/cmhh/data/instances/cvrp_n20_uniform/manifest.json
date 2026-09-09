@@ -2,7 +2,16 @@
   "coordinate_max": 10000,
   "coordinate_min": 0,
   "data_seed": 42,
+  "dataset_seed": 42,
   "distribution": "euclidean_uniform",
+  "metadata": {
+    "nodes": 20,
+    "stream_families": [
+      "within_problem_size",
+      "cross_problem_same_size",
+      "mixed_problem_size"
+    ]
+  },
   "problem": "cvrp",
   "size_tier": "n20",
   "splits": {

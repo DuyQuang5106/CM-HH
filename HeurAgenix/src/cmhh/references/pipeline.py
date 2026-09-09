@@ -70,10 +70,9 @@ def generate_task_references(
                     error=traceback.format_exc(),
                     runtime_seconds=0.0,
                 ))
-            write_reference_set(reference_path, task.task_id, list(records.values()))
 
-    if not pending and not reference_path.exists():
-        write_reference_set(reference_path, task.task_id, [])
+    write_reference_set(reference_path, task.task_id, list(records.values()))
+
     failure_path = reference_path.parent / f"{split}_solver_failures.json"
     write_json_atomic(failure_path, {
         "task_id": task.task_id,

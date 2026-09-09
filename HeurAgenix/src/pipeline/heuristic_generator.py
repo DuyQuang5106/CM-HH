@@ -1,11 +1,15 @@
-import os
-import json
 import importlib
+import json
+import logging
+import os
 import traceback
 from copy import deepcopy
 from src.problems.base.components import BaseOperator
 from src.util.util import extract, extract_function_with_short_docstring, filter_dict_to_str, find_key_value, load_function, parse_paper_to_dict, replace_strings_in_dict, sanitize_function_name, load_framework_description, search_file
 from src.util.llm_client.base_llm_client import BaseLLMClient
+
+_LOGGER = logging.getLogger("heuragenix.generator")
+
 
 
 class HeuristicGenerator:
@@ -222,16 +226,22 @@ class HeuristicGenerator:
             code = self.smoke_test(code, function_name)
             if not code:
                 self.llm_client.dump(f"{function_name}_abandoned")
+                _LOGGER.warning("[GEN] smoke test failed/abandoned for %s", function_name)
                 return None
+
+        if not code:
+            _LOGGER.warning("[GEN] parse failed / no python code extracted for %s", function_name)
+            return None
 
         self.llm_client.dump(f"{function_name}")
 
         # Save code
         output_heuristic_file = os.path.join(self.output_dir, function_name + ".py")
-        print(f"Save {function_name} code to {output_heuristic_file}")
+        _LOGGER.info("[GEN] generated heuristic=%s -> %s", function_name, os.path.basename(output_heuristic_file))
         with open(output_heuristic_file, "w", encoding="utf-8") as fp:
             fp.write(code)
         return output_heuristic_file
+
 
     def smoke_test(self, heuristic_code: str, function_name: str, max_try_times: int=5) -> str:
         prompt_dict = {}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import sys
 import tempfile
@@ -13,14 +14,16 @@ from cmhh.metrics.objective import relative_gap
 from cmhh.models import EvaluationBudget, EvaluationResult, HeuristicArtifact, InstanceEvaluation
 from cmhh.tasks import TaskSpec
 
-
 from cmhh.evaluation.problem_adapter import ProblemRegistry
+
+_LOGGER = logging.getLogger("cmhh.eval")
 
 
 class Evaluator:
-    def __init__(self, repo_root: str | Path, budget: EvaluationBudget) -> None:
+    def __init__(self, repo_root: str | Path, budget: EvaluationBudget, heartbeat_interval: float = 30.0) -> None:
         self.repo_root = Path(repo_root).resolve()
         self.budget = budget
+        self.heartbeat_interval = heartbeat_interval
 
     def evaluate(
         self,
@@ -35,10 +38,28 @@ class Evaluator:
         instances = adapter.discover_instances(split_path)
 
         references = self._load_references(task)
-        started = time.monotonic()
+        started = time.perf_counter()
+        last_heartbeat = started
+        _LOGGER.info(
+            "[EVAL] started heuristic=%s | split=%s | instances=%d",
+            heuristic.heuristic_id,
+            split,
+            len(instances),
+        )
+
         results: list[InstanceEvaluation] = []
-        for instance in instances:
-            elapsed = time.monotonic() - started
+        for index, instance in enumerate(instances):
+            now = time.perf_counter()
+            elapsed = now - started
+            if now - last_heartbeat >= self.heartbeat_interval:
+                _LOGGER.info(
+                    "[EVAL] still running | instances=%d/%d | elapsed=%ds",
+                    index,
+                    len(instances),
+                    int(elapsed),
+                )
+                last_heartbeat = now
+
             if elapsed >= self.budget.batch_timeout_seconds:
                 results.append(InstanceEvaluation(
                     instance_id=instance.stem,
@@ -52,7 +73,20 @@ class Evaluator:
                 ))
                 continue
             results.append(self._evaluate_instance(heuristic, task, instance, references))
-        return EvaluationResult(heuristic.heuristic_id, task.task_id, split, tuple(results))
+
+        eval_result = EvaluationResult(heuristic.heuristic_id, task.task_id, split, tuple(results))
+        total_elapsed = time.perf_counter() - started
+        gap_str = f"{eval_result.mean_relative_gap:.4f}" if eval_result.mean_relative_gap is not None else "N/A"
+        score_str = f"{eval_result.mean_score:.2f}" if eval_result.mean_score is not None else "N/A"
+        _LOGGER.info(
+            "[EVAL] complete heuristic=%s | score=%s | gap=%s | elapsed=%.2fs",
+            heuristic.heuristic_id,
+            score_str,
+            gap_str,
+            total_elapsed,
+        )
+        return eval_result
+
 
     def _load_references(self, task: TaskSpec) -> ReferenceSet | None:
         path = task.reference.path

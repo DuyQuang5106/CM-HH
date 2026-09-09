@@ -57,6 +57,8 @@ def validate_configuration(
         "population_carryover",
         "naive_memory_sequential",
         "naive_sequential",
+        "naive_memory_unbounded",
+        "naive_unbounded",
         "archivist_managed",
         "managed_archivist",
     }

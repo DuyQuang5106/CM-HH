@@ -69,14 +69,17 @@ def write_task_manifest(task: TaskSpec, experiment: ExperimentConfig, seed: int)
         records[split_name] = split_files
 
     manifest_path = base / "manifest.json"
+    effective_seed = int(task.metadata.get("dataset_seed", seed))
     write_json_atomic(manifest_path, {
         "task_id": task.task_id,
         "problem": task.problem,
         "size_tier": task.size_tier,
         "distribution": task.distribution,
-        "data_seed": seed,
+        "dataset_seed": effective_seed,
+        "data_seed": effective_seed,
         "coordinate_min": experiment.data.coordinate_min,
         "coordinate_max": experiment.data.coordinate_max,
+        "metadata": task.metadata,
         "splits": records,
     })
     return manifest_path

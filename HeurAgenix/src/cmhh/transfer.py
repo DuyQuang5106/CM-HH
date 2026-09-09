@@ -42,11 +42,11 @@ class TransferRecord:
 
 
 class DeterministicTransferPolicy:
-    """V0 transfer policy with explicit, auditable actions.
+    """V0 transfer policy with explicit, auditable actions and cross-domain safety.
 
-    The first compatible retrieved executable is reused directly as a seed.
-    Remaining retrieved items are included as refinement context until the
-    configured quota is exhausted. Invalid items are ignored.
+    - The first compatible same-problem retrieved executable is reused directly as a seed.
+    - Cross-problem items or subsequent items are evaluated for refinement context until quota.
+    - Incompatible or excess items are ignored.
     """
 
     def __init__(self, direct_reuse_quota: int = 1, refine_quota: int | None = None) -> None:
@@ -58,7 +58,6 @@ class DeterministicTransferPolicy:
         self.refine_quota = refine_quota
 
     def plan(self, *, task: TaskSpec, retrieved: list[RetrievedItem]) -> list[TransferPlan]:
-        del task
         plans: list[TransferPlan] = []
         direct_used = 0
         refine_used = 0
@@ -68,16 +67,17 @@ class DeterministicTransferPolicy:
             unit = item.unit
             artifact_id = unit.scope.heuristic_family or unit.id
             has_artifact = bool(unit.evidence.source_artifacts)
+            is_same_problem = (unit.scope.problem.lower() == task.problem.lower()) if unit.scope.problem else True
 
-            if not has_artifact:
+            if not has_artifact and not bool(unit.value.content):
                 action: TransferAction = "ignore"
                 role: TransferRole = "none"
-                reason = "no_executable_artifact"
-            elif direct_used < self.direct_reuse_quota:
+                reason = "no_usable_content"
+            elif is_same_problem and has_artifact and direct_used < self.direct_reuse_quota:
                 direct_used += 1
                 action = "direct_reuse"
                 role = "seed"
-                reason = "top_retrieved_executable"
+                reason = "top_retrieved_executable_same_problem"
             elif refine_used < refine_limit:
                 refine_used += 1
                 action = "refine"

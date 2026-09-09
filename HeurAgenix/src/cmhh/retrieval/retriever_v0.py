@@ -25,7 +25,7 @@ class RetrieverV0(Retriever):
     ) -> list[RetrievedItem]:
         budget = budget or RetrievalBudget()
         
-        # Stage 1: Hard structural compatibility filter
+        # Stage 1: Compatibility filter (allow same-problem or units with semantic abstraction)
         compatible: list[tuple[float, float, MemoryUnit]] = []
         for unit in memory:
             if not self._is_structurally_compatible(query, unit):
@@ -59,17 +59,29 @@ class RetrieverV0(Retriever):
         ]
 
     def _is_structurally_compatible(self, query: RetrievalQuery, unit: MemoryUnit) -> bool:
-        if unit.scope.problem and unit.scope.problem.lower() != query.problem.lower():
-            return False
-        return True
+        # Same problem is always structurally compatible
+        if unit.scope.problem and unit.scope.problem.lower() == query.problem.lower():
+            return True
+        # Cross-problem candidate is compatible for semantic evaluation if it has abstraction or content
+        if bool(unit.value.content) or bool(unit.evidence.source_artifacts):
+            return True
+        return False
 
     def _structural_similarity(self, query: RetrievalQuery, unit: MemoryUnit) -> float:
         sim = 0.0
-        if unit.scope.problem.lower() == query.problem.lower():
+        # 1. Problem family matching
+        if unit.scope.problem and unit.scope.problem.lower() == query.problem.lower():
             sim += 1.0
+        else:
+            # Domain-neutral base similarity for cross-problem semantic candidates
+            sim += 0.25
+
+        # 2. Task signature matching
         for key, value in query.task_signature.items():
             if unit.key.task_signature.get(key) == value:
                 sim += 0.5
+
+        # 3. Applicability descriptor matching
         if query.problem.lower() in unit.key.applicability.lower():
             sim += 0.25
         return sim

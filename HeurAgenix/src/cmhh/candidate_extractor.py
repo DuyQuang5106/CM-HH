@@ -30,9 +30,7 @@ class TopKCandidateExtractor:
     """V0 candidate extractor: deterministic top-k by validation score."""
 
     def __init__(self, top_k: int = 3) -> None:
-        if top_k < 1:
-            raise ValueError("top_k must be >= 1")
-        self.top_k = top_k
+        self.top_k = max(1, int(top_k))
 
     def extract(
         self,

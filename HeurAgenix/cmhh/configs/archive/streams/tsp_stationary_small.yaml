@@ -1,0 +1,7 @@
+version: 1
+stream_id: tsp_stationary_small
+description: "Small-scale pilot stream: Stationary control (TSP50 Uniform A -> TSP50 Uniform B -> TSP50 Uniform C)."
+task_ids:
+  - tsp_uniform_n50_a
+  - tsp_uniform_n50_b
+  - tsp_uniform_n50_c

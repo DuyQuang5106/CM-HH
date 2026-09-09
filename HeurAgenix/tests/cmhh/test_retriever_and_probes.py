@@ -47,7 +47,7 @@ class RetrieverV0Tests(unittest.TestCase):
             evidence=MemoryEvidence(validation_after={"score": 0.99}),
         )
 
-    def test_structural_filtering_excludes_incompatible_problem(self) -> None:
+    def test_structural_similarity_ranks_same_problem_above_cross_problem(self) -> None:
         query = RetrievalQuery(
             problem="tsp",
             task_id="tsp_20",
@@ -58,8 +58,9 @@ class RetrieverV0Tests(unittest.TestCase):
             [self.unit_tsp_n20, self.unit_cvrp],
             RetrievalBudget(top_k=5),
         )
-        self.assertEqual(1, len(retrieved))
+        self.assertEqual(2, len(retrieved))
         self.assertEqual(self.unit_tsp_n20.id, retrieved[0].unit.id)
+        self.assertGreater(retrieved[0].score, retrieved[1].score)
 
     def test_top_k_budget_limit(self) -> None:
         query = RetrievalQuery(

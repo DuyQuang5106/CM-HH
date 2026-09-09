@@ -1,0 +1,8 @@
+version: 1
+id: s4_unrelated_cross_problem
+shift_type: unrelated_cross_problem
+description: "S4: Unrelated domain transfer control (TSP50-A -> JSSP10x5 -> TSP50-B)"
+tasks:
+  - tsp_uniform_n50_a
+  - jssp_j10_m5
+  - tsp_uniform_n50_b

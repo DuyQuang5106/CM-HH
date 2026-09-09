@@ -6,7 +6,15 @@ from typing import Any, Iterable
 
 import yaml
 
-from cmhh.config import ExperimentConfig, StreamConfig
+from cmhh.config import (
+    ConditionSpec,
+    ExperimentConfig,
+    StreamConfig,
+    compose_experiment_config,
+    load_base_experiment_config,
+    load_conditions_registry,
+    load_experiment_config,
+)
 from cmhh.models import SearchBudget
 
 
@@ -91,19 +99,52 @@ DEFAULT_STREAMS = (
     "jssp_size_descending",
     "cross_problem_tsp_cvrp_jssp",
     "tsp_revisit",
-    "tsp_stationary",
+    "tsp_stationary_small",
     "related_pair_tsp_cvrp_tsp",
     "unrelated_pair_tsp_jssp_tsp",
 )
 
 
 PILOT_STREAMS = (
-    "tsp_size_ascending",
-    "cvrp_size_ascending",
-    "jssp_size_ascending",
-    "cross_problem_tsp_cvrp_jssp",
-    "tsp_stationary",
+    "s1_tsp_scale",
+    "s2_cvrp_constraint",
+    "s3_related_cross_problem",
+    "s4_unrelated_cross_problem",
 )
+
+
+def resolve_condition_experiment_config(
+    condition: str,
+    base_experiment: ExperimentConfig | None,
+    root: Path,
+) -> tuple[Path, ExperimentConfig]:
+    """Resolve experiment config for a condition using hierarchical composition if available, or legacy YAML."""
+    canonical_cond = CONDITION_ALIASES.get(condition.strip().lower(), condition)
+    conditions_yaml = root / "cmhh" / "configs" / "conditions.yaml"
+    if not conditions_yaml.exists() and (root / "HeurAgenix" / "cmhh" / "configs" / "conditions.yaml").exists():
+        conditions_yaml = root / "HeurAgenix" / "cmhh" / "configs" / "conditions.yaml"
+
+    if conditions_yaml.exists():
+        try:
+            registry = load_conditions_registry(root, conditions_yaml)
+            if canonical_cond in registry:
+                spec = registry[canonical_cond]
+                base = base_experiment if base_experiment is not None else load_base_experiment_config(root)
+                composed = compose_experiment_config(base=base, condition_spec=spec)
+                return conditions_yaml, composed
+        except Exception:
+            pass
+
+    # Fallback to legacy individual experiment file if present
+    rel_path = CONDITION_EXPERIMENTS.get(canonical_cond, "cmhh/configs/experiments/defaults.yaml")
+    exp_path = root / rel_path
+    if not exp_path.exists() and (root / "HeurAgenix" / rel_path).exists():
+        exp_path = root / "HeurAgenix" / rel_path
+    if exp_path.exists():
+        return exp_path, load_experiment_config(exp_path, root)
+
+    base = base_experiment if base_experiment is not None else load_base_experiment_config(root)
+    return exp_path, compose_experiment_config(base=base, condition_name=canonical_cond)
 
 
 def parse_int_values(values: Iterable[str | int] | None) -> tuple[int, ...]:
@@ -131,9 +172,10 @@ def parse_string_values(values: Iterable[str] | None) -> tuple[str, ...]:
 
 
 def normalize_conditions(values: Iterable[str] | None) -> tuple[str, ...]:
-    requested = parse_string_values(values) or DEFAULT_CONDITIONS
+    if not values:
+        return DEFAULT_CONDITIONS
     normalized: list[str] = []
-    for value in requested:
+    for value in values:
         key = value.strip().lower()
         condition = CONDITION_ALIASES.get(key)
         if condition is None:
@@ -152,10 +194,33 @@ def resolve_stream_path(stream: str, root: Path) -> Path:
         return value.resolve()
     candidates = [
         root / value,
+        root / "cmhh" / "configs" / "streams" / "pilot" / f"{stream}.yaml",
         root / "cmhh" / "configs" / "streams" / f"{stream}.yaml",
         root / "cmhh" / "configs" / "streams" / stream,
         root / "HeurAgenix" / value,
+        root / "HeurAgenix" / "cmhh" / "configs" / "streams" / "pilot" / f"{stream}.yaml",
         root / "HeurAgenix" / "cmhh" / "configs" / "streams" / f"{stream}.yaml",
+        root / "cmhh" / "configs" / "archive" / "streams" / f"{stream}.yaml",
+        root / "HeurAgenix" / "cmhh" / "configs" / "archive" / "streams" / f"{stream}.yaml",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate.resolve()
+    return root / value
+
+
+def resolve_suite_path(suite: str, root: Path) -> Path:
+    value = Path(suite)
+    if value.is_absolute():
+        return value
+    if value.exists():
+        return value.resolve()
+    candidates = [
+        root / value,
+        root / "cmhh" / "configs" / "suites" / f"{suite}.yaml",
+        root / "cmhh" / "configs" / "suites" / suite,
+        root / "HeurAgenix" / value,
+        root / "HeurAgenix" / "cmhh" / "configs" / "suites" / f"{suite}.yaml",
     ]
     for candidate in candidates:
         if candidate.exists():

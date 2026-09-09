@@ -1,0 +1,22 @@
+version: 1
+suite_id: pilot_small
+description: "CM-HH Small-Scale Pilot Stream Suite (5 streams x 3 conditions x budget 50)."
+streams:
+  - tsp_size_up_small
+  - tsp_size_down_small
+  - tsp_variant_revisit_small
+  - related_pair_small
+  - unrelated_pair_small
+conditions:
+  - isolated
+  - naive-bounded
+  - managed
+seeds:
+  - 1
+mode: pilot
+llm_budget_per_task: 50
+splits:
+  train: 10
+  validation: 10
+  test: 20
+  smoke: 2

@@ -1,0 +1,20 @@
+version: 1
+suite_id: pilot_small_smoke
+description: "CM-HH Small-Scale Pilot Smoke Suite (isolated + managed, budget 5-10)."
+streams:
+  - tsp_size_up_small
+  - tsp_variant_revisit_small
+  - related_pair_small
+  - unrelated_pair_small
+conditions:
+  - isolated
+  - managed
+seeds:
+  - 1
+mode: smoke
+llm_budget_per_task: 10
+splits:
+  train: 5
+  validation: 5
+  test: 10
+  smoke: 2

@@ -1,0 +1,8 @@
+version: 1
+id: s1_tsp_scale
+shift_type: scale
+description: "S1: Within-problem scale curriculum (TSP20 -> TSP50 -> TSP100)"
+tasks:
+  - tsp_uniform_n20
+  - tsp_uniform_n50
+  - tsp_uniform_n100

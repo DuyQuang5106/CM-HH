@@ -1,0 +1,91 @@
+{
+  "coordinate_max": 10000,
+  "coordinate_min": 0,
+  "data_seed": 51004,
+  "dataset_seed": 51004,
+  "distribution": "euclidean_uniform",
+  "metadata": {
+    "dataset_seed": 51004,
+    "instance_set": "c",
+    "nodes": 50,
+    "stream_families": [
+      "pilot_small"
+    ],
+    "task_distribution_id": "tsp_uniform_n50"
+  },
+  "problem": "tsp",
+  "size_tier": "n50",
+  "splits": {
+    "smoke": {
+      "tsp_uniform_n50_c_smoke_000.tsp": "f5d060a0d1f6603647dcbc6a4de29aec60a2f93ce9237ed50fb472bf49743dd1",
+      "tsp_uniform_n50_c_smoke_001.tsp": "d612a58d8ad5551cb6c8c921aca3bc96f825d2e0b2ff0a47d59ed34bc84229a8"
+    },
+    "test": {
+      "tsp_uniform_n50_c_test_000.tsp": "e3e02fcb326bc35c4a97a03e9984a281e9ac08d0322cee977ba7ec370228baf6",
+      "tsp_uniform_n50_c_test_001.tsp": "b3847b3cd13a69fe29cecbf54512140b1713d7e0cfb52d0198141e12686240da",
+      "tsp_uniform_n50_c_test_002.tsp": "e251b586e0ddc75454a133c96227cde0fef11152c0f9807bfd2c0bc7cebf01db",
+      "tsp_uniform_n50_c_test_003.tsp": "0f479ee1e4eef8e805b2e1e5af4b48cc52c7b47eb0ebb38b336c5a0fdb0acdf5",
+      "tsp_uniform_n50_c_test_004.tsp": "e96e3a76c72ea7e62184f5b27b2b36898cdcb8dc242b77ca369ef4edf54a55cd",
+      "tsp_uniform_n50_c_test_005.tsp": "b49dfa29029438a7b0ebcea1a654b58cdc11ad589eee05edc22c472e639f4d69",
+      "tsp_uniform_n50_c_test_006.tsp": "9b05fca9332bf84f8eb00dbf9fcf0e0b281d7a42873384f72154eb68191787a3",
+      "tsp_uniform_n50_c_test_007.tsp": "f9193399842e2ebff15850cce9d46d2a5acd49bea84d390481cccf2e7d1aa582",
+      "tsp_uniform_n50_c_test_008.tsp": "80d09147bd51135a9e7a1aee79dc095c4a59bb117e23aad3e2703abc8bfde626",
+      "tsp_uniform_n50_c_test_009.tsp": "3bd96e42eaeabc07c57ae2f846d5c5853f8ec83fa633e658840da554170e76e6",
+      "tsp_uniform_n50_c_test_010.tsp": "9d2814e872c020f302ee8e8fc2c344d0219c9c22d3f955af27464ba85d5d38dc",
+      "tsp_uniform_n50_c_test_011.tsp": "7e5f800f5c5328b34937137683b5ed31bc91a397ba0a1bec9276fd4dc5fb57d2",
+      "tsp_uniform_n50_c_test_012.tsp": "b648d7a597ce90ff9e9c0a4d71ff8ad1d077d7c33d0c7c7218ddc86548bf934c",
+      "tsp_uniform_n50_c_test_013.tsp": "4d6407218fa64ca771c402a92cf99571d35a4068a4f8cff78c47fc84653398ba",
+      "tsp_uniform_n50_c_test_014.tsp": "d5df90b10d373d17cac5f51ec32d9b4c2dc171d673760f648b406bcbb709157e",
+      "tsp_uniform_n50_c_test_015.tsp": "40731faa5b1cb7cb91a1559730d8e3cbb0f48036b6e01a8d3ac33c242eae2f9c",
+      "tsp_uniform_n50_c_test_016.tsp": "e4f70ca0124689fe93f3b8f10f3066d4c969569b801ee74d1df2b38a87554123",
+      "tsp_uniform_n50_c_test_017.tsp": "2a2336a40259f48b6ce89feaad41889b588072fff0499325e42aa5b447aafb2f",
+      "tsp_uniform_n50_c_test_018.tsp": "b867205e4641b2c7c199901aae9d29f83381d5875ec452f5c07c0301e07bf6c1",
+      "tsp_uniform_n50_c_test_019.tsp": "99a7417a0a66e8e2b78aeb00a8a4a25adb5ccd99737c5eba0cb61c07bbc493a9",
+      "tsp_uniform_n50_c_test_020.tsp": "90c86a0e69776f0018742ffa5e550aa949aad09a46ec14a74b3d504304eb448f",
+      "tsp_uniform_n50_c_test_021.tsp": "1ca1ef3cc5d94647acfdf8d398ca6940074a2ab676840824581230f4c197a157",
+      "tsp_uniform_n50_c_test_022.tsp": "54b218375f3039f12a6546213cf5fae33a3df950bb1b801c4ab290e4737d7358",
+      "tsp_uniform_n50_c_test_023.tsp": "aee3fc7eec2a67dde3e93c772981c7bfe2160706dc3b8fa961294381b7f8ca03",
+      "tsp_uniform_n50_c_test_024.tsp": "e91a69814c27921405ce41ef0453f0d89422812209c39b0469a85ac5f7b3319a",
+      "tsp_uniform_n50_c_test_025.tsp": "143054b46a60edbb310e4304a20194c37a9fd17dec2cf216187c895b8ab739d9",
+      "tsp_uniform_n50_c_test_026.tsp": "4cdb4a9208a8b33905a5980609cfc51dbc6960bf3cd5d3d9b71fdc17060f296f",
+      "tsp_uniform_n50_c_test_027.tsp": "079aaaa064bf406ad1064dbdc706a0d265aec0d22af677de591393d2ef666168",
+      "tsp_uniform_n50_c_test_028.tsp": "9852ab89d30e52755493c7dd489553595e6b7524b19b64ec1e177bd57f11c799",
+      "tsp_uniform_n50_c_test_029.tsp": "cacb0b1fe29b348970ead759def60562a497596b5df45058659ecf9c2676f73a"
+    },
+    "train": {
+      "tsp_uniform_n50_c_train_000.tsp": "6cf65abfc2ffd117d765140daa74c8d53c85775923eba08bead37c83fe306b8b",
+      "tsp_uniform_n50_c_train_001.tsp": "5b6fdf7e3bf16261b78322a83a579a08b3ad2188cf3ddc2a931aefdeec96469a",
+      "tsp_uniform_n50_c_train_002.tsp": "419865bf1c9278927d46da9aabdd184f756b051477f0b87323f4e00b75ffddae",
+      "tsp_uniform_n50_c_train_003.tsp": "c63c1e3e56f40652ebf578a99ef7c73ba86b88a989aeec258cc8265b3952dd81",
+      "tsp_uniform_n50_c_train_004.tsp": "2924553f399de24e0ba52e5ab6604cd7d83e2a3df0e58823de7232d90a2077ce",
+      "tsp_uniform_n50_c_train_005.tsp": "a3be2b8267cd4fb30ec3f5feb0562efeca93a4b473d78d949cbccde54eadd2ed",
+      "tsp_uniform_n50_c_train_006.tsp": "db81d1ebe5a3a7c09aeecba93bb0bfa3a857a678caf79f082768d72d7e13267a",
+      "tsp_uniform_n50_c_train_007.tsp": "178a8b49b330357128892fbfe08d0dca72fe150fd056b21f22bdf675952d7bff",
+      "tsp_uniform_n50_c_train_008.tsp": "039b41268da580b598fb9608042bcbea116f324bf7cc401c908a1137a74ee28b",
+      "tsp_uniform_n50_c_train_009.tsp": "1f59406407253e85fc151e0f2e4b6588083fbe19d06d3c55ae41afd0aa595c71",
+      "tsp_uniform_n50_c_train_010.tsp": "c10a1b5aab442f7dc1ef87fc7813320cb62cfdde1bd554029937c906f2e7d088",
+      "tsp_uniform_n50_c_train_011.tsp": "89864becbb5cb31ff7328fcbc4f8c21c517b777d6d2dc8e2d071197f822222ea",
+      "tsp_uniform_n50_c_train_012.tsp": "1b00007eee03315c7bb3d7843eac41352a9586b6ec0524bdbd1c21e07b5fec73",
+      "tsp_uniform_n50_c_train_013.tsp": "f60f8f5fb46077bee605be7e185f027b2d5b9ebe4c0a28225c3dfd987f5aaa93",
+      "tsp_uniform_n50_c_train_014.tsp": "559a8af4eafe220ff02a75df301c5ee93314dc84b4dbbe5c451c74435fea39d2",
+      "tsp_uniform_n50_c_train_015.tsp": "c6ed9232f5f18e118b9abdd2b888a76e7884949aef8934169ac441ae2d70afd8",
+      "tsp_uniform_n50_c_train_016.tsp": "32d4b9b00e7f0a1e40030cb210e54299d75c844aba625d501851bfec9c892efa",
+      "tsp_uniform_n50_c_train_017.tsp": "ab7c98e968ee98012aafdee87fb0a39f8a971f457f761602dd6b9ff9991501e9",
+      "tsp_uniform_n50_c_train_018.tsp": "cd6f7fc39090bcb003d936e119d5a24f19c13f20e40cb4a3b40233ebd8db98c7",
+      "tsp_uniform_n50_c_train_019.tsp": "32ce4be988b9edffdd13854f8632f8737bb5051756146fcd0092f907bfabee41"
+    },
+    "validation": {
+      "tsp_uniform_n50_c_validation_000.tsp": "1d1146c679e7f3a6b2746e6074c384538ac0ed2d76f35437cea40cdbc45e565a",
+      "tsp_uniform_n50_c_validation_001.tsp": "1ca713ec932ef0e6d271d122bbc250bb672e173ce0d346ce729206add9eccd6d",
+      "tsp_uniform_n50_c_validation_002.tsp": "34c0b5c913d2682bc99012026d98bc96bf7057e3a3ead51cf3d74c9d38680be9",
+      "tsp_uniform_n50_c_validation_003.tsp": "b16384f01ab24c683154dd8374db8fe86b39a3019b642b84dbc29470790ce421",
+      "tsp_uniform_n50_c_validation_004.tsp": "bc26225147194e72673fcc4f8efd7a7d94e36647a96d381cc698ae6d98f4ec1d",
+      "tsp_uniform_n50_c_validation_005.tsp": "156025942c50b90b89907867b3ab073e80358568008b99fb534a858eb77f1e12",
+      "tsp_uniform_n50_c_validation_006.tsp": "f51310917b310a261ca19cca207f9b364bc252042f97f07deb2537ab697fc255",
+      "tsp_uniform_n50_c_validation_007.tsp": "bc134f5d638611ed8ea7fb5a1f0a23608bf10fa70952bae347c362b8c9081983",
+      "tsp_uniform_n50_c_validation_008.tsp": "b0e366b3067319c5e81b2a097e272cae65073f8f6bb69c5a0e30c022b3229c3e",
+      "tsp_uniform_n50_c_validation_009.tsp": "15c0b552b6c5759fc364131240ae3226935724c91136620c5b86d585694e387e"
+    }
+  },
+  "task_id": "tsp_uniform_n50_c"
+}

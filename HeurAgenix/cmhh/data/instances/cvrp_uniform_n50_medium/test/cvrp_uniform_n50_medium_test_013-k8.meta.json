@@ -1,0 +1,16 @@
+{
+  "total_demand": 266,
+  "demand_max": 10,
+  "fleet_size": 8,
+  "capacity": 45,
+  "rho_target": 0.75,
+  "capacity_tightness": 0.75,
+  "rho_actual": 0.7388888888888889,
+  "coordinate_hash": "d15336fe35f1ba66",
+  "demand_hash": "936d5abddb557d5f",
+  "generation_attempt": 0,
+  "base_seed": 11222032516297556173,
+  "base_instance_id": "cvrp_uniform_n50_base_test_013",
+  "constraint_regime": "medium",
+  "instance_id": "cvrp_uniform_n50_medium_test_013"
+}

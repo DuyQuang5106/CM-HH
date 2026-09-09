@@ -1,0 +1,7 @@
+version: 1
+stream_id: related_pair_small
+description: "Small-scale pilot stream: Related cross-problem transfer (TSP50 A -> CVRP30 -> TSP50 B)."
+task_ids:
+  - tsp_uniform_n50_a
+  - cvrp_uniform_n30
+  - tsp_uniform_n50_b

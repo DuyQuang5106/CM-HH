@@ -86,6 +86,8 @@ class MemoryAwarePopulationBuilder:
         )
 
     def _artifact_from_memory(self, unit: MemoryItem, task: TaskSpec) -> HeuristicArtifact | None:
+        if unit.scope.problem and unit.scope.problem.lower() != task.problem.lower():
+            return None
         code_path = Path(unit.code_path or "")
         if not code_path.exists():
             return None

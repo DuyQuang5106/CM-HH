@@ -1,0 +1,57 @@
+version: 1
+description: "CM-HH Modular Condition Archive & Memory Policies"
+conditions:
+  isolated:
+    condition: isolated_task
+    archive:
+      policy: none
+      capacity: 0
+      top_k: 0
+      candidate_top_k: 0
+      memory_seed_quota: 0
+      direct_reuse_quota: 0
+      refine_quota: 0
+
+  population:
+    condition: population_carryover
+    archive:
+      policy: population_carryover
+      capacity: 20
+      top_k: 5
+      candidate_top_k: 5
+      memory_seed_quota: 1
+      direct_reuse_quota: 1
+      refine_quota: 0
+
+  naive-bounded:
+    condition: naive_memory_sequential
+    archive:
+      policy: naive_overwrite
+      capacity: 20
+      top_k: 5
+      candidate_top_k: 5
+      memory_seed_quota: 1
+      direct_reuse_quota: 1
+      refine_quota: 4
+
+  naive-unbounded:
+    condition: naive_memory_unbounded
+    archive:
+      policy: naive_overwrite
+      capacity: null
+      top_k: 5
+      candidate_top_k: 5
+      memory_seed_quota: 1
+      direct_reuse_quota: 1
+      refine_quota: 4
+
+  managed:
+    condition: archivist_managed
+    archive:
+      policy: archivist_managed
+      capacity: 20
+      top_k: 5
+      candidate_top_k: 5
+      memory_seed_quota: 1
+      direct_reuse_quota: 1
+      refine_quota: 4

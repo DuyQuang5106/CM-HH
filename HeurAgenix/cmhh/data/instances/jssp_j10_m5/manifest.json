@@ -1,0 +1,90 @@
+{
+  "coordinate_max": 10000,
+  "coordinate_min": 0,
+  "data_seed": 54001,
+  "dataset_seed": 54001,
+  "distribution": "uniform_processing_times",
+  "metadata": {
+    "dataset_seed": 54001,
+    "jobs": 10,
+    "machines": 5,
+    "stream_families": [
+      "pilot_small"
+    ]
+  },
+  "problem": "jssp",
+  "size_tier": "j10_m5",
+  "splits": {
+    "smoke": {
+      "jssp_j10_m5_smoke_000.txt": "f1380b1eb9e43efc07ef9f602fa04d7ba8d47b5bf965fccff6562717b942e3ab",
+      "jssp_j10_m5_smoke_001.txt": "c5e4572ec80028f1675792a0fd57f16df5f3666f818935413e380819d683ff1e"
+    },
+    "test": {
+      "jssp_j10_m5_test_000.txt": "4af386b0636b87ace3a1870aceaa85339d7e277f509c87818fc9a82f7ac8e7f2",
+      "jssp_j10_m5_test_001.txt": "8ba2ca5ce22cf9626d59a1dc3f5311c56335ca5b5d884c6d00584665d467dba5",
+      "jssp_j10_m5_test_002.txt": "489d0b38424859f64db4defaed79131ada830fa427e3718462261907095db322",
+      "jssp_j10_m5_test_003.txt": "4ead63036c89c2eba551d5d0329e50aaef25a9a8f62a82cc6a3107f5f5fec1fe",
+      "jssp_j10_m5_test_004.txt": "49215559abc853a2b2bc69bf22f2f7d61c7bb6f2bc429dd56c331eb651d193c1",
+      "jssp_j10_m5_test_005.txt": "21d91366121fa978e45e63baef752cc9f9e1b91a2a9a64b7d991f198a291f141",
+      "jssp_j10_m5_test_006.txt": "a9e1d9859b010fbe6254a527fba2f5ca4f530096be241512c80f6e88a6f0e077",
+      "jssp_j10_m5_test_007.txt": "468541cfe2bab478079fe9d6d6ec884a3fccf09a2ef1c9ab60cb31a04765410b",
+      "jssp_j10_m5_test_008.txt": "7bf942e34a353dce6f5c423a27d315f18614502c92a8256fd29ecc082e3467a8",
+      "jssp_j10_m5_test_009.txt": "94b1d3636c91c9b2bd65fad5e5ec72579f9b35aa54a214c2c7b901376aaa18cc",
+      "jssp_j10_m5_test_010.txt": "1a5662c43c1e685936b65ff083f1f32c6718d986b0dcd552e0e3a4f59478ebc0",
+      "jssp_j10_m5_test_011.txt": "88a455c5b27097ea8b2ce42ca179191f35c4f9f3a522156035826a5b5f49b223",
+      "jssp_j10_m5_test_012.txt": "57242d1056b02c94051ca1c39860e27b9b20e36194e6d0f13e00a852b9dfc597",
+      "jssp_j10_m5_test_013.txt": "c761cd505a3f63dbfc742282b8f42a35ab737a9509f1bc00484334a4a95070e4",
+      "jssp_j10_m5_test_014.txt": "014ce253d6086ac55f4465882d6b63e1a7021d67c3045c4805bda24676de011d",
+      "jssp_j10_m5_test_015.txt": "fe55c3000515dd1223c27998a21193789a269776f7c2e4be81b83ac96b45fb2c",
+      "jssp_j10_m5_test_016.txt": "cd0e2014b58d9ad0107d734959c162d06b5446d2ef483dbe78d9e743ba277284",
+      "jssp_j10_m5_test_017.txt": "7d293cb41adc84436b3de00590e31d0809075c3626f5b7cd8b0e3cba9a4245e1",
+      "jssp_j10_m5_test_018.txt": "33c63000c72b2329bda1c5316108254c4709c309e07edae8cd9b73b3815eca0b",
+      "jssp_j10_m5_test_019.txt": "0d573f1fa5df3a384f5f1b91b54b315da11fcc1a23ec572a08e82dad5e472987",
+      "jssp_j10_m5_test_020.txt": "8401f358b27105abf0265fb25589a3a1ef49fb54ff5e0d4abd94cf8873760dc3",
+      "jssp_j10_m5_test_021.txt": "95d0d3272e168f8ceb22d0564f7058010d837bb2d2959010956c330a60235009",
+      "jssp_j10_m5_test_022.txt": "35f384bfdc935ceda1304530ccde5843ec61507c408faa48af8e14a66681a0a6",
+      "jssp_j10_m5_test_023.txt": "dd3a456a38fc1cfd94b62d49239fe72e5ff31e1364d4062adfb6ae22ce41fed9",
+      "jssp_j10_m5_test_024.txt": "bb22414853ada640d3a69fcf00c3a3bf89a4e5e9457f4c66a1365fa5ff1ddceb",
+      "jssp_j10_m5_test_025.txt": "68eb0a2fd1566eef99fc060b7c848dc7e10fdb5a1415fee8df72a2c30714263e",
+      "jssp_j10_m5_test_026.txt": "8230feebe7db365feb0504a5221788d5362e4d106d0cf7e64f12768350667d76",
+      "jssp_j10_m5_test_027.txt": "51ed2286de41ee03dcd4ee276d45aeeff83b02d506df5425ef41f14aac5d5497",
+      "jssp_j10_m5_test_028.txt": "a869a3d1f61748d7d804333bfb2f617fe55800b4d87cb6dfbb115f0f59590bfa",
+      "jssp_j10_m5_test_029.txt": "4bec35cf5a57da693f2fe315f94e59ae3e977677c033404119d21c4f525d2ac2"
+    },
+    "train": {
+      "jssp_j10_m5_train_000.txt": "4fcde746e71a5102cc11150ec380bbeb224498ee081454f694d9a3b60a0d3939",
+      "jssp_j10_m5_train_001.txt": "01792af591525802032dd4dcaeb994d586ab868eb133f31119b287fa78ada240",
+      "jssp_j10_m5_train_002.txt": "b34f54630be294cbc53139bc1bb5c0c03d5aa7da4d3c7877da8b1d169680d716",
+      "jssp_j10_m5_train_003.txt": "de88b7d7b96c6e94545014343ad868b1bdb794f5fe324ea999771e10f428bb8d",
+      "jssp_j10_m5_train_004.txt": "2a899d38b8b79b43766a9bafde08ef0d9fe36212a3c1696b636450415a4b3c4f",
+      "jssp_j10_m5_train_005.txt": "a3b0c85148b7c0f8c208e8e6d357e6a7851a7f9c44cf53fbdcb616a31f236688",
+      "jssp_j10_m5_train_006.txt": "1cacbd3b473f5beec1b521698b9dcd3d2a93a31b462ebb00f7ec030f82700fdc",
+      "jssp_j10_m5_train_007.txt": "528385ec7a4d92ce76c710b19b7765dd365b08465e0acf803599609491f905e3",
+      "jssp_j10_m5_train_008.txt": "544fafc6b40cdc0d46df154bee8da8a5932db1609cfb4f26957f04f6c31274d1",
+      "jssp_j10_m5_train_009.txt": "2c50273594821a0d7794a9aef040ff9972ee1d7402f9af1307ccea8c65eab287",
+      "jssp_j10_m5_train_010.txt": "260b69dadeab4def575711ac9292ab69cf468f3206a9d9e62583f5c5cf949cc0",
+      "jssp_j10_m5_train_011.txt": "093bd8d4460bd7839037bcc278a38cdd2c668302a0e23dcc1ca39fac13ccbd69",
+      "jssp_j10_m5_train_012.txt": "a851ea806863939c7fa56b348b06d42cf76998b6192839ac8a6c6b1d467098b4",
+      "jssp_j10_m5_train_013.txt": "03529ab038558a6127bc4e28b93b9bd888eb752038d9133e98b33ea152b24c87",
+      "jssp_j10_m5_train_014.txt": "ad5aac155e407b486d66d7efcfb7b4507fc32f05b0ee4ba97b74a30d61bc1888",
+      "jssp_j10_m5_train_015.txt": "157cc131aa29821c9b97e4a3a8786e4e629faac516eb08ae6f312c8571adf9f7",
+      "jssp_j10_m5_train_016.txt": "46437a35888f127979d0a61618ed371d048e942ca2e1ecadfa88df62472d5515",
+      "jssp_j10_m5_train_017.txt": "35e94035fc53b3d2b3bd9c028f19e363dece2230ec75d3663ff9995ae2278800",
+      "jssp_j10_m5_train_018.txt": "c993336ad82b08606132ed97e9845aab8516cc1581e7466cb97e6e26bd4d3c9d",
+      "jssp_j10_m5_train_019.txt": "942c54afaf37c234e9ff10180559806efcbae3b1d7dd8524feafa6afe1ad511e"
+    },
+    "validation": {
+      "jssp_j10_m5_validation_000.txt": "171412f836653473c92e4cf7d2093c2acd2555a3a94bbe5671987a6522bb03c5",
+      "jssp_j10_m5_validation_001.txt": "876bbc4b22c674e3eb5cdf41d43f19360f66129ced065c73ea5df05446f08255",
+      "jssp_j10_m5_validation_002.txt": "bfac6aba334171449c28bfbb4b2f606862522dd32b74bf27cfd3bf55b1413fb9",
+      "jssp_j10_m5_validation_003.txt": "38db49b8c037c8b75b38346cc13a1694156a08fa4fb7e6f0ad7f25810895655c",
+      "jssp_j10_m5_validation_004.txt": "40bbeab284a375357566a652865b090845e352ed1b0ecc7bd8464eac8dfdf492",
+      "jssp_j10_m5_validation_005.txt": "dcd0c07a2e4719754c69ec39d510193af80b0bb04caa380902eaa2be83e0c0a7",
+      "jssp_j10_m5_validation_006.txt": "e184845faad5946a65827aad8239e5236e35fc34e29f591695ce9a1a8e812235",
+      "jssp_j10_m5_validation_007.txt": "dc273a07d4d20a19bc69520b304ee484cef115c16d9c584a659279300ffc2f08",
+      "jssp_j10_m5_validation_008.txt": "fd9c680d39cea6f3272bfd5f86217ccbae85ba04601746f9bb269bac0a6fc997",
+      "jssp_j10_m5_validation_009.txt": "c8be850306968a2dc4837aa8d7e5c4c47261568c2c6daa8d7c84645cc467d5a8"
+    }
+  },
+  "task_id": "jssp_j10_m5"
+}

@@ -3,15 +3,16 @@ from __future__ import annotations
 import ast
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 
+from cmhh.agents.subprocess_runner import run_streaming_subprocess
 from cmhh.data.manifest import sha256_file
 from cmhh.llm.config import load_llm_config, write_sanitized_snapshot
 from cmhh.memory import MemoryUnit
 from cmhh.models import HeuristicArtifact, SearchBudget
 from cmhh.tasks import TaskSpec
+from cmhh.tracking.context import context_to_env, get_current_context, update_current_context
 
 
 class EOHGenerator:
@@ -65,24 +66,27 @@ class EOHGenerator:
             str(self.repo_root / "src"),
             environment.get("PYTHONPATH", ""),
         ])
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=self.repo_root,
-                env=environment,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_seconds,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise TimeoutError(f"EOH generation exceeded {self.timeout_seconds}s") from exc
+
+        # Propagate logging context
+        update_current_context(task_id=task.task_id, stage="B", seed=seed, problem=task.problem)
+        environment.update(context_to_env(get_current_context()))
+
+        completed = run_streaming_subprocess(
+            command,
+            cwd=self.repo_root,
+            env=environment,
+            timeout_seconds=self.timeout_seconds,
+            stream_stderr=True,
+        )
+
         if not result_path.exists():
-            detail = (completed.stderr or completed.stdout or "worker produced no result")[-4000:]
-            raise RuntimeError(f"EOH worker failed: {detail}")
+            detail = ("\n".join(completed.stderr_tail) or completed.stdout or "worker produced no result")[-4000:]
+            raise RuntimeError(f"EOH worker failed (exit {completed.returncode}): {detail}")
+
         raw = json.loads(result_path.read_text(encoding="utf-8"))
         if raw["status"] != "ok":
             raise RuntimeError(raw.get("error", "EOH worker failed"))
+
         artifacts: list[HeuristicArtifact] = []
         for index, candidate in enumerate(raw["candidates"]):
             path = Path(candidate["path"])

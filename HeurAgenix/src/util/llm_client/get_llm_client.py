@@ -1,5 +1,6 @@
 import json
 import os
+from cmhh.llm.config import load_llm_config
 from src.util.llm_client.base_llm_client import BaseLLMClient
 
 
@@ -8,7 +9,7 @@ def get_llm_client(
         prompt_dir: str=os.path.join("src", "problems", "base", "prompt"),
         output_dir: str=None,
         ) -> BaseLLMClient:
-    config = json.load(open(config_file))
+    config = load_llm_config(config_file)
     llm_type = config["type"]
     if llm_type == "azure_gpt":
         from src.util.llm_client.azure_gpt_client import AzureGPTClient

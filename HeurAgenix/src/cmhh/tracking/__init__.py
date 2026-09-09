@@ -4,7 +4,19 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from cmhh.tracking.base import ExperimentTracker
+from cmhh.tracking.console_formatter import ConsoleFormatter
+from cmhh.tracking.context import (
+    RunLogContext,
+    context_from_env,
+    context_to_env,
+    get_current_context,
+    set_current_context,
+    update_current_context,
+)
+from cmhh.tracking.llm_call_logger import LLMCallLogger, LLMCallRecord, get_llm_call_logger
+from cmhh.tracking.logging_config import configure_logging, shutdown_logging
 from cmhh.tracking.noop_tracker import NoOpTracker
+from cmhh.tracking.redaction import SecretRedactionFilter, redact_secrets
 from cmhh.tracking.wandb_tracker import WandbTracker
 
 if TYPE_CHECKING:
@@ -40,4 +52,24 @@ def create_tracker(
     )
 
 
-__all__ = ["ExperimentTracker", "NoOpTracker", "WandbTracker", "create_tracker"]
+__all__ = [
+    "ExperimentTracker",
+    "NoOpTracker",
+    "WandbTracker",
+    "create_tracker",
+    "configure_logging",
+    "shutdown_logging",
+    "ConsoleFormatter",
+    "SecretRedactionFilter",
+    "redact_secrets",
+    "RunLogContext",
+    "get_current_context",
+    "set_current_context",
+    "update_current_context",
+    "context_to_env",
+    "context_from_env",
+    "LLMCallLogger",
+    "LLMCallRecord",
+    "get_llm_call_logger",
+]
+

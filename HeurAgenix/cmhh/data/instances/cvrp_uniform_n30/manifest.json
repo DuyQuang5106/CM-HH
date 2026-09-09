@@ -1,0 +1,90 @@
+{
+  "coordinate_max": 10000,
+  "coordinate_min": 0,
+  "data_seed": 53001,
+  "dataset_seed": 53001,
+  "distribution": "euclidean_uniform",
+  "metadata": {
+    "customers": 30,
+    "dataset_seed": 53001,
+    "nodes": 30,
+    "stream_families": [
+      "pilot_small"
+    ]
+  },
+  "problem": "cvrp",
+  "size_tier": "n30",
+  "splits": {
+    "smoke": {
+      "cvrp_uniform_n30_smoke_000-k6.vrp": "adcc8b1e390ad65d77087d750262f86d496b731afc33cdb9d1c2966e6b081a35",
+      "cvrp_uniform_n30_smoke_001-k6.vrp": "0e7703895ba5d0285027b417c78000e2f4f7133ac3e3feba15ad6ae2a01f268e"
+    },
+    "test": {
+      "cvrp_uniform_n30_test_000-k6.vrp": "2959abe69b40d23404674caaa801512c65d681e27ad0d15bb8e38f7817eb60fb",
+      "cvrp_uniform_n30_test_001-k6.vrp": "f502a9d8847a5f9fecfe3e74444a4315dccd4727262df85df490d5a51b77f69a",
+      "cvrp_uniform_n30_test_002-k6.vrp": "0d0bfa09c966115f18110547e56318e78f620c9b0c9b770e046236914eb725fa",
+      "cvrp_uniform_n30_test_003-k6.vrp": "499740233e425be46a0cd377cdebf8f1e08dd7f23a552ac0b40b1bab38828a64",
+      "cvrp_uniform_n30_test_004-k6.vrp": "ade778ae40adca792f11e40bb8bcff69cf6a8e84700f22121d40fc73a995e3cf",
+      "cvrp_uniform_n30_test_005-k6.vrp": "84bde401fa83a953cccac256194d9ab61b59ca627b8110b2be13762ba019939d",
+      "cvrp_uniform_n30_test_006-k6.vrp": "333fe19691b65fb1c3979f8ee8c8865b478c90a6fd8d278cefffa0220c7b241d",
+      "cvrp_uniform_n30_test_007-k6.vrp": "af992883f1b2b2da2b56899491c9e4ec02abaecccdb2936635535eacc91c7d0f",
+      "cvrp_uniform_n30_test_008-k6.vrp": "c451d7350fbca02f0301cb083ebe3bc3a644818b28fd4af0a06d15b34d0c41af",
+      "cvrp_uniform_n30_test_009-k6.vrp": "68b2c4107953b9c3d5375a3e4c9ad901f152df61f55295b78a0a275ac2d6e6b9",
+      "cvrp_uniform_n30_test_010-k6.vrp": "f7a67221762413db91907b75b5da5def05656779c21a081343765a1ed3060077",
+      "cvrp_uniform_n30_test_011-k6.vrp": "3bb27e013f6be96ef9f17900d7fa09003353cdd123cf5d5efdd75e2cd30d18cd",
+      "cvrp_uniform_n30_test_012-k6.vrp": "90c5f010d2f25433b1ca77a346235192327351be4fc8ca9c1a8b83e9e47811f2",
+      "cvrp_uniform_n30_test_013-k6.vrp": "1986efae30925d49b38e68a62463af1a14ecd3407db1aebedd5d64c08fd7df48",
+      "cvrp_uniform_n30_test_014-k6.vrp": "fb1c4b650e516ca9bf2e8e8353c52949f0952da3857185b896c36a9a1fff2150",
+      "cvrp_uniform_n30_test_015-k6.vrp": "d7100a522ca8cd253d441c7b21ba25368141546eb2aa7913a1306d3d042ae378",
+      "cvrp_uniform_n30_test_016-k6.vrp": "f37cb7f20f4b0977bd50cefdd1f47433b22621a39c0476bbc616ed7328033dac",
+      "cvrp_uniform_n30_test_017-k6.vrp": "930c9c838a85c7c2cec41da04d3b7e952ff43073adb49c463fd9452278ca61db",
+      "cvrp_uniform_n30_test_018-k6.vrp": "8d18f1432a24371da2e7ae89575d87984d3b6f07f8caa6c76787383b114aae76",
+      "cvrp_uniform_n30_test_019-k6.vrp": "071cac3390a8338d3d5ad91fe63880d09331a18094308fd25051d0719a71c3e4",
+      "cvrp_uniform_n30_test_020-k6.vrp": "81f5e17682cee63fedd60f22276a0223cc193eef64af398b3c0bfe661f4e42c4",
+      "cvrp_uniform_n30_test_021-k6.vrp": "3e73198e117fe624f5489c1ff3a3e712ac82c1de7b231c173b782464872597ff",
+      "cvrp_uniform_n30_test_022-k6.vrp": "21aacc01206596e739048080470574dca4090ef6f88b0ab4e22a3aa1c48a3245",
+      "cvrp_uniform_n30_test_023-k6.vrp": "03b0063e7dbd3f0afb0057062e9951acfa48797d1cb8a236dc16e88193df3c08",
+      "cvrp_uniform_n30_test_024-k6.vrp": "8029cce6877587500dd90fd34d6726249985aafaf2ec2033d871b6c7e0d29250",
+      "cvrp_uniform_n30_test_025-k6.vrp": "c72b3c5b4605502e5d0e4fadab7c7a9293e743e9102a41f787a888be8a9b93e5",
+      "cvrp_uniform_n30_test_026-k6.vrp": "1bbe8fd7a9ff9db8ea9fdf76d4d86c0d715050980c3ce234f0bb8627b9f43105",
+      "cvrp_uniform_n30_test_027-k6.vrp": "0fdba7edad2b3c7b2b42f205926aeb531d8825df37e0e38b53f056cabd6bd0bc",
+      "cvrp_uniform_n30_test_028-k6.vrp": "9859b0e5a5722306e92e2e41fe854f45d82dbd80b89110a67d5c749592b1c91a",
+      "cvrp_uniform_n30_test_029-k6.vrp": "415ce627c02b35e0224497798b48f26f508d2dccabcb673fa6d6620c2fcfe8ad"
+    },
+    "train": {
+      "cvrp_uniform_n30_train_000-k6.vrp": "18ba8b516f9d14db09a57d138cacdc33e0b11b00c596bd33085e8df54559e335",
+      "cvrp_uniform_n30_train_001-k6.vrp": "0e323fc96a2b9558713785b8ab021947fe6d066af7dc64dbb4df0153bff096fb",
+      "cvrp_uniform_n30_train_002-k6.vrp": "87cc069c05eb1c373ce7b59ae84e5fc1a7156dad9c40488434481ca77c99401d",
+      "cvrp_uniform_n30_train_003-k6.vrp": "dc45b8969f9a21106d9e73fe507eb778831082c878d62d81577dfc73ee476b7e",
+      "cvrp_uniform_n30_train_004-k6.vrp": "481c7f603a0b95bf7fe0cba78d2a9bf02159fe984299eb3ae0bd99440123a81e",
+      "cvrp_uniform_n30_train_005-k6.vrp": "dc2dc3cedada6f085790a845fc5b6ecc6fec0eccf01b14d173262ca78f41a044",
+      "cvrp_uniform_n30_train_006-k6.vrp": "53d21f7d9fe5d048ee912f3d4e0cf79bcbaf71d07dd0ab8cb44fcaabdbe85bb6",
+      "cvrp_uniform_n30_train_007-k6.vrp": "b0e5703b166e3d9a92a88a5b620b6bc36e0124525b9c8f32e4788b6ae8acc721",
+      "cvrp_uniform_n30_train_008-k6.vrp": "f44725af082d933d2bc23b47d702db325adc6e24f1c318a39d1ccc399dabf591",
+      "cvrp_uniform_n30_train_009-k6.vrp": "8a6f5fd5449cbd8f22afe8ade97cefa6c501716a50dd9017fe1ddd53591b9c08",
+      "cvrp_uniform_n30_train_010-k6.vrp": "f024460b52f854b981144b89f5966d255d2d53811058e39a0faef77b494fa757",
+      "cvrp_uniform_n30_train_011-k6.vrp": "6b5dff9f4370ae73de1aea7b0f91c276869835d5899998d6b7afde482ed95c47",
+      "cvrp_uniform_n30_train_012-k6.vrp": "a438756622689ee6784d2884160114d0b62472607535310d6786655c068ccf6f",
+      "cvrp_uniform_n30_train_013-k6.vrp": "39954d10103aaf3660af0f31b4927ea72b89793c339b6cee418ea6fef086a157",
+      "cvrp_uniform_n30_train_014-k6.vrp": "b67799394ab5ace867f67f1d6309fe6d074d090c4441063a1da0d0dbb94e9f36",
+      "cvrp_uniform_n30_train_015-k6.vrp": "fd730f8a07bee20b1548651c22294c9327a6cb7f98b3461bcca51b18d7b3d04e",
+      "cvrp_uniform_n30_train_016-k6.vrp": "adadbd5094af2369f1b99ca25d49a450715eb8815cd861132cbbad39cda2d490",
+      "cvrp_uniform_n30_train_017-k6.vrp": "91b240fd0d34a2ce1228a71acadf7e2fc6e31d10afb1910b5cde802f31c9b049",
+      "cvrp_uniform_n30_train_018-k6.vrp": "4d4f846df7accdb398afb13ec6d308d6594b310cccd850bbb803982a8eea43d4",
+      "cvrp_uniform_n30_train_019-k6.vrp": "c85001b8ff83b416fb9380df41dd7420cd460428b18c9f397835eba41ec8b9fc"
+    },
+    "validation": {
+      "cvrp_uniform_n30_validation_000-k6.vrp": "f7e38b31d5ed405be79d465a59e0a5c27b952660d17435e2029803ab7e849a6e",
+      "cvrp_uniform_n30_validation_001-k6.vrp": "b4ce23952f67c35120c1b1abf78759c00e5bd4e2e336b16bf3f6cb9ce5e84e41",
+      "cvrp_uniform_n30_validation_002-k6.vrp": "ad06abf08e8b5a06f97a70abe560e917a7226a18889b82d21794fb78bb827b2f",
+      "cvrp_uniform_n30_validation_003-k6.vrp": "008e77f6613c8cffee3f8fa4615810487834a8628b965d72f50dc4faabc961ca",
+      "cvrp_uniform_n30_validation_004-k6.vrp": "ef8f65de8d3ea24b277799b77fba79bb907ec9f25ae96b69458e465dbc99ae51",
+      "cvrp_uniform_n30_validation_005-k6.vrp": "2414cfc2c785f1b64b4f3c65e43305da7a74f13d300f3f6610179f9e3dce1c81",
+      "cvrp_uniform_n30_validation_006-k6.vrp": "ecb0d527a2aceadefbb62c877e60e2742a48cbc01005dd5903379f854eb17f65",
+      "cvrp_uniform_n30_validation_007-k6.vrp": "f58270885ef05e4b996de5618212daff003368e55dfc0a1e741254929d46e261",
+      "cvrp_uniform_n30_validation_008-k6.vrp": "2c9ec66ace0a3c9a5c82d489472730a3ce50f82c407f1a98c6980879f27acd14",
+      "cvrp_uniform_n30_validation_009-k6.vrp": "39f447a232cc1389873c564b23a2860db178715319e3178097456365803de3c3"
+    }
+  },
+  "task_id": "cvrp_uniform_n30"
+}

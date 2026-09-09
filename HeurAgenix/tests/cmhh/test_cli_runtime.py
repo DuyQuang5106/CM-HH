@@ -90,7 +90,7 @@ class CLIRuntimeTests(unittest.TestCase):
 
     def test_write_resolved_config_uses_effective_values(self) -> None:
         experiment_path = self.repo_root / "cmhh/configs/experiments/h1_isolated.yaml"
-        stream_path = self.repo_root / "cmhh/configs/streams/tsp_size_ascending.yaml"
+        stream_path = resolve_stream_path("tsp_size_ascending", self.repo_root)
         experiment = apply_runtime_overrides(
             load_experiment_config(experiment_path, self.repo_root),
             mode="pilot",

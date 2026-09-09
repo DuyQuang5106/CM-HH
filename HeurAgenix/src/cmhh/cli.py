@@ -11,12 +11,17 @@ from cmhh.agents.generator import BaselineGenerator
 from cmhh.agents.heuragenix_generator import HeurAgenixGenerator
 from cmhh.audit import audit_run
 from cmhh.baselines import baseline_artifacts
+from cmhh.env import load_environment
 from cmhh.config import (
     ExperimentConfig,
+    SuiteConfig,
     TrackingConfig,
     WandbConfig,
+    compose_experiment_config,
+    load_base_experiment_config,
     load_experiment_config,
     load_stream_config,
+    load_suite_config,
 )
 from cmhh.data import generate_data_for_tasks
 from cmhh.data.manifest import load_json, sha256_file, write_json_atomic
@@ -39,10 +44,13 @@ from cmhh.runtime import (
     normalize_conditions,
     parse_int_values,
     parse_string_values,
+    resolve_condition_experiment_config,
     resolve_stream_path,
+    resolve_suite_path,
     write_resolved_config,
 )
 from cmhh.tasks import load_task_registry
+from cmhh.tracking import configure_logging, shutdown_logging
 from cmhh.validation import validate_configuration
 
 DEFAULT_EXPERIMENT = "cmhh/configs/experiments/phase0_tsp.yaml"
@@ -89,10 +97,15 @@ def _apply_tracking_overrides(experiment: ExperimentConfig, args: argparse.Names
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="CM-HH experimental tooling")
     parser.add_argument("--repo-root", default=".")
+    parser.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"), default="INFO", help="Console/file log level")
+    parser.add_argument("--quiet", action="store_true", help="Quiet console output")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     validate = subparsers.add_parser("validate-config")
     _add_config_arguments(validate)
+
+    val_pilot = subparsers.add_parser("validate-pilot-suite")
+    val_pilot.add_argument("--suite", default="pilot_4streams")
 
     generate = subparsers.add_parser("generate-data")
     _add_config_arguments(generate)
@@ -172,6 +185,7 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--task", action="append")
 
     suite = subparsers.add_parser("run-suite", help="Run one or more streams across standard CM-HH conditions")
+    suite.add_argument("--suite", help="Suite name or path (e.g. pilot_small, pilot_small_smoke)")
     suite.add_argument("--streams", nargs="+", help="Stream names or paths. Defaults to the phase-1 stream suite.")
     suite.add_argument("--conditions", nargs="+", help="Conditions: isolated, population, naive-bounded, naive-unbounded, managed")
     suite.add_argument("--seeds", nargs="+", default=["1"], help="One or more seeds, e.g. --seeds 1 2 3 or --seeds 1,2,3")
@@ -198,12 +212,16 @@ def build_parser() -> argparse.ArgumentParser:
     suite.add_argument("--wandb-mode", choices=("online", "offline", "disabled"))
     suite.add_argument("--wandb-tags", action="append")
     suite.add_argument("--wandb-run-name")
+    suite.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"), default="INFO", help="Console/file log level")
+    suite.add_argument("--quiet", action="store_true", help="Quiet console output")
     return parser
 
 
 def _add_config_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--experiment", default=DEFAULT_EXPERIMENT)
     parser.add_argument("--stream", default=DEFAULT_STREAM)
+    parser.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"), default="INFO", help="Console/file log level")
+    parser.add_argument("--quiet", action="store_true", help="Quiet console output")
 
 
 def _resolve(path: str, root: Path) -> Path:
@@ -366,7 +384,16 @@ def _create_runner_run(
         },
     )
 
-    matrix = runner.run()
+    configure_logging(
+        log_dir=run_dir,
+        level=getattr(args, "log_level", "INFO"),
+        quiet=getattr(args, "quiet", False),
+    )
+    try:
+        matrix = runner.run()
+    finally:
+        shutdown_logging()
+
     if write_cold_start_scores:
         cold_start_scores = {
             index: matrix[index][index]
@@ -457,16 +484,41 @@ def _default_solver_config(task, root: Path):
 def _run_suite(args: argparse.Namespace, root: Path) -> int:
     registry = load_task_registry(repo_root=root)
     mode = args.mode
+    suite_config = None
+    if getattr(args, "suite", None):
+        suite_path = resolve_suite_path(args.suite, root)
+        suite_config = load_suite_config(suite_path)
+        if args.mode == "quick-smoke" and suite_config.mode:
+            mode = suite_config.mode
+        if suite_config.llm_budget_per_task is not None and getattr(args, "override_max_llm_calls", None) is None:
+            args.override_max_llm_calls = suite_config.llm_budget_per_task
+
     generator_name = args.generator or mode_default_generator(mode)
     evolution_timeout = _resolve_evolution_timeout(args, mode)
-    seeds = parse_int_values(args.seeds)
-    conditions = normalize_conditions(args.conditions)
+
+    if getattr(args, "seeds", None) and args.seeds != ["1"]:
+        seeds = parse_int_values(args.seeds)
+    elif suite_config and suite_config.seeds:
+        seeds = suite_config.seeds
+    else:
+        seeds = parse_int_values(args.seeds)
+
+    if getattr(args, "conditions", None):
+        conditions = normalize_conditions(args.conditions)
+    elif suite_config and suite_config.conditions:
+        conditions = normalize_conditions(suite_config.conditions)
+    else:
+        conditions = normalize_conditions(args.conditions)
+
     if args.skip_managed:
         conditions = tuple(item for item in conditions if item != "managed")
 
     stream_values = parse_string_values(args.streams)
     if not stream_values:
-        stream_values = DEFAULT_STREAMS if (mode != "pilot" or args.all_streams) else PILOT_STREAMS
+        if suite_config and suite_config.streams:
+            stream_values = suite_config.streams
+        else:
+            stream_values = DEFAULT_STREAMS if (mode != "pilot" or args.all_streams) else PILOT_STREAMS
 
     if generator_name in {"heuragenix", "eoh"} and not _resolve(args.llm_config, root).exists():
         print(f"ERROR: Missing LLM config: {_resolve(args.llm_config, root)}", file=sys.stderr)
@@ -485,6 +537,11 @@ def _run_suite(args: argparse.Namespace, root: Path) -> int:
     print(f"Conditions: {', '.join(conditions)}")
     print(f"RunPrefix : {run_prefix}")
 
+    base_experiment_path = getattr(suite_config, "base_experiment", None) if suite_config else None
+    base_experiment = load_base_experiment_config(root, base_experiment_path)
+    if suite_config:
+        base_experiment = compose_experiment_config(base=base_experiment, suite=suite_config)
+
     for stream_value in stream_values:
         stream_path = resolve_stream_path(stream_value, root)
         stream = load_stream_config(stream_path)
@@ -492,15 +549,12 @@ def _run_suite(args: argparse.Namespace, root: Path) -> int:
         print(f"=== Stream {stream.stream_id} ===")
 
         condition_configs: dict[str, tuple[Path, ExperimentConfig]] = {}
-        for condition, experiment_rel in CONDITION_EXPERIMENTS.items():
+        for condition in conditions:
             if condition == "managed" and condition not in conditions:
                 continue
             if condition == "isolated" and (condition not in conditions or args.skip_isolated):
                 continue
-            if condition not in conditions:
-                continue
-            experiment_path = _resolve(experiment_rel, root)
-            experiment = load_experiment_config(experiment_path, root)
+            experiment_path, experiment = resolve_condition_experiment_config(condition, base_experiment, root)
             experiment = _apply_tracking_overrides(experiment, args)
             experiment = _apply_run_overrides(experiment, args)
             condition_configs[condition] = (experiment_path, experiment)
@@ -513,9 +567,9 @@ def _run_suite(args: argparse.Namespace, root: Path) -> int:
             if not report.valid:
                 return 1
 
-        isolated_path = _resolve(CONDITION_EXPERIMENTS["isolated"], root)
+        isolated_path, isolated_experiment = resolve_condition_experiment_config("isolated", base_experiment, root)
         isolated_experiment = _apply_run_overrides(
-            _apply_tracking_overrides(load_experiment_config(isolated_path, root), args),
+            _apply_tracking_overrides(isolated_experiment, args),
             args,
         )
         _prepare_stream(
@@ -636,6 +690,7 @@ def _run_suite(args: argparse.Namespace, root: Path) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    load_environment()
     args = build_parser().parse_args(argv)
     root = Path(args.repo_root).resolve()
     if not (root / "cmhh" / "configs").exists() and (root / "HeurAgenix" / "cmhh" / "configs").exists():
@@ -643,6 +698,29 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "run-suite":
         return _run_suite(args, root)
+
+    if args.command == "validate-pilot-suite":
+        from cmhh.pilot_validator import validate_pilot_suite_structure
+        report = validate_pilot_suite_structure(repo_root=root, suite_name=getattr(args, "suite", "pilot_4streams"))
+        for line in report.summary_lines:
+            print(line)
+        return 0 if report.is_valid else 1
+
+    if args.command == "audit-run":
+        run_path = Path(args.run_id)
+        if not run_path.is_absolute():
+            candidate = root / "cmhh" / "results" / args.run_id
+            if candidate.exists():
+                run_path = candidate
+            elif (root / args.run_id).exists():
+                run_path = root / args.run_id
+        report = audit_run(run_path)
+        for error in report.errors:
+            print(f"ERROR: {error}", file=sys.stderr)
+        for warning in report.warnings:
+            print(f"WARNING: {warning}")
+        print(f"Audit {run_path.name}: valid={report.valid} ({len(report.errors)} errors, {len(report.warnings)} warnings)")
+        return 0 if report.valid else 1
 
     experiment_path = _resolve(args.experiment, root)
     stream_path = resolve_stream_path(args.stream, root)
@@ -760,6 +838,10 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         experiment = _apply_run_overrides(experiment, args)
         evolution_timeout = _resolve_evolution_timeout(args, args.mode)
+
+        # Ensure instance splits are generated for all tasks in the stream
+        generate_data_for_tasks(registry, stream.task_ids, experiment, experiment.data.seed)
+
         for seed in seeds:
             run_id = _run_id_for_seed(
                 requested=args.run_id,
@@ -831,37 +913,36 @@ def main(argv: list[str] | None = None) -> int:
         task = registry.get(args.task)
         evaluator = Evaluator(root, experiment.evaluation)
         run_id = args.run_id or datetime.now(timezone.utc).strftime("evolve_%Y%m%dT%H%M%SZ")
-        generator = HeurAgenixGenerator(
-            repo_root=root,
-            llm_config_path=_resolve(args.llm_config, root),
-            output_root=experiment.output_root / run_id / "generator",
-            timeout_seconds=args.evolution_timeout,
+        run_dir = experiment.output_root / run_id
+        configure_logging(
+            log_dir=run_dir,
+            level=getattr(args, "log_level", "INFO"),
+            quiet=getattr(args, "quiet", False),
         )
-        seed_population = [
-            artifact
-            for artifact in baseline_artifacts(task, root)
-        ]
-        results = generator.generate(
-            task=task,
-            seed_population=seed_population,
-            budget=experiment.search,
-            seed=args.seed,
-        )
-        print(f"Generated {len(results)} candidates for {task.task_id}:")
-        for candidate in results:
-            eval_res = evaluator.evaluate(candidate, task, "validation")
-            print(f"  {candidate.heuristic_id}: gap={eval_res.mean_relative_gap:.4f} failure_rate={eval_res.failure_rate:.2f}")
-        return 0
-
-    if args.command == "audit-run":
-        run_dir = experiment.output_root / args.run_id
-        report = audit_run(run_dir)
-        for error in report.errors:
-            print(f"ERROR: {error}", file=sys.stderr)
-        for warning in report.warnings:
-            print(f"WARNING: {warning}")
-        print(f"Audit {run_dir.name}: valid={report.valid} ({len(report.errors)} errors, {len(report.warnings)} warnings)")
-        return 0 if report.valid else 1
+        try:
+            generator = HeurAgenixGenerator(
+                repo_root=root,
+                llm_config_path=_resolve(args.llm_config, root),
+                output_root=run_dir / "generator",
+                timeout_seconds=args.evolution_timeout,
+            )
+            seed_population = [
+                artifact
+                for artifact in baseline_artifacts(task, root)
+            ]
+            results = generator.generate(
+                task=task,
+                seed_population=seed_population,
+                budget=experiment.search,
+                seed=args.seed,
+            )
+            print(f"Generated {len(results)} candidates for {task.task_id}:")
+            for candidate in results:
+                eval_res = evaluator.evaluate(candidate, task, "validation")
+                print(f"  {candidate.heuristic_id}: gap={eval_res.mean_relative_gap:.4f} failure_rate={eval_res.failure_rate:.2f}")
+            return 0
+        finally:
+            shutdown_logging()
 
     return 1
 

@@ -2,7 +2,15 @@
   "coordinate_max": 10000,
   "coordinate_min": 0,
   "data_seed": 42,
+  "dataset_seed": 42,
   "distribution": "euclidean_uniform",
+  "metadata": {
+    "nodes": 20,
+    "stream_families": [
+      "within_problem_size",
+      "mixed_problem_size"
+    ]
+  },
   "problem": "tsp",
   "size_tier": "n20",
   "splits": {

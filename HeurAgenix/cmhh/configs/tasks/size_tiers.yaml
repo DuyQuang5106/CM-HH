@@ -10,6 +10,12 @@ size_tiers:
       items: 20
     cvrp:
       nodes: 20
+  n30:
+    label: small_medium
+    tsp:
+      nodes: 30
+    cvrp:
+      nodes: 30
   n50:
     label: medium
     tsp:
