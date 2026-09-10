@@ -1,4 +1,10 @@
 from src.problems.cvrp.components import Solution, AppendOperator, InsertOperator
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import (
+    insertion_cost_delta,
+    insertion_positions,
+    insertion_route_is_feasible,
+    is_open_route,
+)
 import numpy as np
 
 def min_cost_insertion_048f(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[InsertOperator, dict]:
@@ -33,6 +39,7 @@ def min_cost_insertion_048f(problem_state: dict, algorithm_data: dict, **kwargs)
     unvisited_nodes = problem_state["unvisited_nodes"]
     vehicle_loads = problem_state["vehicle_loads"]
     vehicle_remaining_capacity = problem_state["vehicle_remaining_capacity"]
+    open_route = is_open_route(problem_state)
 
     # Initialize variables to track the best insertion
     best_increase = float('inf')
@@ -48,13 +55,17 @@ def min_cost_insertion_048f(problem_state: dict, algorithm_data: dict, **kwargs)
                 continue
 
             # Iterate over all possible positions to insert the node
-            for position in range(1, len(route) + 1):
-                # Calculate cost increase for inserting the node
-                prev_node = depot if position == 1 else route[position - 1]
-                next_node = route[position] if position < len(route) else route[0]
-                increase = (distance_matrix[prev_node][node] +
-                            distance_matrix[node][next_node] -
-                            distance_matrix[prev_node][next_node])
+            for position in insertion_positions(route, depot):
+                if not insertion_route_is_feasible(problem_state, route, vehicle_id, node, position):
+                    continue
+                increase = insertion_cost_delta(
+                    distance_matrix,
+                    route,
+                    depot,
+                    node,
+                    position,
+                    open_route,
+                )
 
                 # Check if this is the best insertion found
                 if increase < best_increase:

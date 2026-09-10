@@ -1,0 +1,9 @@
+version: 1
+id: vrp_constraint_graycode_reverse
+shift_type: constraint_semantic_graycode
+description: "Reverse VRP constraint-family stream: VRPTW -> OVRPTW -> OVRP -> CVRP"
+tasks:
+  - vrptw_uniform_n50_medium
+  - ovrptw_uniform_n50_medium
+  - ovrp_uniform_n50_medium
+  - cvrp_uniform_n50_medium

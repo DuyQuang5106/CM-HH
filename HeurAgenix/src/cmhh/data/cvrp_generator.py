@@ -315,6 +315,12 @@ def generate_cvrp_splits_for_regimes(
 
 
 def generate_cvrp_splits(task: TaskSpec, experiment: ExperimentConfig, seed: int) -> None:
+    if task.metadata.get("constraint_family") == "vrp" or task.metadata.get("vrp_variant"):
+        from cmhh.data.vrp_generator import generate_vrp_variant_splits
+
+        generate_vrp_variant_splits(task, experiment, seed)
+        return
+
     split_dirs = {
         "train": task.splits.train,
         "validation": task.splits.validation,

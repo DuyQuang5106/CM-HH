@@ -201,37 +201,44 @@ def replace_strings_in_dict(source_dict: dict, replace_value: str="...") -> dict
 
 def search_file(file_name: str, problem: str="base") -> str:
     def find_file_in_folder(folder_path, file_name):
+        if not os.path.exists(folder_path):
+            return None
         return next((os.path.join(root, file_name) for root, dirs, files in os.walk(folder_path) if file_name in files or file_name in dirs), None)
 
     if os.path.exists(file_name):
         return file_name
 
-    file_path = find_file_in_folder(os.path.join("src", "problems", problem), file_name)
-    if file_path:
-        return file_path
+    source_root = Path(__file__).resolve().parents[1]
+    package_root = Path(__file__).resolve().parents[2]
+
+    candidates_to_search = [
+        os.path.join("src", "problems", problem),
+        str(source_root / "problems" / problem),
+    ]
+
+    for candidate_dir in candidates_to_search:
+        file_path = find_file_in_folder(candidate_dir, file_name)
+        if file_path:
+            return file_path
 
     if os.getenv("AMLT_DATA_DIR"):
-        data_dir = os.getenv("AMLT_DATA_DIR")
-        output_dir = os.getenv("AMLT_OUTPUT_DIR")
+        data_dirs = [os.getenv("AMLT_DATA_DIR")]
+        output_dirs = [os.getenv("AMLT_OUTPUT_DIR")]
     else:
-        data_dir = "data"
-        output_dir = "output"
+        data_dirs = ["data", str(package_root / "data")]
+        output_dirs = ["output", str(package_root / "output")]
 
-    file_path = find_file_in_folder(os.path.join(data_dir, problem, "data"), file_name)
-    if file_path:
-        return file_path
+    for data_dir in data_dirs:
+        for sub in [os.path.join(data_dir, problem, "data"), os.path.join(data_dir, problem, "heuristics"), os.path.join(data_dir, problem)]:
+            file_path = find_file_in_folder(sub, file_name)
+            if file_path:
+                return file_path
 
-    file_path = find_file_in_folder(os.path.join(output_dir, problem, "data"), file_name)
-    if file_path:
-        return file_path
+    for output_dir in output_dirs:
+        file_path = find_file_in_folder(os.path.join(output_dir, problem, "data"), file_name)
+        if file_path:
+            return file_path
 
-    file_path = find_file_in_folder(os.path.join(data_dir, problem, "heuristics"), file_name)
-    if file_path:
-        return file_path
-
-    file_path = find_file_in_folder(os.path.join(data_dir, problem), file_name)
-    if file_path:
-        return file_path
     return None
 
 def df_to_str(df: pd.DataFrame) -> str:

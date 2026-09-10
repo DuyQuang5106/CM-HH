@@ -1,0 +1,9 @@
+version: 1
+id: vrp_constraint_graycode
+shift_type: constraint_semantic_graycode
+description: "VRP constraint-family stream: CVRP -> OVRP -> OVRPTW -> VRPTW"
+tasks:
+  - cvrp_uniform_n50_medium
+  - ovrp_uniform_n50_medium
+  - ovrptw_uniform_n50_medium
+  - vrptw_uniform_n50_medium

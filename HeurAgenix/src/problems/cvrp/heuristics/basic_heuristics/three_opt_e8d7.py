@@ -1,86 +1,54 @@
-from src.problems.cvrp.components import *
+from src.problems.cvrp.components import ReverseSegmentOperator
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import profile_from_problem_state
+from src.problems.cvrp.route_metrics import compute_route_metrics
 
-def three_opt_e8d7(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[ReverseSegmentOperator, dict]:
+
+def three_opt_e8d7(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[ReverseSegmentOperator | None, dict]:
     """
-Intra-route 3-opt with best-improvement over all routes. Treats each route as a closed cycle and evaluates triplets of breakpoints (i, j, k) with wrap-around indexing (k allowed to cross the route end to the start). For each triplet, removes edges (A,B), (C,D), (E,F) and considers exactly three reconnection patterns (a subset of the seven 3-opt variants), each implementable as reversing two segments; the move is emitted as a ReverseSegmentOperator with up to two (possibly wrap-around) segment reversals. The depot node is not used in the delta evaluation; reconnection costs are computed solely from internal route edges, making the method suitable for cyclic representations and asymmetric distance matrices but not enforcing depot adjacency. Selection policy is best-improvement (most negative delta) across all routes; at most one move is returned per call. Time complexity per route: O(n^3); constant extra memory. Constraints remain satisfied as changes are intra-route (vehicle load unchanged).
-
-    Args:
-        problem_state (dict): The dictionary contains the problem state. In this algorithm, the following items are necessary:
-            - "distance_matrix" (numpy.ndarray): A 2D array representing the distances between nodes.
-            - "depot" (int): The index for depot node.
-            - "current_solution" (Solution): The current set of routes for all vehicles.
-        algorithm_data (dict): Contains the data necessary for this algorithm.
-
-    Returns:
-        TwoOptOperator: The operator that represents the best 2-opt move found.
-        dict: Updated algorithm dictionary.
+    Intra-route 3-opt local search with best-improvement strategy.
+    Evaluates 3-opt reconnection patterns (represented as 1 or 2 segment reversals)
+    within each route. Fully constraint-aware: supports both closed and open route semantics,
+    and enforces capacity and time window feasibility constraints.
     """
-    # Retrieve data from problem_state
-    distance_matrix = problem_state["distance_matrix"]
-    depot = problem_state["depot"]
+    profile = profile_from_problem_state(problem_state)
     current_solution = problem_state["current_solution"]
 
-    # Initialize variables for the best move found
-    best_delta = 0
+    best_delta = -1e-6
     best_move = None
 
-    # Iterate over all routes to apply the 3-opt move
     for route_index, route in enumerate(current_solution.routes):
         n = len(route)
         if n <= 3:
-            continue  # Skip routes that are too short to apply 3-opt
+            continue
 
-        # Iterate through all combinations of three edges
-        for i in range(n):
-            for j in range(i + 2, n):
-                for k in range(j + 2, n + (1 if i > 0 else 0)):
-                    # Calculate the cost difference for the 3-opt move
-                    moves, delta = calculate_3opt_moves(distance_matrix, route, i, j, k, depot)
+        original_metrics = compute_route_metrics(route, route_index, problem_state, profile)
+        if not original_metrics.feasible:
+            continue
 
-                    # Check if this move is better than the best found so far
-                    if delta < best_delta:
-                        best_delta = delta
-                        best_move = (route_index, moves)
+        for i in range(1, n):
+            for j in range(i + 1, n):
+                for k in range(j + 1, n):
+                    # Test 3 standard 2-reversal patterns
+                    patterns = [
+                        [(i, j - 1), (j, k - 1)],
+                        [(i, j - 1)],
+                        [(j, k - 1)],
+                    ]
+                    for segments in patterns:
+                        candidate = route[:]
+                        for start_idx, end_idx in segments:
+                            candidate[start_idx : end_idx + 1] = reversed(candidate[start_idx : end_idx + 1])
+                        candidate_metrics = compute_route_metrics(candidate, route_index, problem_state, profile)
+                        if not candidate_metrics.feasible:
+                            continue
 
-    # If a beneficial move is found, create and return the corresponding operator
+                        delta = candidate_metrics.distance - original_metrics.distance
+                        if delta < best_delta:
+                            best_delta = delta
+                            best_move = (route_index, segments)
+
     if best_move:
         route_index, segments = best_move
         return ReverseSegmentOperator(route_index, segments), algorithm_data
 
-    # If no beneficial move is found, return None
-    return None, algorithm_data
-
-def calculate_3opt_moves(distance_matrix, route, i, j, k, depot):
-    """
-    Calculate the cost difference for all 3-opt reconnection moves for the given segments and return the best move.
-    """
-    n = len(route)
-    A = route[(i - 1) % n]
-    B = route[i % n]
-    C = route[(j - 1) % n]
-    D = route[j % n]
-    E = route[(k - 1) % n]
-    F = route[k % n]
-
-    # Calculate the cost of the original segments
-    original_cost = distance_matrix[A][B] + distance_matrix[C][D] + distance_matrix[E][F]
-
-    # Initialize the list of all possible new segments and their costs
-    possible_moves = [
-        (distance_matrix[A][C] + distance_matrix[B][E] + distance_matrix[D][F], [(i % n, (j - 1) % n), (j % n, (k - 1) % n)]),
-        (distance_matrix[F][C] + distance_matrix[B][D] + distance_matrix[E][A], [(i % n, (j - 1) % n), (k % n, (i - 1) % n)]),
-        (distance_matrix[F][B] + distance_matrix[C][E] + distance_matrix[D][A], [(j % n, (k - 1) % n), (k % n, (i - 1) % n)]),
-    ]
-
-
-    # Find the move with the maximum cost reduction
-    best_delta = 0
-    best_move = None
-    for cost, move in possible_moves:
-        delta = cost - original_cost
-        if delta < best_delta:
-            best_delta = delta
-            best_move = move
-
-    # Return the best move and the corresponding cost reduction
-    return best_move, best_delta
+    return None, algorithm_data

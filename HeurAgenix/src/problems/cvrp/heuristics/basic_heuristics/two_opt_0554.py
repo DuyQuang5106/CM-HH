@@ -1,59 +1,44 @@
-from src.problems.cvrp.components import *
+from src.problems.cvrp.components import ReverseSegmentOperator
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import profile_from_problem_state
+from src.problems.cvrp.route_metrics import compute_route_metrics
 
-def two_opt_0554(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[ReverseSegmentOperator, dict]:
+
+def two_opt_0554(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[ReverseSegmentOperator | None, dict]:
     """
-    Intra-route 2-opt with best-improvement pivoting under a circular-route assumption. For every route and for all index pairs i < j (including cuts that involve the last–first edge via modulo wrap-around), compute the 2-edge exchange delta: replace edges (A,B) and (C,D) with (A,C) and (B,D), where A=route[i-1], B=route[i], C=route[j-1], D=route[j%n]. Select the most negative delta across all routes and emit a single ReverseSegmentOperator(vehicle_id, [(i, j-1)]) that reverses the contiguous segment B..C. Capacity feasibility is preserved (pure reordering within one route); inter-route exchanges (2-opt) are not considered. Assumes symmetric distances; in asymmetric metrics the simple 2-edge delta is not valid because internal arc directions flip. One move per call (returns None if no improvement). Time complexity: O(sum_r n_r^2); O(1) extra memory.
-
-    Args:
-        problem_state (dict): The dictionary contains the problem state. In this algorithm, the following items are necessary:
-            - "distance_matrix" (numpy.ndarray): A 2D array representing the distances between nodes.
-            - "depot" (int): The index for depot node.
-            - "current_solution" (Solution): The current set of routes for all vehicles.
-
-    Returns:
-        TwoOptOperator: The operator that represents the best 2-opt move found.
-        dict: Updated algorithm dictionary.
+    Intra-route 2-opt local search with best-improvement strategy.
+    Evaluates reversing contiguous customer segments within each route.
+    Fully constraint-aware: supports both closed and open route semantics,
+    and enforces capacity and time window feasibility constraints.
     """
-
-    # Retrieve the necessary data from problem_state
-    distance_matrix = problem_state["distance_matrix"]
-    depot = problem_state["depot"]
-
+    profile = profile_from_problem_state(problem_state)
     current_solution = problem_state["current_solution"]
 
-    # Initialize variables for the best move found
-    best_delta = 0
+    best_delta = -1e-6
     best_move = None
 
-    # Iterate over all routes to apply the 2-opt move
     for route_index, route in enumerate(current_solution.routes):
-        for i in range(0, len(route)):
-            for j in range(i + 1, len(route) + 1):
-                # Calculate the cost difference for the current 2-opt move
-                delta = two_opt_cost_change(distance_matrix, route, i, j, depot)
-                # Check if this is the best move so far
+        if len(route) <= 2:
+            continue
+        original_metrics = compute_route_metrics(route, route_index, problem_state, profile)
+        if not original_metrics.feasible:
+            continue
+
+        # Evaluate reversing segment [i, j]
+        for i in range(1, len(route)):
+            for j in range(i + 1, len(route)):
+                candidate = route[:]
+                candidate[i : j + 1] = reversed(candidate[i : j + 1])
+                candidate_metrics = compute_route_metrics(candidate, route_index, problem_state, profile)
+                if not candidate_metrics.feasible:
+                    continue
+
+                delta = candidate_metrics.distance - original_metrics.distance
                 if delta < best_delta:
                     best_delta = delta
-                    best_move = (route_index, [(i, j - 1)])
+                    best_move = (route_index, [(i, j)])
 
-    # If a beneficial move is found, create and return the corresponding operator
     if best_move:
         route_index, move_pair = best_move
         return ReverseSegmentOperator(route_index, move_pair), algorithm_data
 
-    # If no beneficial move is found, return None
-    return None, algorithm_data
-
-def two_opt_cost_change(distance_matrix, route, i, j, depot):
-    """Calculate the cost difference for a 2-opt move."""
-    # Assuming the route is a circular tour
-    n = len(route)
-    A = route[(i - 1) % n]
-    B = route[i % n]
-    C = route[(j - 1) % n]
-    D = route[j % n]
-    d0 = distance_matrix[A][B] + distance_matrix[C][D]
-    d1 = distance_matrix[A][C] + distance_matrix[B][D]
-
-    # Return the cost difference
-    return d1 - d0
+    return None, algorithm_data

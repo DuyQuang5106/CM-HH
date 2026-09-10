@@ -1,0 +1,22 @@
+version: 1
+suite_id: vrp_constraint_transfer
+mode: pilot
+description: "CM-HH VRP constraint-family transfer suite over forward and reverse Gray-code streams."
+streams:
+  - vrp_constraint_graycode
+  - vrp_constraint_graycode_reverse
+conditions:
+  - isolated
+  - population
+  - naive-bounded
+  - naive-unbounded
+  - managed
+seeds:
+  - 1
+  - 2
+  - 3
+splits:
+  train: 10
+  validation: 10
+  test: 20
+  smoke: 2

@@ -1,26 +1,13 @@
 from src.problems.cvrp.components import Solution, InsertOperator
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import insertion_route_is_feasible
 import math
 
-def petal_algorithm_b384(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[InsertOperator, dict]:
+def petal_algorithm_b384(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[InsertOperator | None, dict]:
     """
-    Sweep-style single-customer petal seeding. Unvisited customers are ordered by a depot-centric “polar angle” computed directly from the distance matrix (no coordinates): atan2(dist[depot][node]−dist[depot][0], dist[node][depot]−dist[0][depot]) with depot fixed to index 0. Each customer is treated as a singleton petal. The heuristic scans customers in this angular order and vehicles in identifier order, returning the first feasible append-to-end insertion (position = current route length) that does not violate the vehicle’s remaining capacity. Selection is strictly first-fit: no evaluation of marginal travel cost, no best-position search within a route, and no clustering/merging of petals. Stops at the first feasible assignment; otherwise yields no action. Complexity dominated by sorting unvisited nodes: O(|U| log |U|); per-call memory overhead is minimal. Deterministic behavior given the inputs.
-
-    Args:
-        problem_state (dict): The dictionary contains the problem state. In this algorithm, the following items are necessary:
-            - "distance_matrix" (numpy.ndarray): A 2D array representing the distances between nodes.
-            - "demands" (numpy.ndarray): The demand of each node.
-            - "capacity" (int): The capacity for each vehicle.
-            - "vehicle_num" (int): The total number of vehicles.
-            - "node_num" (int): The total number of nodes in the problem.
-            - "current_solution" (Solution): The current set of routes for all vehicles.
-            - "unvisited_nodes" (list[int]): Nodes that have not yet been visited by any vehicle.
-            - "vehicle_remaining_capacity" (list[int]): The remaining capacity for each vehicle.
-
-    Returns:
-        InsertOperator: The operator that adds a node to the route of a vehicle.
-        dict: Updated algorithm data, empty in this case as this heuristic doesn't utilize it.
+    Sweep-style single-customer petal seeding. Unvisited customers are ordered by a depot-centric polar angle.
+    The heuristic scans customers in this angular order and vehicles in identifier order, returning the first
+    feasible append-to-end insertion that respects both capacity and time-window constraints.
     """
-
     distance_matrix = problem_state["distance_matrix"]
     demands = problem_state["demands"]
     vehicle_capacity = problem_state["capacity"]
@@ -29,11 +16,10 @@ def petal_algorithm_b384(problem_state: dict, algorithm_data: dict, **kwargs) ->
     unvisited_nodes = problem_state["unvisited_nodes"].copy()
 
     if not unvisited_nodes:
-        # No more nodes to visit, return None.
         return None, {}
 
     # Sort nodes based on their polar angle with respect to the depot
-    depot = 0
+    depot = problem_state.get("depot", 0)
     sorted_nodes = sorted(unvisited_nodes, key=lambda node: polar_angle(distance_matrix, depot, node))
 
     # Create petals
@@ -44,12 +30,12 @@ def petal_algorithm_b384(problem_state: dict, algorithm_data: dict, **kwargs) ->
 
     # Try to fit petals into existing vehicle routes
     for petal in petals:
+        node = petal[0]
         for vehicle_id, route in enumerate(current_solution):
             if route_fits(petal, vehicle_id, vehicle_remaining_capacity, demands, vehicle_capacity):
-                # If the petal fits, assign it to the vehicle and return the operator
-                return InsertOperator(vehicle_id=vehicle_id, node=petal[0], position=len(route)), {}
+                if insertion_route_is_feasible(problem_state, route, vehicle_id, node, len(route)):
+                    return InsertOperator(vehicle_id=vehicle_id, node=node, position=len(route)), {}
 
-    # If no petals fit, return None
     return None, {}
 
 def polar_angle(distance_matrix, depot, node):
@@ -60,7 +46,5 @@ def polar_angle(distance_matrix, depot, node):
 
 def route_fits(petal, vehicle_id, vehicle_remaining_capacity, demands, vehicle_capacity):
     """Check if a petal can fit into the current route of a vehicle."""
-    # Calculate the total demand of the petal
     petal_demand = sum(demands[node] for node in petal)
-    # Check if adding the petal would exceed the vehicle's capacity
-    return petal_demand <= vehicle_remaining_capacity[vehicle_id]
+    return petal_demand <= vehicle_remaining_capacity[vehicle_id]

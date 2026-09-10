@@ -1,4 +1,10 @@
 from src.problems.cvrp.components import *
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import (
+    insertion_cost_delta,
+    insertion_positions,
+    insertion_route_is_feasible,
+    is_open_route,
+)
 
 def variable_neighborhood_search_614b(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[BaseOperator, dict]:
     """ 
@@ -29,6 +35,7 @@ def variable_neighborhood_search_614b(problem_state: dict, algorithm_data: dict,
     capacity = problem_state.get('capacity')
     vehicle_num = problem_state.get('vehicle_num')
     distance_matrix = problem_state.get('distance_matrix')
+    open_route = is_open_route(problem_state)
 
     # Define hyperparameters (with default values)
     neighborhood_size = kwargs.get('neighborhood_size', 10)
@@ -43,17 +50,18 @@ def variable_neighborhood_search_614b(problem_state: dict, algorithm_data: dict,
             node = unvisited_nodes[node_index]
             # Check if adding this node to the route exceeds the vehicle's capacity
             if vehicle_loads[vehicle_id] + problem_state['demands'][node] <= capacity:
-                for position in range(len(current_solution.routes[vehicle_id]) + 1):
-                    # Calculate the cost of inserting the node at the current position
-                    if position == 0:
-                        before_node = depot
-                    else:
-                        before_node = current_solution.routes[vehicle_id][position - 1]
-                    if position == len(current_solution.routes[vehicle_id]):
-                        after_node = depot
-                    else:
-                        after_node = current_solution.routes[vehicle_id][position]
-                    cost_to_add = distance_matrix[before_node][node] + distance_matrix[node][after_node] - distance_matrix[before_node][after_node]
+                route = current_solution.routes[vehicle_id]
+                for position in insertion_positions(route, depot):
+                    if not insertion_route_is_feasible(problem_state, route, vehicle_id, node, position):
+                        continue
+                    cost_to_add = insertion_cost_delta(
+                        distance_matrix,
+                        route,
+                        depot,
+                        node,
+                        position,
+                        open_route,
+                    )
 
                     # If the insertion leads to a cost saving, and is better than the previous best saving, store it
                     if cost_to_add < best_cost_saving:

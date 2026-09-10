@@ -1,18 +1,20 @@
 from __future__ import annotations
 
+import math
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from cmhh.data.manifest import sha256_file, write_json_atomic
+from cmhh.data.manifest import load_json, sha256_file, write_json_atomic
 from cmhh.data.references import ReferenceRecord, load_reference_set, write_reference_set
 from cmhh.evaluation.problem_adapter import ProblemRegistry
 from cmhh.references.base import ReferenceResult, SolverConfig
 from cmhh.references.concorde import ConcordeConfig, SolverFailure
 from cmhh.references.registry import ReferenceSolverRegistry
 from cmhh.tasks import TaskSpec
+from src.problems.cvrp.variant import profile_from_config
 
 
 def generate_task_references(
@@ -45,7 +47,7 @@ def generate_task_references(
     pending = []
     for instance in instances:
         cached = records.get(instance.stem)
-        if cached and _cached_reference_is_current(cached, instance, solver_config):
+        if cached and _cached_reference_is_current(cached, instance, solver_config, task):
             continue
         records.pop(instance.stem, None)
         pending.append(instance)
@@ -117,12 +119,70 @@ def _cached_reference_is_current(
     cached: ReferenceRecord,
     instance: Path,
     solver_config: SolverConfig,
+    task: TaskSpec | None = None,
 ) -> bool:
     if cached.instance_sha256 != sha256_file(instance):
         return False
     if solver_config.solver_name != "default" and cached.solver != solver_config.solver_name:
         return False
-    return not cached.tour_path or Path(cached.tour_path).exists()
+    if cached.tour_path and not Path(cached.tour_path).exists():
+        return False
+    if _is_vrp_constraint_family_task(task):
+        return _cached_vrp_reference_metadata_is_current(cached, instance, task)
+    return True
+
+
+def _is_vrp_constraint_family_task(task: TaskSpec | None) -> bool:
+    if task is None or task.problem != "cvrp":
+        return False
+    return task.metadata.get("constraint_family") == "vrp" or bool(task.metadata.get("vrp_variant"))
+
+
+def _cached_vrp_reference_metadata_is_current(
+    cached: ReferenceRecord,
+    instance: Path,
+    task: TaskSpec | None,
+) -> bool:
+    instance_meta = _load_instance_meta(instance)
+    expected_variant = str(
+        instance_meta.get("variant")
+        or task.metadata.get("vrp_variant")
+        or task.metadata.get("variant")
+        or "cvrp"
+    ).lower()
+    expected_profile = profile_from_config(
+        instance_meta.get("constraints")
+        or instance_meta.get("variant")
+        or task.metadata.get("constraints")
+        or task.metadata.get("vrp_variant")
+        or "cvrp"
+    )
+
+    metadata = cached.metadata if isinstance(cached.metadata, dict) else {}
+    if str(metadata.get("variant", "")).lower() != expected_variant:
+        return False
+    if metadata.get("constraints") != expected_profile.to_dict():
+        return False
+    if metadata.get("internal_validation_feasible") is not True:
+        return False
+
+    try:
+        internal_objective = float(metadata.get("internal_objective"))
+    except (TypeError, ValueError):
+        return False
+    if not math.isfinite(internal_objective):
+        return False
+
+    tolerance = 1e-6 * max(1.0, abs(cached.objective))
+    return abs(internal_objective - cached.objective) <= tolerance
+
+
+def _load_instance_meta(instance: Path) -> dict:
+    meta_path = instance.with_suffix(".meta.json")
+    if not meta_path.exists():
+        return {}
+    meta = load_json(meta_path)
+    return meta if isinstance(meta, dict) else {}
 
 
 def _solve_single_instance(solver, instance: Path, config: SolverConfig) -> ReferenceRecord | SolverFailure:

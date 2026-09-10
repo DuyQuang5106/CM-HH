@@ -1,95 +1,71 @@
-from src.problems.cvrp.components import *
+from src.problems.cvrp.components import RelocateOperator
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import profile_from_problem_state
+from src.problems.cvrp.route_metrics import compute_route_metrics
 
-def node_shift_between_routes_7b8a(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[RelocateOperator, dict]:
+
+def node_shift_between_routes_7b8a(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[RelocateOperator | None, dict]:
     """
-    Inter-route relocate with best-improvement under capacity constraints. Scans all non-depot nodes in all source routes and all insertion cuts of all different target routes, selecting the single shift with the largest strictly positive cost reduction. Routes are treated as circular sequences (depot included), so removal and insertion are evaluated by cutting and reconnecting edges:
-    - Removal at source (prev, node, next): Δsrc = -d[prev,node] - d[node,next] + d[prev,next].
-    - Insertion at target between (prev, next): Δtgt = +d[prev,node] + d[node,next] - d[prev,next].
-    Total Δ = Δsrc + Δtgt; asymmetric distances supported.
-    Feasibility: target load + demand[node] ≤ capacity; depot nodes never moved. Intra-route relocations are excluded by design (source_vehicle_id ≠ target_vehicle_id).
-    Search space: for each source node, all target routes and all circular cuts (0..|route|) are considered; for routes containing only the depot, insertion evaluates the depot–depot break implicitly.
-    Selection policy: best-improving (global minimum Δ) among all feasible moves; no move if no strict improvement exists.
-    Time complexity ~ O(M^2), where M is the total number of visited nodes across all routes; constant extra memory.
-
-    
-    Args:
-        problem_state (dict): The dictionary contains the problem state. In this algorithm, the following items are necessary:
-            - "distance_matrix" (numpy.ndarray): The matrix of distances between nodes.
-            - "capacity" (int): The capacity for each vehicle.
-            - "current_solution" (Solution): The current set of routes.
-            - "vehicle_loads" (list[int]): The current load of each vehicle.
-            - "unvisited_nodes" (list[int]): Nodes that have not yet been visited.
-            
-        algorithm_data (dict): Contains algorithm-specific data. Not used in this heuristic.
-
-    Returns:
-        (RelocateOperator, dict): The operator to shift a node between routes and an empty dictionary, as the heuristic does not update algorithm_data.
+    Inter-route relocate with best-improvement strategy.
+    Evaluates moving a customer node from a source vehicle route to any position
+    in a different target vehicle route. Fully constraint-aware: supports both
+    closed and open route semantics, and checks vehicle capacity and time window
+    feasibility for both modified routes.
     """
-    # Extract required data from problem_state
-    distance_matrix = problem_state["distance_matrix"]
-    capacity = problem_state["capacity"]
+    profile = profile_from_problem_state(problem_state)
     depot = problem_state["depot"]
     current_solution = problem_state["current_solution"]
-    vehicle_loads = problem_state["vehicle_loads"]
-    # Find the best position to insert the node in the target route
-    best_position = None
-    best_cost_reduction = 0
-    # Find the best node shift between routes
+
+    best_cost_reduction = 1e-6
+    best_move = None
+
     for source_vehicle_id, source_route in enumerate(current_solution.routes):
+        if len(source_route) <= 1:
+            continue
+        orig_src_metrics = compute_route_metrics(source_route, source_vehicle_id, problem_state, profile)
+        if not orig_src_metrics.feasible:
+            continue
+
         for source_position, node in enumerate(source_route):
-            # Skip if no nodes to shift
-            if not source_route or node == depot:
+            if node == depot:
                 continue
-            
-            # Calculate the load after removing the node
-            new_load_source = vehicle_loads[source_vehicle_id] - problem_state["demands"][node]
-            if new_load_source < 0:
-                continue  # Skip if moving the node violates source vehicle's capacity
-            
-            # Check each target route to find the best shift
+
+            candidate_src = [n for idx, n in enumerate(source_route) if idx != source_position]
+            new_src_metrics = compute_route_metrics(candidate_src, source_vehicle_id, problem_state, profile)
+            if not new_src_metrics.feasible:
+                continue
+
             for target_vehicle_id, target_route in enumerate(current_solution.routes):
-                # Do not consider the same route
                 if source_vehicle_id == target_vehicle_id:
                     continue
-                
-                # Calculate the load after adding the node to the target vehicle
-                new_load_target = vehicle_loads[target_vehicle_id] + problem_state["demands"][node]
-                if new_load_target > capacity:
-                    continue  # Skip if moving the node violates target vehicle's capacity
-                for target_position in range(len(target_route) + 1):
-                        # Calculate the cost difference if the node is inserted at the target position
-                        source_previous_node = source_route[(source_position - 1) % len(source_route)]
-                        source_next_node = source_route[(source_position + 1) % len(source_route)]
-                        target_previous_node = target_route[(target_position - 1) % len(target_route)]
-                        target_next_node = target_route[target_position % len(target_route)]
 
-                        cost_increase = (
-                            -distance_matrix[source_previous_node][node]
-                            -distance_matrix[node][source_next_node]
-                            +distance_matrix[source_previous_node][source_next_node]
-                            +distance_matrix[target_previous_node][node]
-                            +distance_matrix[node][target_next_node]
-                            -distance_matrix[target_previous_node][target_next_node]
-                        )
-                        cost_reduction = -cost_increase
+                orig_tgt_metrics = compute_route_metrics(target_route, target_vehicle_id, problem_state, profile)
+                if not orig_tgt_metrics.feasible:
+                    continue
 
-                        # Update best shift if this shift is better
-                        if cost_reduction > best_cost_reduction and current_solution.routes[source_vehicle_id][source_position] != depot:
-                            best_source_vehicle_id = source_vehicle_id
-                            best_source_position = source_position
-                            best_target_vehicle_id = target_vehicle_id
-                            best_target_position = target_position
-                            best_cost_reduction = cost_reduction
-                        
-                
-    # If a beneficial shift is found, return the corresponding operator
-    if best_cost_reduction > 0:
+                # Target insertion positions: from after depot (index 1) to end of route
+                tgt_start = 1 if (depot in target_route) else 0
+                for target_position in range(tgt_start, len(target_route) + 1):
+                    candidate_tgt = list(target_route)
+                    candidate_tgt.insert(target_position, node)
+                    new_tgt_metrics = compute_route_metrics(candidate_tgt, target_vehicle_id, problem_state, profile)
+                    if not new_tgt_metrics.feasible:
+                        continue
+
+                    old_total = orig_src_metrics.distance + orig_tgt_metrics.distance
+                    new_total = new_src_metrics.distance + new_tgt_metrics.distance
+                    cost_reduction = old_total - new_total
+
+                    if cost_reduction > best_cost_reduction:
+                        best_cost_reduction = cost_reduction
+                        best_move = (source_vehicle_id, source_position, target_vehicle_id, target_position)
+
+    if best_move:
+        src_v, src_p, tgt_v, tgt_p = best_move
         return RelocateOperator(
-            source_vehicle_id=best_source_vehicle_id,
-            source_position=best_source_position,
-            target_vehicle_id=best_target_vehicle_id,
-            target_position=best_target_position
+            source_vehicle_id=src_v,
+            source_position=src_p,
+            target_vehicle_id=tgt_v,
+            target_position=tgt_p,
         ), {}
-    
-    # If no beneficial shift is found, return None
-    return None, {}
+
+    return None, {}

@@ -21,7 +21,7 @@ class ReferenceSolverRegistry:
         key = problem_or_solver.lower()
         if key in ("tsp", "concorde"):
             return TSPSolverAdapter(concorde_config=concorde_config)
-        elif key in ("cvrp", "pyvrp"):
+        elif key in ("cvrp", "pyvrp", "ovrp", "ovrptw", "vrptw"):
             return PyVRPSolverAdapter()
         elif key in ("jssp", "ortools_cpsat", "cpsat"):
             return ORToolsCPSATSolverAdapter()
@@ -33,4 +33,3 @@ class ReferenceSolverRegistry:
     @classmethod
     def register_solver(cls, name: str, solver: ReferenceSolverAdapter) -> None:
         cls._solvers[name.lower()] = solver
-

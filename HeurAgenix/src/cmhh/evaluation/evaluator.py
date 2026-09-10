@@ -12,6 +12,7 @@ from cmhh.data.manifest import sha256_file
 from cmhh.data.references import ReferenceSet, load_reference_set
 from cmhh.metrics.objective import relative_gap
 from cmhh.models import EvaluationBudget, EvaluationResult, HeuristicArtifact, InstanceEvaluation
+from cmhh.references.verification import verify_vrp_reference_record
 from cmhh.tasks import TaskSpec
 
 from cmhh.evaluation.problem_adapter import ProblemRegistry
@@ -152,6 +153,14 @@ class Evaluator:
                 reference.status, None, time.perf_counter() - started,
                 "Reference checksum does not match the evaluated instance",
             )
+        if reference:
+            reference_errors = verify_vrp_reference_record(task, instance, reference)
+            if reference_errors:
+                return InstanceEvaluation(
+                    instance.stem, "reference_mismatch", raw.get("objective"), reference.objective,
+                    reference.status, None, time.perf_counter() - started,
+                    "; ".join(reference_errors),
+                )
         objective = raw.get("objective")
         gap = (
             relative_gap(float(objective), reference.objective, objective=task.metric.objective)

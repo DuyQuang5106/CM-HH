@@ -19,6 +19,9 @@ To implement this heuristic function in python, please note:
 13. Do not forget the input problem_state:
 {problem_state_introduction}
 
+General complexity and runtime constraints:
+{global_complexity_remind}
+
 For {problem} problem, take about following:
 {special_remind}
 

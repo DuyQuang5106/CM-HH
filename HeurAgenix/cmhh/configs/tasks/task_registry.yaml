@@ -209,9 +209,131 @@ tasks:
       fleet_size: 8
       constraint_regime: medium
       capacity_tightness: 0.75
+      constraint_family: vrp
+      vrp_variant: cvrp
+      time_window_regime: medium
+      service_duration: 0
+      pair_family_id: vrp_constraint_uniform_n50_medium
       base_dataset_id: cvrp_uniform_n50_base
       dataset_seed: 53050
-      stream_families: [pilot]
+      stream_families: [pilot, vrp_constraint_graycode]
+
+  - task_id: ovrp_uniform_n50_medium
+    problem: cvrp
+    implemented_in_heuragenix: true
+    size_tier: n50
+    distribution: euclidean_uniform
+    splits:
+      train: cmhh/data/instances/ovrp_uniform_n50_medium/train
+      validation: cmhh/data/instances/ovrp_uniform_n50_medium/validation
+      test: cmhh/data/instances/ovrp_uniform_n50_medium/test
+      smoke: cmhh/data/instances/ovrp_uniform_n50_medium/smoke
+    reference:
+      type: best_known
+      path: cmhh/data/references/ovrp_uniform_n50_medium/reference.json
+      status: pending
+    metric:
+      name: relative_gap
+      objective: minimize
+      aggregation: mean
+    baseline_pool:
+      heuristic_dir: basic_heuristics
+      seed_heuristics:
+        - nearest_neighbor_99ba
+        - greedy_f4c4
+        - farthest_insertion_4e1d
+    metadata:
+      nodes: 50
+      customers: 50
+      fleet_size: 8
+      constraint_regime: medium
+      capacity_tightness: 0.75
+      constraint_family: vrp
+      vrp_variant: ovrp
+      time_window_regime: medium
+      service_duration: 0
+      pair_family_id: vrp_constraint_uniform_n50_medium
+      base_dataset_id: cvrp_uniform_n50_base
+      dataset_seed: 53050
+      stream_families: [vrp_constraint_graycode]
+
+  - task_id: ovrptw_uniform_n50_medium
+    problem: cvrp
+    implemented_in_heuragenix: true
+    size_tier: n50
+    distribution: euclidean_uniform
+    splits:
+      train: cmhh/data/instances/ovrptw_uniform_n50_medium/train
+      validation: cmhh/data/instances/ovrptw_uniform_n50_medium/validation
+      test: cmhh/data/instances/ovrptw_uniform_n50_medium/test
+      smoke: cmhh/data/instances/ovrptw_uniform_n50_medium/smoke
+    reference:
+      type: best_known
+      path: cmhh/data/references/ovrptw_uniform_n50_medium/reference.json
+      status: pending
+    metric:
+      name: relative_gap
+      objective: minimize
+      aggregation: mean
+    baseline_pool:
+      heuristic_dir: basic_heuristics
+      seed_heuristics:
+        - nearest_neighbor_99ba
+        - greedy_f4c4
+        - farthest_insertion_4e1d
+    metadata:
+      nodes: 50
+      customers: 50
+      fleet_size: 8
+      constraint_regime: medium
+      capacity_tightness: 0.75
+      constraint_family: vrp
+      vrp_variant: ovrptw
+      time_window_regime: medium
+      service_duration: 0
+      pair_family_id: vrp_constraint_uniform_n50_medium
+      base_dataset_id: cvrp_uniform_n50_base
+      dataset_seed: 53050
+      stream_families: [vrp_constraint_graycode]
+
+  - task_id: vrptw_uniform_n50_medium
+    problem: cvrp
+    implemented_in_heuragenix: true
+    size_tier: n50
+    distribution: euclidean_uniform
+    splits:
+      train: cmhh/data/instances/vrptw_uniform_n50_medium/train
+      validation: cmhh/data/instances/vrptw_uniform_n50_medium/validation
+      test: cmhh/data/instances/vrptw_uniform_n50_medium/test
+      smoke: cmhh/data/instances/vrptw_uniform_n50_medium/smoke
+    reference:
+      type: best_known
+      path: cmhh/data/references/vrptw_uniform_n50_medium/reference.json
+      status: pending
+    metric:
+      name: relative_gap
+      objective: minimize
+      aggregation: mean
+    baseline_pool:
+      heuristic_dir: basic_heuristics
+      seed_heuristics:
+        - nearest_neighbor_99ba
+        - greedy_f4c4
+        - farthest_insertion_4e1d
+    metadata:
+      nodes: 50
+      customers: 50
+      fleet_size: 8
+      constraint_regime: medium
+      capacity_tightness: 0.75
+      constraint_family: vrp
+      vrp_variant: vrptw
+      time_window_regime: medium
+      service_duration: 0
+      pair_family_id: vrp_constraint_uniform_n50_medium
+      base_dataset_id: cvrp_uniform_n50_base
+      dataset_seed: 53050
+      stream_families: [vrp_constraint_graycode]
 
   - task_id: cvrp_uniform_n50_tight
     problem: cvrp

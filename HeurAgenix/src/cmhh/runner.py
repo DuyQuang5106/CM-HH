@@ -42,6 +42,7 @@ from cmhh.retrieval import RetrievalBudget, RetrievalQuery, RetrievedItem, Retri
 from cmhh.tasks import TaskRegistry
 from cmhh.tracking import ExperimentTracker, create_tracker
 from cmhh.transfer import DeterministicTransferPolicy, TransferPlan, TransferRecord
+from src.problems.cvrp.variant import diff_constraint_profiles, profile_from_config
 
 _LOGGER = logging.getLogger("cmhh.runner")
 
@@ -1044,6 +1045,10 @@ class StreamRunner:
                 "source_task",
                 "target_task",
                 "relationship",
+                "source_variant",
+                "target_variant",
+                "constraint_delta_added",
+                "constraint_delta_removed",
                 "direct_executable",
                 "zero_shot_score",
                 "post_budget_score",
@@ -1056,8 +1061,11 @@ class StreamRunner:
                 source_spec = self.registry.get(source_id)
                 target_spec = self.registry.get(target_id)
 
+                constraint_details = _vrp_constraint_transition(source_spec, target_spec)
                 is_same_prob = (source_spec.problem == target_spec.problem)
-                if is_same_prob:
+                if constraint_details is not None:
+                    relationship = constraint_details["relationship"]
+                elif is_same_prob:
                     if source_spec.distribution == target_spec.distribution:
                         if source_spec.size_tier != target_spec.size_tier:
                             relationship = "same_problem_scale"
@@ -1084,6 +1092,10 @@ class StreamRunner:
                     source_id,
                     target_id,
                     relationship,
+                    "" if constraint_details is None else constraint_details["source_variant"],
+                    "" if constraint_details is None else constraint_details["target_variant"],
+                    "" if constraint_details is None else constraint_details["added"],
+                    "" if constraint_details is None else constraint_details["removed"],
                     str(is_same_prob).lower(),
                     "" if z_score is None else f"{z_score:.6f}",
                     "" if post_score is None else f"{post_score:.6f}",
@@ -1110,3 +1122,40 @@ def _artifact_from_dict(raw: dict) -> HeuristicArtifact:
         model=raw.get("model"),
         llm_call_index=raw.get("llm_call_index"),
     )
+
+
+def _vrp_constraint_transition(source_spec, target_spec) -> dict[str, str] | None:
+    if source_spec.metadata.get("constraint_family") != "vrp":
+        return None
+    if target_spec.metadata.get("constraint_family") != "vrp":
+        return None
+    if source_spec.metadata.get("pair_family_id") != target_spec.metadata.get("pair_family_id"):
+        return None
+
+    source_profile = profile_from_config(source_spec.metadata.get("vrp_variant"))
+    target_profile = profile_from_config(target_spec.metadata.get("vrp_variant"))
+    delta = diff_constraint_profiles(source_profile, target_profile)
+    relationship = _constraint_delta_relationship(delta)
+    return {
+        "relationship": relationship,
+        "source_variant": source_profile.variant,
+        "target_variant": target_profile.variant,
+        "added": ",".join(delta.added),
+        "removed": ",".join(delta.removed),
+    }
+
+
+def _constraint_delta_relationship(delta) -> str:
+    if delta.added == ("open_route",):
+        return "remove_route_closure"
+    if delta.removed == ("open_route",):
+        return "add_route_closure"
+    if delta.added == ("time_windows",):
+        return "add_time_windows"
+    if delta.removed == ("time_windows",):
+        return "remove_time_windows"
+    if delta.added or delta.removed:
+        parts = [f"add_{name}" for name in delta.added]
+        parts.extend(f"remove_{name}" for name in delta.removed)
+        return "vrp_constraint_shift:" + "+".join(parts)
+    return "same_vrp_constraint_profile"

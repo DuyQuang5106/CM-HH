@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 import time
 from pathlib import Path
@@ -8,6 +9,10 @@ from typing import Any
 from cmhh.data.manifest import sha256_file
 from cmhh.evaluation.problem_adapter import ensure_tsplib95_fallback
 from cmhh.references.base import ReferenceResult, ReferenceSolverAdapter, SolverConfig
+from src.problems.cvrp.components import Solution
+from src.problems.cvrp.constraints import validate_solution
+from src.problems.cvrp.route_metrics import total_solution_distance
+from src.problems.cvrp.variant import CVRP_PROFILE, profile_from_config
 
 
 class PyVRPSolverAdapter(ReferenceSolverAdapter):
@@ -35,6 +40,8 @@ class PyVRPSolverAdapter(ReferenceSolverAdapter):
         checksum = sha256_file(instance)
 
         problem_data = tsplib95.load(str(instance))
+        meta = _load_meta(instance)
+        profile = profile_from_config(meta.get("variant") or meta.get("constraints") or CVRP_PROFILE)
 
         # Determine depot
         depot_node = problem_data.depots[0] if getattr(problem_data, "depots", None) else 1
@@ -49,6 +56,7 @@ class PyVRPSolverAdapter(ReferenceSolverAdapter):
             nid: int(problem_data.demands.get(nid, 0))
             for nid in nodes
         }
+        internal_demands = [demands[nid] for nid in nodes]
 
         # Vehicle number from file name or estimate
         stem = instance.stem
@@ -64,33 +72,62 @@ class PyVRPSolverAdapter(ReferenceSolverAdapter):
         # Build PyVRP Model
         model = Model()
         depot_x, depot_y = node_coords[depot_node]
-        depot_loc = model.add_depot(x=depot_x, y=depot_y)
+        if profile.time_windows:
+            depot_tw_early, depot_tw_late = _time_window_for_internal_node(meta, 0, scale=1000)
+            depot_loc = model.add_depot(x=depot_x, y=depot_y, tw_early=depot_tw_early, tw_late=depot_tw_late)
+            end_depot_loc = None
+            if profile.open_route:
+                end_depot_loc = model.add_depot(x=depot_x, y=depot_y, tw_early=depot_tw_early, tw_late=depot_tw_late)
+        else:
+            depot_loc = model.add_depot(x=depot_x, y=depot_y)
+            end_depot_loc = None
+            if profile.open_route:
+                end_depot_loc = model.add_depot(x=depot_x, y=depot_y)
 
         client_locs = []
         for c_node in customer_nodes:
             cx, cy = node_coords[c_node]
-            c_loc = model.add_client(
-                x=cx,
-                y=cy,
-                delivery=demands[c_node],
-            )
+            internal_node = c_node - 1
+            if profile.time_windows:
+                tw_early, tw_late = _time_window_for_internal_node(meta, internal_node, scale=1000)
+                c_loc = model.add_client(
+                    x=cx,
+                    y=cy,
+                    delivery=demands[c_node] if profile.capacitated else 0,
+                    service_duration=_service_time_for_internal_node(meta, internal_node, scale=1000),
+                    tw_early=tw_early,
+                    tw_late=tw_late,
+                )
+            else:
+                c_loc = model.add_client(
+                    x=cx,
+                    y=cy,
+                    delivery=demands[c_node] if profile.capacitated else 0,
+                )
             client_locs.append(c_loc)
 
         model.add_vehicle_type(
             num_available=vehicle_num,
-            capacity=capacity,
+            capacity=capacity if profile.capacitated else [],
+            start_depot=depot_loc,
+            end_depot=end_depot_loc if profile.open_route else depot_loc,
         )
 
         # Add edges between all locations with Euclidean distances scaled by 1000
         SCALE = 1000
-        all_locs = [depot_loc] + client_locs
-        all_nids = [depot_node] + customer_nodes
+        all_locs = [depot_loc] + client_locs + ([end_depot_loc] if end_depot_loc is not None else [])
+        all_nids = [depot_node] + customer_nodes + ([None] if end_depot_loc is not None else [])
 
         for i, loc_i in enumerate(all_locs):
-            xi, yi = node_coords[all_nids[i]]
             for j, loc_j in enumerate(all_locs):
-                xj, yj = node_coords[all_nids[j]]
-                d = math.hypot(xi - xj, yi - yj)
+                if profile.open_route and all_nids[j] is None:
+                    d = 0.0
+                elif all_nids[i] is None or all_nids[j] is None:
+                    d = 0.0
+                else:
+                    xi, yi = node_coords[all_nids[i]]
+                    xj, yj = node_coords[all_nids[j]]
+                    d = math.hypot(xi - xj, yi - yj)
                 scaled_d = int(round(d * SCALE))
                 model.add_edge(loc_i, loc_j, distance=scaled_d, duration=scaled_d)
 
@@ -109,22 +146,59 @@ class PyVRPSolverAdapter(ReferenceSolverAdapter):
 
         if result.is_feasible() and result.best:
             # Recompute exact floating-point Euclidean cost
-            exact_cost = 0.0
             reconstructed_routes: list[list[int]] = []
+            internal_routes: list[list[int]] = []
 
             for r in result.best.routes():
                 visits = r.visits()
                 if not visits:
                     continue
-                # visits are 1-indexed into client_locs (1 -> customer_nodes[0])
-                route_nodes = [customer_nodes[idx - 1] for idx in visits]
+                route_nodes = [
+                    customer_nodes[_client_index_from_visit(idx, depot_count=2 if profile.open_route else 1, client_count=len(customer_nodes))]
+                    for idx in visits
+                ]
                 reconstructed_routes.append(route_nodes)
+                internal_routes.append([node - 1 for node in route_nodes])
 
-                full_path = [depot_node] + route_nodes + [depot_node]
-                for k in range(len(full_path) - 1):
-                    x1, y1 = node_coords[full_path[k]]
-                    x2, y2 = node_coords[full_path[k + 1]]
-                    exact_cost += math.hypot(x1 - x2, y1 - y2)
+            internal_instance = _internal_instance_data(
+                nodes=nodes,
+                node_coords=node_coords,
+                demands=internal_demands,
+                depot_node=depot_node,
+                vehicle_num=vehicle_num,
+                capacity=capacity,
+                profile=profile,
+                meta=meta,
+            )
+            solution_routes = [[depot_node - 1, *route] for route in internal_routes]
+            while len(solution_routes) < vehicle_num:
+                solution_routes.append([depot_node - 1])
+            solution = Solution(routes=solution_routes, depot=depot_node - 1)
+            validation_results = validate_solution(solution, internal_instance, profile)
+            internal_feasible = all(item.feasible for item in validation_results)
+            exact_cost = total_solution_distance(solution, internal_instance, profile)
+            if not internal_feasible:
+                return ReferenceResult(
+                    instance_id=instance.stem,
+                    objective=None,
+                    status="failed",
+                    solver="pyvrp",
+                    instance_sha256=checksum,
+                    runtime_seconds=runtime,
+                    proven_optimal=False,
+                    metadata={
+                        "solver": "pyvrp",
+                        "solver_version": pyvrp_version,
+                        "seed": seed,
+                        "time_limit_seconds": time_limit,
+                        "variant": profile.variant,
+                        "constraints": profile.to_dict(),
+                        "routes": reconstructed_routes,
+                        "internal_routes": internal_routes,
+                        "internal_validation": [item.__dict__ for item in validation_results],
+                        "error": "PyVRP returned a route that failed internal VRP validation",
+                    },
+                )
 
             return ReferenceResult(
                 instance_id=instance.stem,
@@ -139,9 +213,14 @@ class PyVRPSolverAdapter(ReferenceSolverAdapter):
                     "solver_version": pyvrp_version,
                     "seed": seed,
                     "time_limit_seconds": time_limit,
+                    "variant": profile.variant,
+                    "constraints": profile.to_dict(),
                     "iterations": getattr(result, "iterations", None),
                     "num_routes": len(reconstructed_routes),
                     "routes": reconstructed_routes,
+                    "internal_routes": internal_routes,
+                    "internal_objective": float(exact_cost),
+                    "internal_validation_feasible": internal_feasible,
                     "vehicle_num": vehicle_num,
                     "capacity": capacity,
                 },
@@ -160,6 +239,90 @@ class PyVRPSolverAdapter(ReferenceSolverAdapter):
                 "solver_version": pyvrp_version,
                 "seed": seed,
                 "time_limit_seconds": time_limit,
-                "error": "No feasible CVRP solution found within time limit",
+                "variant": profile.variant,
+                "constraints": profile.to_dict(),
+                "error": f"No feasible {profile.variant.upper()} solution found within time limit",
             },
         )
+
+
+def _load_meta(instance: Path) -> dict[str, Any]:
+    meta_path = instance.with_suffix(".meta.json")
+    if not meta_path.exists():
+        return {}
+    return json.loads(meta_path.read_text(encoding="utf-8"))
+
+
+def _client_index_from_visit(visit: int, depot_count: int, client_count: int) -> int:
+    client_index = int(visit) - depot_count
+    if 0 <= client_index < client_count:
+        return client_index
+    legacy_index = int(visit) - 1
+    if 0 <= legacy_index < client_count:
+        return legacy_index
+    if 0 <= int(visit) < client_count:
+        return int(visit)
+    raise IndexError(f"PyVRP visit id {visit} cannot be mapped to {client_count} clients")
+
+
+def _time_window_for_internal_node(meta: dict[str, Any], node: int, scale: int) -> tuple[int, int]:
+    time_windows = meta.get("time_windows", {})
+    value = None
+    if isinstance(time_windows, dict):
+        if node == 0:
+            value = time_windows.get("depot")
+        if value is None:
+            customers = time_windows.get("customers", {})
+            value = customers.get(str(node), customers.get(node))
+        if value is None:
+            value = time_windows.get(str(node), time_windows.get(node))
+    elif time_windows and node < len(time_windows):
+        value = time_windows[node]
+    if value is None:
+        return 0, 9223372036854775807
+    return int(round(float(value[0]) * scale)), int(round(float(value[1]) * scale))
+
+
+def _service_time_for_internal_node(meta: dict[str, Any], node: int, scale: int) -> int:
+    service_times = meta.get("service_times", {})
+    if isinstance(service_times, dict):
+        value = service_times.get(str(node), service_times.get(node, service_times.get("default", 0.0)))
+    elif service_times and node < len(service_times):
+        value = service_times[node]
+    else:
+        value = 0.0
+    return int(round(float(value) * scale))
+
+
+def _internal_instance_data(
+    nodes: list[int],
+    node_coords: dict[int, tuple[float, float]],
+    demands: list[int],
+    depot_node: int,
+    vehicle_num: int,
+    capacity: int,
+    profile,
+    meta: dict[str, Any],
+) -> dict[str, Any]:
+    matrix = []
+    for left in nodes:
+        row = []
+        x1, y1 = node_coords[left]
+        for right in nodes:
+            x2, y2 = node_coords[right]
+            row.append(math.hypot(x1 - x2, y1 - y2))
+        matrix.append(row)
+    return {
+        "node_num": len(nodes),
+        "distance_matrix": matrix,
+        "depot": depot_node - 1,
+        "vehicle_num": vehicle_num,
+        "capacity": capacity,
+        "demands": demands,
+        "family": "vrp",
+        "variant": profile.variant,
+        "constraints": profile.to_dict(),
+        "constraint_profile": profile,
+        "time_windows": meta.get("time_windows", {}) if profile.time_windows else {},
+        "service_times": meta.get("service_times", {"default": 0.0}) if profile.time_windows else {"default": 0.0},
+    }

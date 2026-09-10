@@ -1,4 +1,10 @@
 from src.problems.cvrp.components import Solution, AppendOperator, InsertOperator
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import (
+    insertion_cost_delta,
+    insertion_positions,
+    insertion_route_is_feasible,
+    is_open_route,
+)
 import numpy as np
 
 def farthest_insertion_4e1d(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[AppendOperator, dict]:
@@ -30,32 +36,37 @@ def farthest_insertion_4e1d(problem_state: dict, algorithm_data: dict, **kwargs)
     vehicle_loads = problem_state["vehicle_loads"]
     vehicle_remaining_capacity = problem_state["vehicle_remaining_capacity"]
     current_solution = problem_state["current_solution"]
+    open_route = is_open_route(problem_state)
 
     # If all nodes are visited, return None
     if not unvisited_nodes:
         return None, {}
 
-    # Start with the farthest node from the depot
-    farthest_node = max(unvisited_nodes, key=lambda node: distance_matrix[depot][node])
     best_insertion = None
     min_cost_increase = float('inf')
 
-    # Try to insert the farthest node into each route at the best position
-    for vehicle_id, route in enumerate(current_solution.routes):
-        if demands[farthest_node] <= vehicle_remaining_capacity[vehicle_id]:
-            # Try every possible position in the route
-            for position in range(1, len(route) + 1):
-                # Calculate the cost increase if inserting the node at this position
-                previous_node = route[position - 1] if position > 0 else depot
-                next_node = route[position] if position < len(route) else depot
-                cost_increase = (distance_matrix[previous_node][farthest_node] +
-                                 distance_matrix[farthest_node][next_node] -
-                                 distance_matrix[previous_node][next_node])
+    for farthest_node in sorted(unvisited_nodes, key=lambda node: distance_matrix[depot][node], reverse=True):
+        # Try to insert the farthest feasible node into each route at the best position
+        for vehicle_id, route in enumerate(current_solution.routes):
+            if demands[farthest_node] <= vehicle_remaining_capacity[vehicle_id]:
+                for position in insertion_positions(route, depot):
+                    if not insertion_route_is_feasible(problem_state, route, vehicle_id, farthest_node, position):
+                        continue
+                    cost_increase = insertion_cost_delta(
+                        distance_matrix,
+                        route,
+                        depot,
+                        farthest_node,
+                        position,
+                        open_route,
+                    )
 
-                # Update the best insertion if the cost is lower
-                if cost_increase < min_cost_increase:
-                    min_cost_increase = cost_increase
-                    best_insertion = InsertOperator(vehicle_id, farthest_node, position)
+                    # Update the best insertion if the cost is lower
+                    if cost_increase < min_cost_increase:
+                        min_cost_increase = cost_increase
+                        best_insertion = InsertOperator(vehicle_id, farthest_node, position)
+        if best_insertion is not None:
+            break
 
     # If a valid insertion is found, return it
     if best_insertion is not None:

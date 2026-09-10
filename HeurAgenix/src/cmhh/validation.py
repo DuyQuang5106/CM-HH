@@ -6,6 +6,7 @@ from pathlib import Path
 
 from cmhh.config import ExperimentConfig, StreamConfig, load_yaml
 from cmhh.tasks import TaskRegistry
+from src.problems.cvrp.variant import constraint_vector, hamming_distance, profile_from_config
 
 
 @dataclass
@@ -65,6 +66,9 @@ def validate_configuration(
     if experiment.condition not in allowed_conditions:
         report.errors.append(f"Unknown experiment condition: {experiment.condition}")
 
+    if stream.stream_id.startswith("vrp_constraint_graycode"):
+        report.errors.extend(_validate_vrp_graycode_stream(registry, stream))
+
     defaults_path = root / "cmhh/configs/tasks/problem_defaults.yaml"
     tiers_path = root / "cmhh/configs/tasks/size_tiers.yaml"
     defaults = load_yaml(defaults_path)["problems"]
@@ -87,3 +91,36 @@ def validate_configuration(
             report.warnings.append(f"{task.task_id}: {len(missing)} data/reference artifacts are pending")
 
     return report
+
+
+def _validate_vrp_graycode_stream(registry: TaskRegistry, stream: StreamConfig) -> list[str]:
+    errors = []
+    profiles = []
+    pair_family_ids = set()
+    for task_id in stream.task_ids:
+        task = registry.get(task_id)
+        if task is None:
+            continue
+        if task.problem != "cvrp":
+            errors.append(f"{stream.stream_id}: {task_id} must use shared cvrp problem adapter")
+            continue
+        if task.metadata.get("constraint_family") != "vrp":
+            errors.append(f"{stream.stream_id}: {task_id} missing constraint_family=vrp")
+        variant = task.metadata.get("vrp_variant")
+        if not variant:
+            errors.append(f"{stream.stream_id}: {task_id} missing vrp_variant metadata")
+            continue
+        profiles.append((task_id, profile_from_config(variant)))
+        if task.metadata.get("pair_family_id"):
+            pair_family_ids.add(task.metadata["pair_family_id"])
+
+    if len(pair_family_ids) > 1:
+        errors.append(f"{stream.stream_id}: tasks must share one pair_family_id, got {sorted(pair_family_ids)}")
+
+    for (left_task_id, left_profile), (right_task_id, right_profile) in zip(profiles, profiles[1:]):
+        distance = hamming_distance(constraint_vector(left_profile), constraint_vector(right_profile))
+        if distance != 1:
+            errors.append(
+                f"{stream.stream_id}: {left_task_id} -> {right_task_id} changes {distance} constraint bits, expected 1"
+            )
+    return errors

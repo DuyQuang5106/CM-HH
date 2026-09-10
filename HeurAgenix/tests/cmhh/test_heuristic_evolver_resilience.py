@@ -71,18 +71,29 @@ def test_identity_bottlenecks_skips_malformed_lines_and_preserves_reason_semicol
     assert result == [[12, "InsertOperator(node=2)", "reason contains ; an extra semicolon"]]
 
 
-def test_get_improvement_handles_none_zero_and_short_results() -> None:
+def test_get_improvement_raises_on_invalid_or_none_results() -> None:
+    import pytest
+    from src.pipeline.heuristic_evolver import InvalidValidationResult
+
     class FakeEnv:
         def compare(self, result, baseline):
             return baseline - result
 
     evolver = HeuristicEvolver.__new__(HeuristicEvolver)
 
+    with pytest.raises(InvalidValidationResult):
+        evolver.get_improvement(
+            FakeEnv(),
+            baselines=[10.0, 20.0],
+            results=[8.0, None],
+        )
+
+    # Valid numeric comparison passes
     assert evolver.get_improvement(
         FakeEnv(),
-        baselines=[10.0, None, 0, 5.0, 7.0],
-        results=[8.0, 1.0, 1.0, None],
-    ) == [0.2, 0, 0, 0, 0]
+        baselines=[10.0, 20.0],
+        results=[8.0, 16.0],
+    ) == [0.2, 0.2]
 
 
 def test_validation_uses_per_instance_timeout(monkeypatch) -> None:
@@ -96,8 +107,9 @@ def test_validation_uses_per_instance_timeout(monkeypatch) -> None:
 
     monkeypatch.setattr(heuristic_evolver, "_run_validation_case_with_timeout", fake_run)
 
-    assert evolver.validation(["case_a", "case_b"], "heuristic.py", timeout_seconds=3.5) == [123.0, 123.0]
-    assert calls == [
-        ("tsp", "case_a", "heuristic.py", 3.5),
-        ("tsp", "case_b", "heuristic.py", 3.5),
-    ]
+    assert evolver.validation(["case_a", "case_b"], "heuristic.py", case_timeout_seconds=3.5) == [123.0, 123.0]
+    assert len(calls) == 2
+    assert calls[0][0] == "tsp"
+    assert calls[0][1] == "case_a"
+    assert calls[1][1] == "case_b"
+

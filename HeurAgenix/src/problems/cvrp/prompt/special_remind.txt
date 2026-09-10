@@ -1,3 +1,6 @@
 1. Make the result must be valid, such as: no re-visited nodes, no overload on capacity, etc.
 2. We insert the depot in each route before start construct the solution.
 3. The position of depot in route may change, but finial after solution is built, we will make it to first.
+4. Always inspect problem_state["constraints"]. If open_route is true, do not optimize for the final return-to-depot edge.
+5. If time_windows is true, only choose moves that can keep service starts within customer windows; early arrival may wait, late service is invalid.
+6. Keep each heuristic decision at O(N^2) or better. Avoid exhaustive nested two-step lookahead over all route positions and all customers.

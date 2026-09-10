@@ -43,7 +43,10 @@ def generate_data_for_tasks(
         else:
             raise NotImplementedError(f"Data generator for problem '{task.problem}' is not implemented.")
 
-        manifest_path = write_task_manifest(task, experiment, seed)
+        if task.metadata.get("constraint_family") == "vrp" or task.metadata.get("vrp_variant"):
+            manifest_path = task.splits.train.parent / "manifest.json"
+        else:
+            manifest_path = write_task_manifest(task, experiment, seed)
         manifests.append(manifest_path)
 
     return manifests

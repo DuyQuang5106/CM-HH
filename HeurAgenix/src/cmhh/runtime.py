@@ -175,14 +175,17 @@ def normalize_conditions(values: Iterable[str] | None) -> tuple[str, ...]:
     if not values:
         return DEFAULT_CONDITIONS
     normalized: list[str] = []
-    for value in values:
-        key = value.strip().lower()
-        condition = CONDITION_ALIASES.get(key)
-        if condition is None:
-            choices = ", ".join(DEFAULT_CONDITIONS)
-            raise ValueError(f"Unknown condition '{value}'. Choose from: {choices}")
-        if condition not in normalized:
-            normalized.append(condition)
+    for raw in values:
+        for value in str(raw).split(","):
+            key = value.strip().lower()
+            if not key:
+                continue
+            condition = CONDITION_ALIASES.get(key)
+            if condition is None:
+                choices = ", ".join(DEFAULT_CONDITIONS)
+                raise ValueError(f"Unknown condition '{value}'. Choose from: {choices}")
+            if condition not in normalized:
+                normalized.append(condition)
     return tuple(normalized)
 
 

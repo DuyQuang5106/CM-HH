@@ -1,4 +1,7 @@
 problem_state (dict): The dictionary contains the problem state with:
+    - family (str): Always "vrp" for this configurable VRP family.
+    - variant (str): Active variant, one of "cvrp", "ovrp", "ovrptw", or "vrptw".
+    - constraints (dict): Active constraint profile with keys such as capacitated, open_route, and time_windows.
     - node_num (int): The total number of nodes in the problem.
     - distance_matrix (numpy.ndarray): A 2D array representing the distances between nodes.
     - vehicle_num (int): The total number of vehicles.
@@ -33,3 +36,13 @@ problem_state (dict): The dictionary contains the problem state with:
     - number_of_unvisited_nodes (int): The count of nodes that have not been visited.
     - average_unvisited_node_demand (float): The average demand of unvisited nodes.
     - total_remaining_demand (int): The cumulative demand of unvisited nodes.
+    - vehicle_waiting_times (list[float], optional): Waiting time per route when time_windows is active.
+    - vehicle_tw_violations (list[int], optional): Time-window violation count per route when time_windows is active.
+    - total_waiting_time (float, optional): Total waiting time when time_windows is active.
+    - total_tw_violations (int, optional): Total time-window violations when time_windows is active.
+
+Open-route semantics:
+    If constraints["open_route"] is true, route cost is depot -> customers only and excludes the final customer -> depot edge.
+
+Time-window semantics:
+    If constraints["time_windows"] is true, early arrival is allowed with waiting, but service_start > latest is invalid.

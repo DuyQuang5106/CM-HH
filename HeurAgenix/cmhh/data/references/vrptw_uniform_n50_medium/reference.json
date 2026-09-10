@@ -1,0 +1,6961 @@
+{
+  "records": [
+    {
+      "instance_id": "vrptw_uniform_n50_medium_smoke_000-k8",
+      "instance_sha256": "0d5b18eb3959b8b485507422d8cfaaf858c3c35f3ccf10879d26552fe7b0bd5b",
+      "metadata": {
+        "capacity": 42,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 142624.25397757982,
+        "internal_routes": [
+          [
+            3,
+            10,
+            25,
+            17,
+            45
+          ],
+          [
+            36,
+            31,
+            49,
+            15,
+            30,
+            7
+          ],
+          [
+            12,
+            24,
+            2,
+            5,
+            23,
+            41
+          ],
+          [
+            42,
+            38,
+            18,
+            43,
+            9
+          ],
+          [
+            37,
+            22,
+            48,
+            34,
+            21,
+            6,
+            29
+          ],
+          [
+            11,
+            39,
+            35,
+            8,
+            20,
+            19,
+            46,
+            32
+          ],
+          [
+            13,
+            33,
+            1,
+            40
+          ],
+          [
+            16,
+            28,
+            26,
+            27,
+            14,
+            47,
+            44,
+            4
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            4,
+            11,
+            26,
+            18,
+            46
+          ],
+          [
+            37,
+            32,
+            50,
+            16,
+            31,
+            8
+          ],
+          [
+            13,
+            25,
+            3,
+            6,
+            24,
+            42
+          ],
+          [
+            43,
+            39,
+            19,
+            44,
+            10
+          ],
+          [
+            38,
+            23,
+            49,
+            35,
+            22,
+            7,
+            30
+          ],
+          [
+            12,
+            40,
+            36,
+            9,
+            21,
+            20,
+            47,
+            33
+          ],
+          [
+            14,
+            34,
+            2,
+            41
+          ],
+          [
+            17,
+            29,
+            27,
+            28,
+            15,
+            48,
+            45,
+            5
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 30.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 142624.25397757982,
+      "runtime_seconds": 30.039366699999846,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_smoke_001-k8",
+      "instance_sha256": "55b2abf0a7e069ad6d4171ead4baa949aff162ca6b7b725e5e6a62308c7a81be",
+      "metadata": {
+        "capacity": 41,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 143504.8191519747,
+        "internal_routes": [
+          [
+            10,
+            47,
+            42,
+            36,
+            7,
+            9,
+            28
+          ],
+          [
+            30,
+            18,
+            15,
+            19,
+            20,
+            32,
+            14,
+            17
+          ],
+          [
+            8,
+            5,
+            39,
+            45,
+            49,
+            12,
+            40
+          ],
+          [
+            27,
+            23,
+            34,
+            24,
+            6,
+            31,
+            38
+          ],
+          [
+            21,
+            35,
+            11,
+            37,
+            16,
+            25
+          ],
+          [
+            33,
+            13
+          ],
+          [
+            4,
+            41,
+            29,
+            1,
+            26,
+            46
+          ],
+          [
+            2,
+            48,
+            3,
+            43,
+            22,
+            44
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            11,
+            48,
+            43,
+            37,
+            8,
+            10,
+            29
+          ],
+          [
+            31,
+            19,
+            16,
+            20,
+            21,
+            33,
+            15,
+            18
+          ],
+          [
+            9,
+            6,
+            40,
+            46,
+            50,
+            13,
+            41
+          ],
+          [
+            28,
+            24,
+            35,
+            25,
+            7,
+            32,
+            39
+          ],
+          [
+            22,
+            36,
+            12,
+            38,
+            17,
+            26
+          ],
+          [
+            34,
+            14
+          ],
+          [
+            5,
+            42,
+            30,
+            2,
+            27,
+            47
+          ],
+          [
+            3,
+            49,
+            4,
+            44,
+            23,
+            45
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 30.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 143504.8191519747,
+      "runtime_seconds": 30.028921299999638,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_000-k8",
+      "instance_sha256": "7feceb9f6a1972765dc17272dcde84a85ccd6ac4f259d636eec279b931a10b23",
+      "metadata": {
+        "capacity": 45,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 139041.883240564,
+        "internal_routes": [
+          [
+            5,
+            38
+          ],
+          [
+            36,
+            18,
+            17,
+            8,
+            22,
+            28
+          ],
+          [
+            39,
+            9,
+            21,
+            14,
+            13,
+            2,
+            24
+          ],
+          [
+            48,
+            15,
+            31,
+            45,
+            16,
+            34,
+            43
+          ],
+          [
+            41,
+            44,
+            1,
+            26,
+            19,
+            6,
+            37,
+            29,
+            7
+          ],
+          [
+            3,
+            20,
+            47,
+            23,
+            33,
+            12
+          ],
+          [
+            42,
+            27,
+            32,
+            46
+          ],
+          [
+            49,
+            4,
+            40,
+            30,
+            25,
+            10,
+            35,
+            11
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            6,
+            39
+          ],
+          [
+            37,
+            19,
+            18,
+            9,
+            23,
+            29
+          ],
+          [
+            40,
+            10,
+            22,
+            15,
+            14,
+            3,
+            25
+          ],
+          [
+            49,
+            16,
+            32,
+            46,
+            17,
+            35,
+            44
+          ],
+          [
+            42,
+            45,
+            2,
+            27,
+            20,
+            7,
+            38,
+            30,
+            8
+          ],
+          [
+            4,
+            21,
+            48,
+            24,
+            34,
+            13
+          ],
+          [
+            43,
+            28,
+            33,
+            47
+          ],
+          [
+            50,
+            5,
+            41,
+            31,
+            26,
+            11,
+            36,
+            12
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 139041.883240564,
+      "runtime_seconds": 10.092674800000168,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_001-k8",
+      "instance_sha256": "360ec5f36efcb70f1d5651032dad425d717f2a5123ea2ad1f8506a80de7a77be",
+      "metadata": {
+        "capacity": 42,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 132454.63793529273,
+        "internal_routes": [
+          [
+            41,
+            14,
+            37
+          ],
+          [
+            19,
+            7,
+            47,
+            12,
+            3,
+            5,
+            25
+          ],
+          [
+            32,
+            23,
+            27,
+            11,
+            44,
+            30
+          ],
+          [
+            36,
+            33,
+            8,
+            26,
+            13,
+            21,
+            2
+          ],
+          [
+            35,
+            24,
+            1,
+            49,
+            15,
+            10,
+            28
+          ],
+          [
+            48,
+            9,
+            4,
+            22,
+            16,
+            6
+          ],
+          [
+            38,
+            39,
+            29,
+            31,
+            45,
+            17
+          ],
+          [
+            46,
+            40,
+            34,
+            43,
+            20,
+            42,
+            18
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            42,
+            15,
+            38
+          ],
+          [
+            20,
+            8,
+            48,
+            13,
+            4,
+            6,
+            26
+          ],
+          [
+            33,
+            24,
+            28,
+            12,
+            45,
+            31
+          ],
+          [
+            37,
+            34,
+            9,
+            27,
+            14,
+            22,
+            3
+          ],
+          [
+            36,
+            25,
+            2,
+            50,
+            16,
+            11,
+            29
+          ],
+          [
+            49,
+            10,
+            5,
+            23,
+            17,
+            7
+          ],
+          [
+            39,
+            40,
+            30,
+            32,
+            46,
+            18
+          ],
+          [
+            47,
+            41,
+            35,
+            44,
+            21,
+            43,
+            19
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 132454.63793529273,
+      "runtime_seconds": 10.089122800000041,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_002-k8",
+      "instance_sha256": "642c36a70c63fe191d382ea88d4f5f5aea544eb4b0252376dfc77f4f08b506e1",
+      "metadata": {
+        "capacity": 40,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 160431.17168493153,
+        "internal_routes": [
+          [
+            48,
+            44,
+            42,
+            34,
+            15,
+            21,
+            40
+          ],
+          [
+            24,
+            29,
+            47,
+            35,
+            13,
+            11,
+            9
+          ],
+          [
+            20,
+            22,
+            39,
+            41,
+            45,
+            2,
+            8,
+            32
+          ],
+          [
+            46,
+            10,
+            4,
+            30,
+            27,
+            5
+          ],
+          [
+            18,
+            25,
+            38,
+            43,
+            23
+          ],
+          [
+            37,
+            26,
+            12,
+            36,
+            33
+          ],
+          [
+            31,
+            7,
+            49,
+            17,
+            1
+          ],
+          [
+            14,
+            19,
+            6,
+            3,
+            16,
+            28
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            49,
+            45,
+            43,
+            35,
+            16,
+            22,
+            41
+          ],
+          [
+            25,
+            30,
+            48,
+            36,
+            14,
+            12,
+            10
+          ],
+          [
+            21,
+            23,
+            40,
+            42,
+            46,
+            3,
+            9,
+            33
+          ],
+          [
+            47,
+            11,
+            5,
+            31,
+            28,
+            6
+          ],
+          [
+            19,
+            26,
+            39,
+            44,
+            24
+          ],
+          [
+            38,
+            27,
+            13,
+            37,
+            34
+          ],
+          [
+            32,
+            8,
+            50,
+            18,
+            2
+          ],
+          [
+            15,
+            20,
+            7,
+            4,
+            17,
+            29
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 160431.17168493153,
+      "runtime_seconds": 10.086725200000728,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_003-k8",
+      "instance_sha256": "0a08920691fb37f587a9331377f817e6455da51dac822ad64e9a368cf0815d9b",
+      "metadata": {
+        "capacity": 44,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 160757.7412687843,
+        "internal_routes": [
+          [
+            26,
+            35,
+            47,
+            6,
+            15,
+            21
+          ],
+          [
+            8,
+            14,
+            42,
+            18,
+            13,
+            3,
+            33
+          ],
+          [
+            31,
+            23,
+            29,
+            11,
+            46,
+            19,
+            5
+          ],
+          [
+            36,
+            38,
+            27,
+            49,
+            20
+          ],
+          [
+            1,
+            30,
+            12,
+            22,
+            4,
+            43,
+            16
+          ],
+          [
+            41,
+            10,
+            9,
+            44,
+            40,
+            45
+          ],
+          [
+            28,
+            2,
+            7,
+            24,
+            25,
+            48,
+            37
+          ],
+          [
+            34,
+            32,
+            17,
+            39
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            27,
+            36,
+            48,
+            7,
+            16,
+            22
+          ],
+          [
+            9,
+            15,
+            43,
+            19,
+            14,
+            4,
+            34
+          ],
+          [
+            32,
+            24,
+            30,
+            12,
+            47,
+            20,
+            6
+          ],
+          [
+            37,
+            39,
+            28,
+            50,
+            21
+          ],
+          [
+            2,
+            31,
+            13,
+            23,
+            5,
+            44,
+            17
+          ],
+          [
+            42,
+            11,
+            10,
+            45,
+            41,
+            46
+          ],
+          [
+            29,
+            3,
+            8,
+            25,
+            26,
+            49,
+            38
+          ],
+          [
+            35,
+            33,
+            18,
+            40
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 160757.7412687843,
+      "runtime_seconds": 10.101516700000502,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_004-k8",
+      "instance_sha256": "9f1d52b551799036e4264b1909a74a1734d388a6e79cfe94563338ec49771c16",
+      "metadata": {
+        "capacity": 44,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 164360.15939798878,
+        "internal_routes": [
+          [
+            25,
+            26,
+            2,
+            49,
+            47,
+            43
+          ],
+          [
+            40,
+            17,
+            30,
+            6,
+            27,
+            13
+          ],
+          [
+            41,
+            9,
+            28,
+            35,
+            16,
+            45
+          ],
+          [
+            7,
+            32,
+            19,
+            12,
+            18
+          ],
+          [
+            1,
+            23,
+            31,
+            44,
+            21,
+            5
+          ],
+          [
+            39,
+            33,
+            46,
+            22,
+            24,
+            29
+          ],
+          [
+            10,
+            48,
+            42,
+            37,
+            34,
+            36
+          ],
+          [
+            20,
+            11,
+            3,
+            8,
+            14,
+            38,
+            15,
+            4
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            26,
+            27,
+            3,
+            50,
+            48,
+            44
+          ],
+          [
+            41,
+            18,
+            31,
+            7,
+            28,
+            14
+          ],
+          [
+            42,
+            10,
+            29,
+            36,
+            17,
+            46
+          ],
+          [
+            8,
+            33,
+            20,
+            13,
+            19
+          ],
+          [
+            2,
+            24,
+            32,
+            45,
+            22,
+            6
+          ],
+          [
+            40,
+            34,
+            47,
+            23,
+            25,
+            30
+          ],
+          [
+            11,
+            49,
+            43,
+            38,
+            35,
+            37
+          ],
+          [
+            21,
+            12,
+            4,
+            9,
+            15,
+            39,
+            16,
+            5
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 164360.15939798878,
+      "runtime_seconds": 10.097642800000358,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_005-k8",
+      "instance_sha256": "3e9569cafdeaae017db8447d29caedcff2215d5e8fedf6c3c0a30d2568339836",
+      "metadata": {
+        "capacity": 48,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 150634.26874059602,
+        "internal_routes": [
+          [
+            46,
+            4,
+            41,
+            33,
+            2,
+            12,
+            30
+          ],
+          [
+            6,
+            35,
+            38,
+            26,
+            13
+          ],
+          [
+            29,
+            34,
+            14,
+            42,
+            18,
+            44
+          ],
+          [
+            8,
+            27,
+            21,
+            32,
+            25,
+            24,
+            45
+          ],
+          [
+            16,
+            15,
+            37,
+            23,
+            39
+          ],
+          [
+            31,
+            17,
+            28,
+            1,
+            40,
+            48,
+            9
+          ],
+          [
+            19,
+            20,
+            10,
+            43
+          ],
+          [
+            5,
+            7,
+            22,
+            49,
+            3,
+            36,
+            11,
+            47
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            47,
+            5,
+            42,
+            34,
+            3,
+            13,
+            31
+          ],
+          [
+            7,
+            36,
+            39,
+            27,
+            14
+          ],
+          [
+            30,
+            35,
+            15,
+            43,
+            19,
+            45
+          ],
+          [
+            9,
+            28,
+            22,
+            33,
+            26,
+            25,
+            46
+          ],
+          [
+            17,
+            16,
+            38,
+            24,
+            40
+          ],
+          [
+            32,
+            18,
+            29,
+            2,
+            41,
+            49,
+            10
+          ],
+          [
+            20,
+            21,
+            11,
+            44
+          ],
+          [
+            6,
+            8,
+            23,
+            50,
+            4,
+            37,
+            12,
+            48
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 150634.26874059602,
+      "runtime_seconds": 10.094043000000056,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_006-k8",
+      "instance_sha256": "6b562e1f3d699dfb639ffffb3bba443777c41084251d827799a361f5d17c01d6",
+      "metadata": {
+        "capacity": 42,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 119085.11237777057,
+        "internal_routes": [
+          [
+            18,
+            24,
+            48,
+            41,
+            45,
+            19,
+            33
+          ],
+          [
+            29,
+            49,
+            10,
+            22,
+            31
+          ],
+          [
+            9,
+            39,
+            42,
+            12,
+            47,
+            20
+          ],
+          [
+            7,
+            28,
+            23,
+            40,
+            1,
+            6,
+            35,
+            15
+          ],
+          [
+            44,
+            36,
+            32
+          ],
+          [
+            37,
+            43,
+            30,
+            14,
+            26,
+            11
+          ],
+          [
+            38,
+            17,
+            16,
+            8,
+            27,
+            13
+          ],
+          [
+            25,
+            3,
+            21,
+            4,
+            46,
+            5,
+            2,
+            34
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            19,
+            25,
+            49,
+            42,
+            46,
+            20,
+            34
+          ],
+          [
+            30,
+            50,
+            11,
+            23,
+            32
+          ],
+          [
+            10,
+            40,
+            43,
+            13,
+            48,
+            21
+          ],
+          [
+            8,
+            29,
+            24,
+            41,
+            2,
+            7,
+            36,
+            16
+          ],
+          [
+            45,
+            37,
+            33
+          ],
+          [
+            38,
+            44,
+            31,
+            15,
+            27,
+            12
+          ],
+          [
+            39,
+            18,
+            17,
+            9,
+            28,
+            14
+          ],
+          [
+            26,
+            4,
+            22,
+            5,
+            47,
+            6,
+            3,
+            35
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 119085.11237777057,
+      "runtime_seconds": 10.091513000000305,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_007-k8",
+      "instance_sha256": "b99ede83072d413adbeaf3cd6ea68e6ba8dd941df5d8a0e70de7ce9bfbbd4ba8",
+      "metadata": {
+        "capacity": 47,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 136165.0879137957,
+        "internal_routes": [
+          [
+            34,
+            22,
+            23,
+            41,
+            45
+          ],
+          [
+            20,
+            2,
+            42,
+            43,
+            36,
+            28,
+            40,
+            12
+          ],
+          [
+            9,
+            29,
+            10,
+            49,
+            6,
+            19,
+            27,
+            30
+          ],
+          [
+            33,
+            48,
+            39,
+            17,
+            38,
+            44,
+            35
+          ],
+          [
+            18,
+            8,
+            14,
+            31
+          ],
+          [
+            47,
+            15,
+            3,
+            26,
+            21,
+            32,
+            24,
+            1
+          ],
+          [
+            16,
+            37,
+            46,
+            11,
+            13,
+            7
+          ],
+          [
+            25,
+            4,
+            5
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            35,
+            23,
+            24,
+            42,
+            46
+          ],
+          [
+            21,
+            3,
+            43,
+            44,
+            37,
+            29,
+            41,
+            13
+          ],
+          [
+            10,
+            30,
+            11,
+            50,
+            7,
+            20,
+            28,
+            31
+          ],
+          [
+            34,
+            49,
+            40,
+            18,
+            39,
+            45,
+            36
+          ],
+          [
+            19,
+            9,
+            15,
+            32
+          ],
+          [
+            48,
+            16,
+            4,
+            27,
+            22,
+            33,
+            25,
+            2
+          ],
+          [
+            17,
+            38,
+            47,
+            12,
+            14,
+            8
+          ],
+          [
+            26,
+            5,
+            6
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 136165.0879137957,
+      "runtime_seconds": 10.1205944000003,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_008-k8",
+      "instance_sha256": "6d7e464e32fa3a330f4f176e597c483195251f84300e0b713a5b31e9e99cb1e2",
+      "metadata": {
+        "capacity": 50,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 160541.8953179419,
+        "internal_routes": [
+          [
+            38,
+            48,
+            40,
+            30,
+            20,
+            10,
+            4,
+            27
+          ],
+          [
+            36,
+            34,
+            37,
+            1,
+            23,
+            8
+          ],
+          [
+            21,
+            33,
+            19,
+            44,
+            18,
+            2,
+            11,
+            49
+          ],
+          [
+            41,
+            35,
+            26,
+            12,
+            13,
+            47
+          ],
+          [
+            16,
+            32,
+            46,
+            17,
+            43,
+            28
+          ],
+          [
+            25,
+            42,
+            6,
+            39,
+            29,
+            9,
+            14,
+            5
+          ],
+          [
+            7,
+            22,
+            45,
+            31,
+            24,
+            3,
+            15
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 7,
+        "routes": [
+          [
+            39,
+            49,
+            41,
+            31,
+            21,
+            11,
+            5,
+            28
+          ],
+          [
+            37,
+            35,
+            38,
+            2,
+            24,
+            9
+          ],
+          [
+            22,
+            34,
+            20,
+            45,
+            19,
+            3,
+            12,
+            50
+          ],
+          [
+            42,
+            36,
+            27,
+            13,
+            14,
+            48
+          ],
+          [
+            17,
+            33,
+            47,
+            18,
+            44,
+            29
+          ],
+          [
+            26,
+            43,
+            7,
+            40,
+            30,
+            10,
+            15,
+            6
+          ],
+          [
+            8,
+            23,
+            46,
+            32,
+            25,
+            4,
+            16
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 160541.8953179419,
+      "runtime_seconds": 10.062439399999676,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_009-k8",
+      "instance_sha256": "5bdb0d2f2c90c3a6946054a3413cf3fc2bc471b8cd7d6605fc78b23f89c8c0b5",
+      "metadata": {
+        "capacity": 45,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 130848.6912870895,
+        "internal_routes": [
+          [
+            28,
+            31,
+            22,
+            33,
+            48,
+            34,
+            25
+          ],
+          [
+            32,
+            11,
+            1,
+            21,
+            23,
+            4
+          ],
+          [
+            41,
+            27,
+            24,
+            43,
+            5,
+            42
+          ],
+          [
+            12,
+            47,
+            18,
+            49,
+            26,
+            16
+          ],
+          [
+            19,
+            38,
+            39,
+            17,
+            29,
+            8
+          ],
+          [
+            35,
+            45,
+            30,
+            13,
+            20,
+            37,
+            14
+          ],
+          [
+            40,
+            36,
+            15,
+            3,
+            10
+          ],
+          [
+            9,
+            46,
+            2,
+            44,
+            7,
+            6
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            29,
+            32,
+            23,
+            34,
+            49,
+            35,
+            26
+          ],
+          [
+            33,
+            12,
+            2,
+            22,
+            24,
+            5
+          ],
+          [
+            42,
+            28,
+            25,
+            44,
+            6,
+            43
+          ],
+          [
+            13,
+            48,
+            19,
+            50,
+            27,
+            17
+          ],
+          [
+            20,
+            39,
+            40,
+            18,
+            30,
+            9
+          ],
+          [
+            36,
+            46,
+            31,
+            14,
+            21,
+            38,
+            15
+          ],
+          [
+            41,
+            37,
+            16,
+            4,
+            11
+          ],
+          [
+            10,
+            47,
+            3,
+            45,
+            8,
+            7
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 130848.6912870895,
+      "runtime_seconds": 10.098171700000421,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_010-k8",
+      "instance_sha256": "f38b4bbb0bceae4e943f7f3c624a2f59253d8c83fdbd182151b8e3c4fed8a7b3",
+      "metadata": {
+        "capacity": 43,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 154179.34636688806,
+        "internal_routes": [
+          [
+            28
+          ],
+          [
+            24,
+            40,
+            47,
+            17,
+            4,
+            30,
+            6
+          ],
+          [
+            16,
+            18,
+            32,
+            14
+          ],
+          [
+            36,
+            9,
+            3,
+            31,
+            1,
+            29,
+            34,
+            48
+          ],
+          [
+            44,
+            22,
+            33,
+            38,
+            8,
+            19,
+            13
+          ],
+          [
+            2,
+            42,
+            7,
+            23,
+            35,
+            45,
+            26
+          ],
+          [
+            25,
+            11,
+            20,
+            49,
+            10,
+            46,
+            21,
+            37
+          ],
+          [
+            43,
+            12,
+            15,
+            5,
+            41,
+            39,
+            27
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            29
+          ],
+          [
+            25,
+            41,
+            48,
+            18,
+            5,
+            31,
+            7
+          ],
+          [
+            17,
+            19,
+            33,
+            15
+          ],
+          [
+            37,
+            10,
+            4,
+            32,
+            2,
+            30,
+            35,
+            49
+          ],
+          [
+            45,
+            23,
+            34,
+            39,
+            9,
+            20,
+            14
+          ],
+          [
+            3,
+            43,
+            8,
+            24,
+            36,
+            46,
+            27
+          ],
+          [
+            26,
+            12,
+            21,
+            50,
+            11,
+            47,
+            22,
+            38
+          ],
+          [
+            44,
+            13,
+            16,
+            6,
+            42,
+            40,
+            28
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 154179.34636688806,
+      "runtime_seconds": 10.100075700000161,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_011-k8",
+      "instance_sha256": "d6cea171fe0b54cecf9864b3585c139e6f0cfa4faf1b158dc21887444b0f4e09",
+      "metadata": {
+        "capacity": 45,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 138646.92442879442,
+        "internal_routes": [
+          [
+            36,
+            5,
+            1,
+            23,
+            13
+          ],
+          [
+            27,
+            48,
+            39,
+            35,
+            4,
+            16,
+            18
+          ],
+          [
+            11,
+            25,
+            9,
+            8,
+            49,
+            20,
+            30
+          ],
+          [
+            37,
+            26,
+            47,
+            3,
+            40,
+            22
+          ],
+          [
+            32,
+            10,
+            7,
+            29,
+            46,
+            19
+          ],
+          [
+            12,
+            42,
+            21,
+            41,
+            28,
+            44
+          ],
+          [
+            14,
+            45,
+            6,
+            43,
+            31,
+            34,
+            24
+          ],
+          [
+            15,
+            38,
+            33,
+            2,
+            17
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            37,
+            6,
+            2,
+            24,
+            14
+          ],
+          [
+            28,
+            49,
+            40,
+            36,
+            5,
+            17,
+            19
+          ],
+          [
+            12,
+            26,
+            10,
+            9,
+            50,
+            21,
+            31
+          ],
+          [
+            38,
+            27,
+            48,
+            4,
+            41,
+            23
+          ],
+          [
+            33,
+            11,
+            8,
+            30,
+            47,
+            20
+          ],
+          [
+            13,
+            43,
+            22,
+            42,
+            29,
+            45
+          ],
+          [
+            15,
+            46,
+            7,
+            44,
+            32,
+            35,
+            25
+          ],
+          [
+            16,
+            39,
+            34,
+            3,
+            18
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 138646.92442879442,
+      "runtime_seconds": 10.064609199999722,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_012-k8",
+      "instance_sha256": "27400c7c0305ba2a2a29d30a0e082f4a616ba75404b8fbe150a620de85cb9682",
+      "metadata": {
+        "capacity": 39,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 125826.8748759859,
+        "internal_routes": [
+          [
+            42,
+            23,
+            19,
+            8,
+            43
+          ],
+          [
+            13,
+            9,
+            1,
+            6,
+            37,
+            32,
+            29,
+            3,
+            28
+          ],
+          [
+            40,
+            7,
+            2,
+            25
+          ],
+          [
+            4,
+            49,
+            33,
+            15,
+            39,
+            30,
+            45
+          ],
+          [
+            5,
+            17,
+            36
+          ],
+          [
+            21,
+            35,
+            38,
+            22,
+            47,
+            24,
+            10
+          ],
+          [
+            11,
+            14,
+            31,
+            44,
+            26,
+            34,
+            12,
+            27
+          ],
+          [
+            18,
+            16,
+            20,
+            41,
+            48,
+            46
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            43,
+            24,
+            20,
+            9,
+            44
+          ],
+          [
+            14,
+            10,
+            2,
+            7,
+            38,
+            33,
+            30,
+            4,
+            29
+          ],
+          [
+            41,
+            8,
+            3,
+            26
+          ],
+          [
+            5,
+            50,
+            34,
+            16,
+            40,
+            31,
+            46
+          ],
+          [
+            6,
+            18,
+            37
+          ],
+          [
+            22,
+            36,
+            39,
+            23,
+            48,
+            25,
+            11
+          ],
+          [
+            12,
+            15,
+            32,
+            45,
+            27,
+            35,
+            13,
+            28
+          ],
+          [
+            19,
+            17,
+            21,
+            42,
+            49,
+            47
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 125826.8748759859,
+      "runtime_seconds": 10.069942500000252,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_013-k8",
+      "instance_sha256": "1f47bf09471975170c53dd54e02e7b3fd8b47fe9db8ebd25babbd54cb539a2ea",
+      "metadata": {
+        "capacity": 45,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 149918.28715871347,
+        "internal_routes": [
+          [
+            18,
+            29,
+            32,
+            9,
+            28
+          ],
+          [
+            17,
+            10,
+            25,
+            21
+          ],
+          [
+            24,
+            33,
+            11,
+            31,
+            42,
+            49,
+            20,
+            36
+          ],
+          [
+            27,
+            19,
+            37,
+            8,
+            34,
+            40
+          ],
+          [
+            46,
+            35,
+            1,
+            26,
+            3,
+            16,
+            43,
+            6
+          ],
+          [
+            14,
+            5,
+            13,
+            15,
+            4,
+            41
+          ],
+          [
+            39,
+            45,
+            48,
+            23,
+            47,
+            2
+          ],
+          [
+            12,
+            44,
+            38,
+            30,
+            22,
+            7
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            19,
+            30,
+            33,
+            10,
+            29
+          ],
+          [
+            18,
+            11,
+            26,
+            22
+          ],
+          [
+            25,
+            34,
+            12,
+            32,
+            43,
+            50,
+            21,
+            37
+          ],
+          [
+            28,
+            20,
+            38,
+            9,
+            35,
+            41
+          ],
+          [
+            47,
+            36,
+            2,
+            27,
+            4,
+            17,
+            44,
+            7
+          ],
+          [
+            15,
+            6,
+            14,
+            16,
+            5,
+            42
+          ],
+          [
+            40,
+            46,
+            49,
+            24,
+            48,
+            3
+          ],
+          [
+            13,
+            45,
+            39,
+            31,
+            23,
+            8
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 149918.28715871347,
+      "runtime_seconds": 10.072212000000036,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_014-k8",
+      "instance_sha256": "b294173ceb072e723e6db3c2c1a69618e65a67ecccedc5e6fec5ed8b784482c6",
+      "metadata": {
+        "capacity": 50,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 135879.76567933004,
+        "internal_routes": [
+          [
+            2,
+            33,
+            5,
+            3,
+            31,
+            37,
+            4
+          ],
+          [
+            43,
+            40,
+            15,
+            24,
+            35,
+            16,
+            12,
+            39,
+            21
+          ],
+          [
+            1,
+            23,
+            20,
+            17,
+            22,
+            8,
+            28
+          ],
+          [
+            10,
+            19,
+            44,
+            6,
+            48,
+            14,
+            45
+          ],
+          [
+            9,
+            47,
+            11,
+            18
+          ],
+          [
+            27,
+            30,
+            46,
+            34,
+            25,
+            41
+          ],
+          [
+            36,
+            42,
+            29,
+            49,
+            38,
+            26
+          ],
+          [
+            7,
+            13,
+            32
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            3,
+            34,
+            6,
+            4,
+            32,
+            38,
+            5
+          ],
+          [
+            44,
+            41,
+            16,
+            25,
+            36,
+            17,
+            13,
+            40,
+            22
+          ],
+          [
+            2,
+            24,
+            21,
+            18,
+            23,
+            9,
+            29
+          ],
+          [
+            11,
+            20,
+            45,
+            7,
+            49,
+            15,
+            46
+          ],
+          [
+            10,
+            48,
+            12,
+            19
+          ],
+          [
+            28,
+            31,
+            47,
+            35,
+            26,
+            42
+          ],
+          [
+            37,
+            43,
+            30,
+            50,
+            39,
+            27
+          ],
+          [
+            8,
+            14,
+            33
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 135879.76567933004,
+      "runtime_seconds": 10.090791999999965,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_015-k8",
+      "instance_sha256": "0eb3099bc607df019e354c1cf74c9d45e163ad1f3c9160fc8dea33c0521917f3",
+      "metadata": {
+        "capacity": 44,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 154604.64747277886,
+        "internal_routes": [
+          [
+            13,
+            23,
+            11
+          ],
+          [
+            35,
+            48,
+            28,
+            45,
+            15,
+            49,
+            2
+          ],
+          [
+            8,
+            34,
+            22,
+            16,
+            24,
+            1,
+            46,
+            14
+          ],
+          [
+            6,
+            42,
+            7,
+            44,
+            12,
+            17,
+            39,
+            21
+          ],
+          [
+            27,
+            5,
+            31,
+            19
+          ],
+          [
+            10,
+            33,
+            9,
+            25,
+            41,
+            18,
+            20
+          ],
+          [
+            37,
+            47,
+            3,
+            38,
+            30,
+            26,
+            36
+          ],
+          [
+            32,
+            4,
+            29,
+            43,
+            40
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            14,
+            24,
+            12
+          ],
+          [
+            36,
+            49,
+            29,
+            46,
+            16,
+            50,
+            3
+          ],
+          [
+            9,
+            35,
+            23,
+            17,
+            25,
+            2,
+            47,
+            15
+          ],
+          [
+            7,
+            43,
+            8,
+            45,
+            13,
+            18,
+            40,
+            22
+          ],
+          [
+            28,
+            6,
+            32,
+            20
+          ],
+          [
+            11,
+            34,
+            10,
+            26,
+            42,
+            19,
+            21
+          ],
+          [
+            38,
+            48,
+            4,
+            39,
+            31,
+            27,
+            37
+          ],
+          [
+            33,
+            5,
+            30,
+            44,
+            41
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 154604.64747277886,
+      "runtime_seconds": 10.098301099999844,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_016-k8",
+      "instance_sha256": "070d8c4925d8be6c6599390a80caec97c3ca35c078ad302390fba03aa80829fa",
+      "metadata": {
+        "capacity": 51,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 143121.70619885728,
+        "internal_routes": [
+          [
+            35,
+            25,
+            47,
+            19
+          ],
+          [
+            48,
+            20,
+            14,
+            15,
+            36,
+            1,
+            11,
+            3
+          ],
+          [
+            26,
+            38,
+            17,
+            41,
+            7,
+            49
+          ],
+          [
+            44,
+            23,
+            43,
+            9,
+            10
+          ],
+          [
+            22,
+            46,
+            29,
+            21
+          ],
+          [
+            31,
+            13,
+            8,
+            12,
+            45,
+            5,
+            28
+          ],
+          [
+            37,
+            30,
+            40,
+            39,
+            42,
+            33
+          ],
+          [
+            24,
+            34,
+            2,
+            4,
+            6,
+            16,
+            27,
+            32,
+            18
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            36,
+            26,
+            48,
+            20
+          ],
+          [
+            49,
+            21,
+            15,
+            16,
+            37,
+            2,
+            12,
+            4
+          ],
+          [
+            27,
+            39,
+            18,
+            42,
+            8,
+            50
+          ],
+          [
+            45,
+            24,
+            44,
+            10,
+            11
+          ],
+          [
+            23,
+            47,
+            30,
+            22
+          ],
+          [
+            32,
+            14,
+            9,
+            13,
+            46,
+            6,
+            29
+          ],
+          [
+            38,
+            31,
+            41,
+            40,
+            43,
+            34
+          ],
+          [
+            25,
+            35,
+            3,
+            5,
+            7,
+            17,
+            28,
+            33,
+            19
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 143121.70619885728,
+      "runtime_seconds": 10.086187200000495,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_017-k8",
+      "instance_sha256": "e2c80d78598436c0f01a25ab7108479cdf96285ba7759e6afdd2a37b522e4164",
+      "metadata": {
+        "capacity": 42,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 148535.0309142605,
+        "internal_routes": [
+          [
+            34,
+            6,
+            18,
+            22,
+            20,
+            46,
+            16
+          ],
+          [
+            17,
+            15,
+            3,
+            44,
+            26,
+            8,
+            24
+          ],
+          [
+            41,
+            37,
+            43,
+            35,
+            25,
+            21,
+            2
+          ],
+          [
+            42,
+            19,
+            9,
+            48
+          ],
+          [
+            29,
+            33,
+            4,
+            38,
+            1,
+            45,
+            23
+          ],
+          [
+            12,
+            14,
+            30,
+            40,
+            36,
+            47
+          ],
+          [
+            27,
+            13,
+            7,
+            11,
+            28,
+            10,
+            49,
+            39,
+            5,
+            32
+          ],
+          [
+            31
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            35,
+            7,
+            19,
+            23,
+            21,
+            47,
+            17
+          ],
+          [
+            18,
+            16,
+            4,
+            45,
+            27,
+            9,
+            25
+          ],
+          [
+            42,
+            38,
+            44,
+            36,
+            26,
+            22,
+            3
+          ],
+          [
+            43,
+            20,
+            10,
+            49
+          ],
+          [
+            30,
+            34,
+            5,
+            39,
+            2,
+            46,
+            24
+          ],
+          [
+            13,
+            15,
+            31,
+            41,
+            37,
+            48
+          ],
+          [
+            28,
+            14,
+            8,
+            12,
+            29,
+            11,
+            50,
+            40,
+            6,
+            33
+          ],
+          [
+            32
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 148535.0309142605,
+      "runtime_seconds": 10.09295210000073,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_018-k8",
+      "instance_sha256": "5953aebfec8e9c35597891b9d8efe5d785476f448a0506c819b24d9ee158cf20",
+      "metadata": {
+        "capacity": 43,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 130290.45284560302,
+        "internal_routes": [
+          [
+            8,
+            4,
+            28,
+            38,
+            13,
+            2,
+            18
+          ],
+          [
+            37,
+            12,
+            47,
+            29,
+            26,
+            33,
+            25,
+            7
+          ],
+          [
+            5,
+            49,
+            19,
+            48,
+            11,
+            6
+          ],
+          [
+            16,
+            20,
+            35,
+            44,
+            22,
+            14,
+            15
+          ],
+          [
+            43,
+            30,
+            39,
+            34,
+            27,
+            36,
+            45,
+            10
+          ],
+          [
+            3,
+            21,
+            46,
+            17,
+            1,
+            31,
+            41
+          ],
+          [
+            40,
+            32,
+            42,
+            23,
+            24,
+            9
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 7,
+        "routes": [
+          [
+            9,
+            5,
+            29,
+            39,
+            14,
+            3,
+            19
+          ],
+          [
+            38,
+            13,
+            48,
+            30,
+            27,
+            34,
+            26,
+            8
+          ],
+          [
+            6,
+            50,
+            20,
+            49,
+            12,
+            7
+          ],
+          [
+            17,
+            21,
+            36,
+            45,
+            23,
+            15,
+            16
+          ],
+          [
+            44,
+            31,
+            40,
+            35,
+            28,
+            37,
+            46,
+            11
+          ],
+          [
+            4,
+            22,
+            47,
+            18,
+            2,
+            32,
+            42
+          ],
+          [
+            41,
+            33,
+            43,
+            24,
+            25,
+            10
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 130290.45284560302,
+      "runtime_seconds": 10.041960999999901,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_019-k8",
+      "instance_sha256": "e3bbeeae70cd1bfdfa3de282750c0c643f69b1eea0a4db9228c4cd29be4bbb6e",
+      "metadata": {
+        "capacity": 48,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 137171.34482898132,
+        "internal_routes": [
+          [
+            17,
+            20,
+            5,
+            7,
+            32
+          ],
+          [
+            3,
+            25,
+            26,
+            21,
+            43,
+            38,
+            36,
+            44
+          ],
+          [
+            11,
+            27,
+            33,
+            2,
+            42,
+            40,
+            13,
+            34
+          ],
+          [
+            49,
+            10,
+            19,
+            18
+          ],
+          [
+            14,
+            31,
+            8,
+            12,
+            9,
+            46,
+            41,
+            45
+          ],
+          [
+            48,
+            30,
+            16,
+            6,
+            15,
+            29
+          ],
+          [
+            1,
+            47,
+            24,
+            22
+          ],
+          [
+            4,
+            35,
+            23,
+            39,
+            37,
+            28
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            18,
+            21,
+            6,
+            8,
+            33
+          ],
+          [
+            4,
+            26,
+            27,
+            22,
+            44,
+            39,
+            37,
+            45
+          ],
+          [
+            12,
+            28,
+            34,
+            3,
+            43,
+            41,
+            14,
+            35
+          ],
+          [
+            50,
+            11,
+            20,
+            19
+          ],
+          [
+            15,
+            32,
+            9,
+            13,
+            10,
+            47,
+            42,
+            46
+          ],
+          [
+            49,
+            31,
+            17,
+            7,
+            16,
+            30
+          ],
+          [
+            2,
+            48,
+            25,
+            23
+          ],
+          [
+            5,
+            36,
+            24,
+            40,
+            38,
+            29
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 137171.34482898132,
+      "runtime_seconds": 10.048911799999587,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_020-k8",
+      "instance_sha256": "184df35a02166d2e08f0d22b2f0f347748e0aa380c0dea4f673795f990f38744",
+      "metadata": {
+        "capacity": 46,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 140776.0104405037,
+        "internal_routes": [
+          [
+            43,
+            13,
+            19,
+            47,
+            39,
+            35,
+            29,
+            12,
+            7
+          ],
+          [
+            21,
+            22,
+            46,
+            15,
+            8,
+            10,
+            48,
+            6
+          ],
+          [
+            33,
+            25,
+            9,
+            41,
+            24,
+            45
+          ],
+          [
+            27,
+            38,
+            32,
+            5
+          ],
+          [
+            23,
+            30,
+            37,
+            3,
+            49,
+            16,
+            44,
+            14
+          ],
+          [
+            40,
+            26,
+            1,
+            34,
+            20,
+            18,
+            17,
+            36
+          ],
+          [
+            4,
+            28,
+            42,
+            31,
+            11,
+            2
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 7,
+        "routes": [
+          [
+            44,
+            14,
+            20,
+            48,
+            40,
+            36,
+            30,
+            13,
+            8
+          ],
+          [
+            22,
+            23,
+            47,
+            16,
+            9,
+            11,
+            49,
+            7
+          ],
+          [
+            34,
+            26,
+            10,
+            42,
+            25,
+            46
+          ],
+          [
+            28,
+            39,
+            33,
+            6
+          ],
+          [
+            24,
+            31,
+            38,
+            4,
+            50,
+            17,
+            45,
+            15
+          ],
+          [
+            41,
+            27,
+            2,
+            35,
+            21,
+            19,
+            18,
+            37
+          ],
+          [
+            5,
+            29,
+            43,
+            32,
+            12,
+            3
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 140776.0104405037,
+      "runtime_seconds": 10.057396799999879,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_021-k8",
+      "instance_sha256": "18cbbfd433523e50b27a97b22dc1357e27c31c635a3ec1d717712efafb787a63",
+      "metadata": {
+        "capacity": 45,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 154403.32217138234,
+        "internal_routes": [
+          [
+            32,
+            31,
+            10,
+            9,
+            46,
+            18,
+            39
+          ],
+          [
+            13,
+            17,
+            8,
+            5,
+            29,
+            34,
+            26
+          ],
+          [
+            33,
+            44,
+            30,
+            15,
+            28,
+            40,
+            2,
+            48,
+            4,
+            14
+          ],
+          [
+            41,
+            45,
+            35,
+            20,
+            19,
+            47
+          ],
+          [
+            38,
+            12,
+            27
+          ],
+          [
+            3,
+            24,
+            36,
+            22,
+            7,
+            11
+          ],
+          [
+            16,
+            1,
+            42,
+            6
+          ],
+          [
+            23,
+            37,
+            25,
+            21,
+            49,
+            43
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            33,
+            32,
+            11,
+            10,
+            47,
+            19,
+            40
+          ],
+          [
+            14,
+            18,
+            9,
+            6,
+            30,
+            35,
+            27
+          ],
+          [
+            34,
+            45,
+            31,
+            16,
+            29,
+            41,
+            3,
+            49,
+            5,
+            15
+          ],
+          [
+            42,
+            46,
+            36,
+            21,
+            20,
+            48
+          ],
+          [
+            39,
+            13,
+            28
+          ],
+          [
+            4,
+            25,
+            37,
+            23,
+            8,
+            12
+          ],
+          [
+            17,
+            2,
+            43,
+            7
+          ],
+          [
+            24,
+            38,
+            26,
+            22,
+            50,
+            44
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 154403.32217138234,
+      "runtime_seconds": 10.085044200000084,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_022-k8",
+      "instance_sha256": "fed5b78af1ca0786a0a6fceafa7cc6f74a99dc48c1603dde4c7508c1ef05c444",
+      "metadata": {
+        "capacity": 45,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 119593.75548048504,
+        "internal_routes": [
+          [
+            38,
+            28,
+            40,
+            22,
+            30,
+            8,
+            37,
+            3,
+            7
+          ],
+          [
+            43,
+            20,
+            45,
+            36,
+            32,
+            49
+          ],
+          [
+            34,
+            9,
+            26,
+            25,
+            19,
+            23,
+            42
+          ],
+          [
+            1,
+            33,
+            15,
+            39,
+            5,
+            2
+          ],
+          [
+            12,
+            10,
+            16,
+            13
+          ],
+          [
+            47,
+            4,
+            18,
+            35,
+            27,
+            11
+          ],
+          [
+            46,
+            14,
+            17,
+            41,
+            44
+          ],
+          [
+            24,
+            21,
+            29,
+            31,
+            6,
+            48
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            39,
+            29,
+            41,
+            23,
+            31,
+            9,
+            38,
+            4,
+            8
+          ],
+          [
+            44,
+            21,
+            46,
+            37,
+            33,
+            50
+          ],
+          [
+            35,
+            10,
+            27,
+            26,
+            20,
+            24,
+            43
+          ],
+          [
+            2,
+            34,
+            16,
+            40,
+            6,
+            3
+          ],
+          [
+            13,
+            11,
+            17,
+            14
+          ],
+          [
+            48,
+            5,
+            19,
+            36,
+            28,
+            12
+          ],
+          [
+            47,
+            15,
+            18,
+            42,
+            45
+          ],
+          [
+            25,
+            22,
+            30,
+            32,
+            7,
+            49
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 119593.75548048504,
+      "runtime_seconds": 10.070444099999804,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_023-k8",
+      "instance_sha256": "23b747eddf3811e654c3a23b783b7c8abc234a9351cdadcc9daa04338f58b5f6",
+      "metadata": {
+        "capacity": 46,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 170249.24226923735,
+        "internal_routes": [
+          [
+            13,
+            47,
+            24,
+            48
+          ],
+          [
+            27,
+            44,
+            39,
+            29,
+            40,
+            11
+          ],
+          [
+            1,
+            18,
+            23,
+            4,
+            41,
+            31,
+            9
+          ],
+          [
+            33,
+            3,
+            32,
+            25,
+            30,
+            28
+          ],
+          [
+            8,
+            36,
+            16,
+            35,
+            22,
+            38
+          ],
+          [
+            46,
+            37,
+            19,
+            21,
+            17,
+            34
+          ],
+          [
+            15,
+            12,
+            14,
+            10,
+            7,
+            5,
+            26
+          ],
+          [
+            43,
+            42,
+            49,
+            45,
+            2,
+            6,
+            20
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            14,
+            48,
+            25,
+            49
+          ],
+          [
+            28,
+            45,
+            40,
+            30,
+            41,
+            12
+          ],
+          [
+            2,
+            19,
+            24,
+            5,
+            42,
+            32,
+            10
+          ],
+          [
+            34,
+            4,
+            33,
+            26,
+            31,
+            29
+          ],
+          [
+            9,
+            37,
+            17,
+            36,
+            23,
+            39
+          ],
+          [
+            47,
+            38,
+            20,
+            22,
+            18,
+            35
+          ],
+          [
+            16,
+            13,
+            15,
+            11,
+            8,
+            6,
+            27
+          ],
+          [
+            44,
+            43,
+            50,
+            46,
+            3,
+            7,
+            21
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 30.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 170249.24226923735,
+      "runtime_seconds": 30.025885600000038,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_024-k8",
+      "instance_sha256": "294b8cf56da02402c8ac5b5e093fb53465d56a84d04764392f30abf51325f5fe",
+      "metadata": {
+        "capacity": 47,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 123924.33124478237,
+        "internal_routes": [
+          [
+            3,
+            15,
+            28,
+            19,
+            20,
+            27
+          ],
+          [
+            17,
+            35,
+            43,
+            11,
+            45,
+            44,
+            48
+          ],
+          [
+            41,
+            7,
+            1,
+            47,
+            34,
+            36,
+            25
+          ],
+          [
+            13,
+            12,
+            38,
+            23
+          ],
+          [
+            9,
+            29,
+            21,
+            22,
+            5,
+            18
+          ],
+          [
+            6,
+            40,
+            31,
+            32,
+            46,
+            37
+          ],
+          [
+            10,
+            49,
+            30,
+            42,
+            2,
+            24
+          ],
+          [
+            16,
+            33,
+            26,
+            14,
+            4,
+            39,
+            8
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            4,
+            16,
+            29,
+            20,
+            21,
+            28
+          ],
+          [
+            18,
+            36,
+            44,
+            12,
+            46,
+            45,
+            49
+          ],
+          [
+            42,
+            8,
+            2,
+            48,
+            35,
+            37,
+            26
+          ],
+          [
+            14,
+            13,
+            39,
+            24
+          ],
+          [
+            10,
+            30,
+            22,
+            23,
+            6,
+            19
+          ],
+          [
+            7,
+            41,
+            32,
+            33,
+            47,
+            38
+          ],
+          [
+            11,
+            50,
+            31,
+            43,
+            3,
+            25
+          ],
+          [
+            17,
+            34,
+            27,
+            15,
+            5,
+            40,
+            9
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 123924.33124478237,
+      "runtime_seconds": 10.03996300000017,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_025-k8",
+      "instance_sha256": "02d8f8f4a8215bcfc9f1a610127ec1b05cc1de78bd20c932352b46ea4bd43db5",
+      "metadata": {
+        "capacity": 40,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 148846.52814190224,
+        "internal_routes": [
+          [
+            18,
+            22,
+            25,
+            20,
+            42,
+            32
+          ],
+          [
+            16,
+            39,
+            37,
+            28,
+            17,
+            3,
+            23
+          ],
+          [
+            29,
+            5,
+            2,
+            1,
+            45,
+            6
+          ],
+          [
+            8,
+            36,
+            27,
+            26,
+            24
+          ],
+          [
+            14,
+            46,
+            4,
+            9,
+            33
+          ],
+          [
+            35,
+            15,
+            11
+          ],
+          [
+            21,
+            49,
+            40,
+            41,
+            43,
+            10,
+            48,
+            47
+          ],
+          [
+            19,
+            7,
+            31,
+            30,
+            12,
+            34,
+            44,
+            13,
+            38
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            19,
+            23,
+            26,
+            21,
+            43,
+            33
+          ],
+          [
+            17,
+            40,
+            38,
+            29,
+            18,
+            4,
+            24
+          ],
+          [
+            30,
+            6,
+            3,
+            2,
+            46,
+            7
+          ],
+          [
+            9,
+            37,
+            28,
+            27,
+            25
+          ],
+          [
+            15,
+            47,
+            5,
+            10,
+            34
+          ],
+          [
+            36,
+            16,
+            12
+          ],
+          [
+            22,
+            50,
+            41,
+            42,
+            44,
+            11,
+            49,
+            48
+          ],
+          [
+            20,
+            8,
+            32,
+            31,
+            13,
+            35,
+            45,
+            14,
+            39
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 148846.52814190224,
+      "runtime_seconds": 10.034652299999834,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_026-k8",
+      "instance_sha256": "ff9b460b7dd4e8089572dce427329af803ff0a567bd94b5e409d3662690b69eb",
+      "metadata": {
+        "capacity": 47,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 164698.1462678751,
+        "internal_routes": [
+          [
+            21,
+            41,
+            30,
+            25,
+            24
+          ],
+          [
+            1,
+            29,
+            6,
+            20,
+            48
+          ],
+          [
+            32,
+            31,
+            4,
+            13,
+            18,
+            3,
+            16
+          ],
+          [
+            11,
+            28,
+            7,
+            37,
+            35
+          ],
+          [
+            40,
+            43,
+            33,
+            22,
+            46,
+            34,
+            27
+          ],
+          [
+            12,
+            38,
+            5,
+            8,
+            39
+          ],
+          [
+            23,
+            9,
+            15,
+            19,
+            47,
+            44
+          ],
+          [
+            2,
+            36,
+            14,
+            10,
+            42,
+            26,
+            49,
+            17,
+            45
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            22,
+            42,
+            31,
+            26,
+            25
+          ],
+          [
+            2,
+            30,
+            7,
+            21,
+            49
+          ],
+          [
+            33,
+            32,
+            5,
+            14,
+            19,
+            4,
+            17
+          ],
+          [
+            12,
+            29,
+            8,
+            38,
+            36
+          ],
+          [
+            41,
+            44,
+            34,
+            23,
+            47,
+            35,
+            28
+          ],
+          [
+            13,
+            39,
+            6,
+            9,
+            40
+          ],
+          [
+            24,
+            10,
+            16,
+            20,
+            48,
+            45
+          ],
+          [
+            3,
+            37,
+            15,
+            11,
+            43,
+            27,
+            50,
+            18,
+            46
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 164698.1462678751,
+      "runtime_seconds": 10.03099210000073,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_027-k8",
+      "instance_sha256": "88116fc72468d4c66da007fff8427a64819be35847f7f0841fda89a96ca48f02",
+      "metadata": {
+        "capacity": 47,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 163339.96928086205,
+        "internal_routes": [
+          [
+            45,
+            3,
+            8,
+            32
+          ],
+          [
+            37,
+            19,
+            25,
+            15,
+            39
+          ],
+          [
+            26,
+            46,
+            6,
+            21,
+            36,
+            47,
+            1
+          ],
+          [
+            29,
+            14,
+            12,
+            33
+          ],
+          [
+            27,
+            28,
+            22,
+            48,
+            49,
+            10,
+            2
+          ],
+          [
+            13,
+            17,
+            9,
+            43,
+            38,
+            34,
+            41,
+            42
+          ],
+          [
+            4,
+            30,
+            40,
+            24,
+            44,
+            23,
+            35,
+            11
+          ],
+          [
+            7,
+            5,
+            16,
+            20,
+            31,
+            18
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            46,
+            4,
+            9,
+            33
+          ],
+          [
+            38,
+            20,
+            26,
+            16,
+            40
+          ],
+          [
+            27,
+            47,
+            7,
+            22,
+            37,
+            48,
+            2
+          ],
+          [
+            30,
+            15,
+            13,
+            34
+          ],
+          [
+            28,
+            29,
+            23,
+            49,
+            50,
+            11,
+            3
+          ],
+          [
+            14,
+            18,
+            10,
+            44,
+            39,
+            35,
+            42,
+            43
+          ],
+          [
+            5,
+            31,
+            41,
+            25,
+            45,
+            24,
+            36,
+            12
+          ],
+          [
+            8,
+            6,
+            17,
+            21,
+            32,
+            19
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 163339.96928086205,
+      "runtime_seconds": 10.034807600000022,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_028-k8",
+      "instance_sha256": "888c1b89999e743a311677dd9c7d0d1c6a38dc1be3a4152c406de1bd517bf868",
+      "metadata": {
+        "capacity": 48,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 157616.8564642328,
+        "internal_routes": [
+          [
+            49,
+            9,
+            1,
+            27,
+            42,
+            14,
+            2
+          ],
+          [
+            48,
+            41,
+            6,
+            20,
+            11
+          ],
+          [
+            3,
+            28,
+            12,
+            16,
+            22,
+            26
+          ],
+          [
+            5,
+            31,
+            46,
+            39,
+            7,
+            45,
+            36
+          ],
+          [
+            43,
+            10
+          ],
+          [
+            32,
+            19,
+            37,
+            38,
+            34,
+            17,
+            24
+          ],
+          [
+            30,
+            13,
+            25,
+            18,
+            23,
+            4,
+            44,
+            35
+          ],
+          [
+            21,
+            29,
+            33,
+            40,
+            8,
+            15,
+            47
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            50,
+            10,
+            2,
+            28,
+            43,
+            15,
+            3
+          ],
+          [
+            49,
+            42,
+            7,
+            21,
+            12
+          ],
+          [
+            4,
+            29,
+            13,
+            17,
+            23,
+            27
+          ],
+          [
+            6,
+            32,
+            47,
+            40,
+            8,
+            46,
+            37
+          ],
+          [
+            44,
+            11
+          ],
+          [
+            33,
+            20,
+            38,
+            39,
+            35,
+            18,
+            25
+          ],
+          [
+            31,
+            14,
+            26,
+            19,
+            24,
+            5,
+            45,
+            36
+          ],
+          [
+            22,
+            30,
+            34,
+            41,
+            9,
+            16,
+            48
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 157616.8564642328,
+      "runtime_seconds": 10.059923699999672,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_test_029-k8",
+      "instance_sha256": "1c59be88af55b750d0b7a6d2ad3b529937c8d9a7a768d7e3335f28c51605d6a5",
+      "metadata": {
+        "capacity": 47,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 147670.22835882579,
+        "internal_routes": [
+          [
+            41,
+            40,
+            34,
+            18,
+            38,
+            46,
+            49
+          ],
+          [
+            19,
+            23,
+            3,
+            17,
+            48,
+            32
+          ],
+          [
+            28,
+            10,
+            21,
+            33,
+            5
+          ],
+          [
+            15,
+            11,
+            20,
+            31,
+            2,
+            47,
+            9
+          ],
+          [
+            4,
+            36,
+            39,
+            26,
+            25,
+            6
+          ],
+          [
+            14,
+            27,
+            35,
+            12,
+            22
+          ],
+          [
+            13,
+            44,
+            42,
+            43,
+            45,
+            7
+          ],
+          [
+            16,
+            24,
+            30,
+            8,
+            1,
+            37,
+            29
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            42,
+            41,
+            35,
+            19,
+            39,
+            47,
+            50
+          ],
+          [
+            20,
+            24,
+            4,
+            18,
+            49,
+            33
+          ],
+          [
+            29,
+            11,
+            22,
+            34,
+            6
+          ],
+          [
+            16,
+            12,
+            21,
+            32,
+            3,
+            48,
+            10
+          ],
+          [
+            5,
+            37,
+            40,
+            27,
+            26,
+            7
+          ],
+          [
+            15,
+            28,
+            36,
+            13,
+            23
+          ],
+          [
+            14,
+            45,
+            43,
+            44,
+            46,
+            8
+          ],
+          [
+            17,
+            25,
+            31,
+            9,
+            2,
+            38,
+            30
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 147670.22835882579,
+      "runtime_seconds": 10.05719769999996,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_000-k8",
+      "instance_sha256": "48ade3b10e0dda7ac80f7c135d610722fa9b734ab0bfa4f9d2b31066cd724c7a",
+      "metadata": {
+        "capacity": 47,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 130180.94038435296,
+        "internal_routes": [
+          [
+            14,
+            39,
+            18,
+            26,
+            47,
+            21,
+            31,
+            12
+          ],
+          [
+            13,
+            40,
+            42,
+            11,
+            2,
+            17,
+            46,
+            8
+          ],
+          [
+            20,
+            10,
+            43,
+            28,
+            15
+          ],
+          [
+            4,
+            30,
+            9,
+            33,
+            38
+          ],
+          [
+            7,
+            3,
+            34,
+            36,
+            29
+          ],
+          [
+            32,
+            1,
+            25,
+            27,
+            6,
+            45
+          ],
+          [
+            5,
+            44,
+            37,
+            19,
+            41,
+            22
+          ],
+          [
+            24,
+            48,
+            23,
+            49,
+            16,
+            35
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            15,
+            40,
+            19,
+            27,
+            48,
+            22,
+            32,
+            13
+          ],
+          [
+            14,
+            41,
+            43,
+            12,
+            3,
+            18,
+            47,
+            9
+          ],
+          [
+            21,
+            11,
+            44,
+            29,
+            16
+          ],
+          [
+            5,
+            31,
+            10,
+            34,
+            39
+          ],
+          [
+            8,
+            4,
+            35,
+            37,
+            30
+          ],
+          [
+            33,
+            2,
+            26,
+            28,
+            7,
+            46
+          ],
+          [
+            6,
+            45,
+            38,
+            20,
+            42,
+            23
+          ],
+          [
+            25,
+            49,
+            24,
+            50,
+            17,
+            36
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 130180.94038435296,
+      "runtime_seconds": 10.066381600000568,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_001-k8",
+      "instance_sha256": "d1ed846ae083abbeb819d43d2748d60f5b9b1cdac6ace8a3ff626da7ce03d117",
+      "metadata": {
+        "capacity": 52,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 132422.45578924948,
+        "internal_routes": [
+          [
+            36,
+            7,
+            30,
+            42,
+            8
+          ],
+          [
+            21,
+            19,
+            32,
+            9,
+            41,
+            47,
+            49,
+            2,
+            3
+          ],
+          [
+            11,
+            1,
+            34,
+            12,
+            17,
+            20,
+            4
+          ],
+          [
+            22,
+            45,
+            23,
+            44
+          ],
+          [
+            5,
+            14,
+            33,
+            39,
+            18,
+            29,
+            27
+          ],
+          [
+            16,
+            24,
+            46,
+            38,
+            25,
+            10
+          ],
+          [
+            13,
+            43,
+            31,
+            40,
+            37,
+            48,
+            6
+          ],
+          [
+            26,
+            28,
+            15,
+            35
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            37,
+            8,
+            31,
+            43,
+            9
+          ],
+          [
+            22,
+            20,
+            33,
+            10,
+            42,
+            48,
+            50,
+            3,
+            4
+          ],
+          [
+            12,
+            2,
+            35,
+            13,
+            18,
+            21,
+            5
+          ],
+          [
+            23,
+            46,
+            24,
+            45
+          ],
+          [
+            6,
+            15,
+            34,
+            40,
+            19,
+            30,
+            28
+          ],
+          [
+            17,
+            25,
+            47,
+            39,
+            26,
+            11
+          ],
+          [
+            14,
+            44,
+            32,
+            41,
+            38,
+            49,
+            7
+          ],
+          [
+            27,
+            29,
+            16,
+            36
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 132422.45578924948,
+      "runtime_seconds": 10.08609609999985,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_002-k8",
+      "instance_sha256": "a071c1fd411524d1f0a894a54cf2e6ee73664bde0a3a4902fea52cd49082e0c6",
+      "metadata": {
+        "capacity": 48,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 153978.41823656272,
+        "internal_routes": [
+          [
+            42,
+            43,
+            18,
+            11,
+            19,
+            15
+          ],
+          [
+            12,
+            45,
+            47,
+            46,
+            41,
+            23,
+            37
+          ],
+          [
+            29,
+            33,
+            1,
+            35,
+            40
+          ],
+          [
+            34,
+            25,
+            24,
+            36,
+            30,
+            32,
+            2
+          ],
+          [
+            5,
+            27,
+            21,
+            22,
+            6,
+            20
+          ],
+          [
+            8,
+            31,
+            26,
+            13
+          ],
+          [
+            48,
+            4,
+            38,
+            3,
+            9,
+            10,
+            44,
+            28
+          ],
+          [
+            39,
+            17,
+            14,
+            16,
+            7,
+            49
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            43,
+            44,
+            19,
+            12,
+            20,
+            16
+          ],
+          [
+            13,
+            46,
+            48,
+            47,
+            42,
+            24,
+            38
+          ],
+          [
+            30,
+            34,
+            2,
+            36,
+            41
+          ],
+          [
+            35,
+            26,
+            25,
+            37,
+            31,
+            33,
+            3
+          ],
+          [
+            6,
+            28,
+            22,
+            23,
+            7,
+            21
+          ],
+          [
+            9,
+            32,
+            27,
+            14
+          ],
+          [
+            49,
+            5,
+            39,
+            4,
+            10,
+            11,
+            45,
+            29
+          ],
+          [
+            40,
+            18,
+            15,
+            17,
+            8,
+            50
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 153978.41823656272,
+      "runtime_seconds": 10.131132599999546,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_003-k8",
+      "instance_sha256": "78e636072fead8187c033f9e2c4cbeee52809d7c002b0ee1a01af40456c1ee19",
+      "metadata": {
+        "capacity": 42,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 134727.2505927932,
+        "internal_routes": [
+          [
+            44,
+            33,
+            13,
+            39,
+            25,
+            27,
+            15,
+            36,
+            5
+          ],
+          [
+            35,
+            40,
+            22,
+            10,
+            9,
+            19,
+            43,
+            26
+          ],
+          [
+            48,
+            34,
+            3,
+            23,
+            47,
+            16
+          ],
+          [
+            18,
+            20,
+            8,
+            17
+          ],
+          [
+            42,
+            12,
+            32,
+            41,
+            31,
+            2,
+            1,
+            29,
+            11
+          ],
+          [
+            6,
+            45,
+            4,
+            37,
+            14
+          ],
+          [
+            30,
+            49,
+            7,
+            28,
+            21,
+            46
+          ],
+          [
+            24,
+            38
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            45,
+            34,
+            14,
+            40,
+            26,
+            28,
+            16,
+            37,
+            6
+          ],
+          [
+            36,
+            41,
+            23,
+            11,
+            10,
+            20,
+            44,
+            27
+          ],
+          [
+            49,
+            35,
+            4,
+            24,
+            48,
+            17
+          ],
+          [
+            19,
+            21,
+            9,
+            18
+          ],
+          [
+            43,
+            13,
+            33,
+            42,
+            32,
+            3,
+            2,
+            30,
+            12
+          ],
+          [
+            7,
+            46,
+            5,
+            38,
+            15
+          ],
+          [
+            31,
+            50,
+            8,
+            29,
+            22,
+            47
+          ],
+          [
+            25,
+            39
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 134727.2505927932,
+      "runtime_seconds": 10.110168199999862,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_004-k8",
+      "instance_sha256": "180a78213a4542e222f401f9451ec03582a2d8226677cfc84f6b0322683a31eb",
+      "metadata": {
+        "capacity": 45,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 127870.9306147785,
+        "internal_routes": [
+          [
+            43,
+            13,
+            48,
+            47,
+            9,
+            24,
+            49,
+            30,
+            42,
+            15,
+            38
+          ],
+          [
+            11,
+            45,
+            44,
+            7,
+            20
+          ],
+          [
+            34,
+            18,
+            14,
+            35,
+            5,
+            32
+          ],
+          [
+            26,
+            23,
+            16,
+            10,
+            29
+          ],
+          [
+            37,
+            6,
+            25,
+            36,
+            28,
+            12,
+            17
+          ],
+          [
+            4,
+            1,
+            33,
+            46
+          ],
+          [
+            8,
+            41,
+            27
+          ],
+          [
+            22,
+            2,
+            3,
+            19,
+            39,
+            31,
+            40,
+            21
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            44,
+            14,
+            49,
+            48,
+            10,
+            25,
+            50,
+            31,
+            43,
+            16,
+            39
+          ],
+          [
+            12,
+            46,
+            45,
+            8,
+            21
+          ],
+          [
+            35,
+            19,
+            15,
+            36,
+            6,
+            33
+          ],
+          [
+            27,
+            24,
+            17,
+            11,
+            30
+          ],
+          [
+            38,
+            7,
+            26,
+            37,
+            29,
+            13,
+            18
+          ],
+          [
+            5,
+            2,
+            34,
+            47
+          ],
+          [
+            9,
+            42,
+            28
+          ],
+          [
+            23,
+            3,
+            4,
+            20,
+            40,
+            32,
+            41,
+            22
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 127870.9306147785,
+      "runtime_seconds": 10.12676350000038,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_005-k8",
+      "instance_sha256": "47b16f69b12e0fe3fcea4e7cc1a7fec75ee3691cfa6b798185d6343ae3b7d145",
+      "metadata": {
+        "capacity": 43,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 146267.28972071205,
+        "internal_routes": [
+          [
+            22,
+            39,
+            21,
+            38,
+            41,
+            5
+          ],
+          [
+            31,
+            17,
+            9,
+            48,
+            13,
+            30,
+            49,
+            18
+          ],
+          [
+            10,
+            47,
+            15,
+            19,
+            37,
+            46,
+            25,
+            14
+          ],
+          [
+            7,
+            16,
+            4,
+            12,
+            40,
+            27
+          ],
+          [
+            45,
+            24,
+            8,
+            42,
+            29,
+            3,
+            36,
+            20
+          ],
+          [
+            6,
+            23,
+            33,
+            43,
+            26,
+            11,
+            34,
+            44
+          ],
+          [
+            1,
+            35,
+            2,
+            28,
+            32
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 7,
+        "routes": [
+          [
+            23,
+            40,
+            22,
+            39,
+            42,
+            6
+          ],
+          [
+            32,
+            18,
+            10,
+            49,
+            14,
+            31,
+            50,
+            19
+          ],
+          [
+            11,
+            48,
+            16,
+            20,
+            38,
+            47,
+            26,
+            15
+          ],
+          [
+            8,
+            17,
+            5,
+            13,
+            41,
+            28
+          ],
+          [
+            46,
+            25,
+            9,
+            43,
+            30,
+            4,
+            37,
+            21
+          ],
+          [
+            7,
+            24,
+            34,
+            44,
+            27,
+            12,
+            35,
+            45
+          ],
+          [
+            2,
+            36,
+            3,
+            29,
+            33
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 146267.28972071205,
+      "runtime_seconds": 10.111038799999733,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_006-k8",
+      "instance_sha256": "e4d3b3ee0b7ebd3ae4d9aeb5462ec92da70525128ea3c63e0feaa1fb6c553b2a",
+      "metadata": {
+        "capacity": 39,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 125461.59118001068,
+        "internal_routes": [
+          [
+            2,
+            42,
+            3,
+            4,
+            31
+          ],
+          [
+            15,
+            47,
+            28,
+            21,
+            35
+          ],
+          [
+            27,
+            8,
+            24,
+            20,
+            18
+          ],
+          [
+            48,
+            9,
+            49,
+            34,
+            5,
+            38,
+            12
+          ],
+          [
+            11,
+            16,
+            41,
+            44,
+            46,
+            26,
+            17
+          ],
+          [
+            33,
+            30,
+            14,
+            13,
+            6
+          ],
+          [
+            7,
+            29,
+            43,
+            36,
+            1,
+            25,
+            32
+          ],
+          [
+            23,
+            22,
+            10,
+            19,
+            39,
+            40,
+            45,
+            37
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            3,
+            43,
+            4,
+            5,
+            32
+          ],
+          [
+            16,
+            48,
+            29,
+            22,
+            36
+          ],
+          [
+            28,
+            9,
+            25,
+            21,
+            19
+          ],
+          [
+            49,
+            10,
+            50,
+            35,
+            6,
+            39,
+            13
+          ],
+          [
+            12,
+            17,
+            42,
+            45,
+            47,
+            27,
+            18
+          ],
+          [
+            34,
+            31,
+            15,
+            14,
+            7
+          ],
+          [
+            8,
+            30,
+            44,
+            37,
+            2,
+            26,
+            33
+          ],
+          [
+            24,
+            23,
+            11,
+            20,
+            40,
+            41,
+            46,
+            38
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 125461.59118001068,
+      "runtime_seconds": 10.053445000000465,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_007-k8",
+      "instance_sha256": "529d9ad0d43fc081e892678044206306ba1ed00b2a8148ae4680b4f8a5bca56f",
+      "metadata": {
+        "capacity": 41,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 158244.7439542791,
+        "internal_routes": [
+          [
+            17,
+            2,
+            42,
+            31,
+            4,
+            21
+          ],
+          [
+            26,
+            19,
+            13
+          ],
+          [
+            24,
+            11,
+            34,
+            49,
+            25,
+            28,
+            27
+          ],
+          [
+            36,
+            16,
+            41,
+            30,
+            38,
+            35,
+            9,
+            33
+          ],
+          [
+            40,
+            47,
+            12,
+            5,
+            44,
+            39,
+            32,
+            1
+          ],
+          [
+            43,
+            23,
+            3,
+            29,
+            22
+          ],
+          [
+            8,
+            46,
+            37,
+            20,
+            15
+          ],
+          [
+            10,
+            14,
+            45,
+            48,
+            7,
+            18,
+            6
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            18,
+            3,
+            43,
+            32,
+            5,
+            22
+          ],
+          [
+            27,
+            20,
+            14
+          ],
+          [
+            25,
+            12,
+            35,
+            50,
+            26,
+            29,
+            28
+          ],
+          [
+            37,
+            17,
+            42,
+            31,
+            39,
+            36,
+            10,
+            34
+          ],
+          [
+            41,
+            48,
+            13,
+            6,
+            45,
+            40,
+            33,
+            2
+          ],
+          [
+            44,
+            24,
+            4,
+            30,
+            23
+          ],
+          [
+            9,
+            47,
+            38,
+            21,
+            16
+          ],
+          [
+            11,
+            15,
+            46,
+            49,
+            8,
+            19,
+            7
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 158244.7439542791,
+      "runtime_seconds": 10.058263199999601,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_008-k8",
+      "instance_sha256": "531dd55fca31cda475ae0bee5922530ed8f3137f27d401362d43fb0d4e8e2676",
+      "metadata": {
+        "capacity": 39,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 140272.74036506505,
+        "internal_routes": [
+          [
+            37,
+            42
+          ],
+          [
+            47,
+            20,
+            8,
+            48,
+            14,
+            13,
+            39,
+            25
+          ],
+          [
+            12,
+            45,
+            31,
+            24,
+            9,
+            30,
+            32,
+            36
+          ],
+          [
+            6,
+            40,
+            33,
+            11,
+            15,
+            7
+          ],
+          [
+            29,
+            19,
+            18,
+            44,
+            10,
+            46,
+            49
+          ],
+          [
+            21,
+            3,
+            27,
+            16,
+            2,
+            23,
+            4
+          ],
+          [
+            5,
+            1,
+            26,
+            35,
+            43
+          ],
+          [
+            34,
+            38,
+            28,
+            17,
+            22,
+            41
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            38,
+            43
+          ],
+          [
+            48,
+            21,
+            9,
+            49,
+            15,
+            14,
+            40,
+            26
+          ],
+          [
+            13,
+            46,
+            32,
+            25,
+            10,
+            31,
+            33,
+            37
+          ],
+          [
+            7,
+            41,
+            34,
+            12,
+            16,
+            8
+          ],
+          [
+            30,
+            20,
+            19,
+            45,
+            11,
+            47,
+            50
+          ],
+          [
+            22,
+            4,
+            28,
+            17,
+            3,
+            24,
+            5
+          ],
+          [
+            6,
+            2,
+            27,
+            36,
+            44
+          ],
+          [
+            35,
+            39,
+            29,
+            18,
+            23,
+            42
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 140272.74036506505,
+      "runtime_seconds": 10.079048099999454,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    },
+    {
+      "instance_id": "vrptw_uniform_n50_medium_validation_009-k8",
+      "instance_sha256": "f47d7fae423a72eb29e702120fe2d9b811178e84c30f99fb144d31a9a9a595ef",
+      "metadata": {
+        "capacity": 46,
+        "constraints": {
+          "capacitated": true,
+          "heterogeneous_fleet": false,
+          "max_route_distance": false,
+          "max_route_duration": false,
+          "open_route": false,
+          "pickup_delivery": false,
+          "time_windows": true
+        },
+        "internal_objective": 178031.12622125636,
+        "internal_routes": [
+          [
+            29,
+            19,
+            1
+          ],
+          [
+            25,
+            39,
+            2,
+            5,
+            28,
+            26,
+            20
+          ],
+          [
+            47,
+            8,
+            41,
+            11,
+            33,
+            13,
+            42
+          ],
+          [
+            44,
+            30,
+            3,
+            34
+          ],
+          [
+            4,
+            10,
+            18,
+            36,
+            9,
+            27,
+            31
+          ],
+          [
+            45,
+            16,
+            40,
+            12,
+            38,
+            24,
+            23
+          ],
+          [
+            22,
+            37,
+            46,
+            43,
+            17,
+            6,
+            15,
+            7
+          ],
+          [
+            48,
+            14,
+            49,
+            35,
+            32,
+            21
+          ]
+        ],
+        "internal_validation_feasible": true,
+        "iterations": null,
+        "num_routes": 8,
+        "routes": [
+          [
+            30,
+            20,
+            2
+          ],
+          [
+            26,
+            40,
+            3,
+            6,
+            29,
+            27,
+            21
+          ],
+          [
+            48,
+            9,
+            42,
+            12,
+            34,
+            14,
+            43
+          ],
+          [
+            45,
+            31,
+            4,
+            35
+          ],
+          [
+            5,
+            11,
+            19,
+            37,
+            10,
+            28,
+            32
+          ],
+          [
+            46,
+            17,
+            41,
+            13,
+            39,
+            25,
+            24
+          ],
+          [
+            23,
+            38,
+            47,
+            44,
+            18,
+            7,
+            16,
+            8
+          ],
+          [
+            49,
+            15,
+            50,
+            36,
+            33,
+            22
+          ]
+        ],
+        "seed": 1,
+        "solver": "pyvrp",
+        "solver_version": "0.11.3",
+        "time_limit_seconds": 10.0,
+        "variant": "vrptw",
+        "vehicle_num": 8
+      },
+      "objective": 178031.12622125636,
+      "runtime_seconds": 10.059878899999603,
+      "solver": "pyvrp",
+      "solver_exit_code": 0,
+      "status": "best_known",
+      "tour_path": null
+    }
+  ],
+  "task_id": "vrptw_uniform_n50_medium"
+}

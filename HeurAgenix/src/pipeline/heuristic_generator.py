@@ -1,7 +1,10 @@
 import importlib
 import json
 import logging
+import multiprocessing
 import os
+import queue as queue_module
+import time
 import traceback
 from copy import deepcopy
 from src.problems.base.components import BaseOperator
@@ -9,6 +12,99 @@ from src.util.util import extract, extract_function_with_short_docstring, filter
 from src.util.llm_client.base_llm_client import BaseLLMClient
 
 _LOGGER = logging.getLogger("heuragenix.generator")
+
+_MP_CONTEXT = multiprocessing.get_context("spawn")
+DEFAULT_SMOKE_WARN_SECONDS = float(os.getenv("CMHH_SMOKE_STEP_WARN_SECONDS", "0.2"))
+DEFAULT_SMOKE_TIMEOUT_SECONDS = float(os.getenv("CMHH_SMOKE_STEP_TIMEOUT_SECONDS", "1.0"))
+DEFAULT_SMOKE_SCALING_RATIO_WARN = float(os.getenv("CMHH_SMOKE_SCALING_RATIO_WARN", "50.0"))
+
+
+def _run_smoke_worker(
+    problem: str,
+    smoke_data: str,
+    previous_operations: list[str],
+    heuristic_code: str,
+    function_name: str,
+    result_queue: multiprocessing.Queue,
+) -> None:
+    try:
+        from cmhh.evaluation.problem_adapter import ProblemRegistry
+
+        adapter = ProblemRegistry.get(problem)
+        env = adapter.load_env(smoke_data)
+        for prev_op in previous_operations:
+            if prev_op.strip():
+                env.run_operator(eval(prev_op.strip()))
+
+        heuristic = load_function(heuristic_code, function_name=function_name)
+        start_t = time.perf_counter()
+        operator = env.run_heuristic(heuristic)
+        elapsed = time.perf_counter() - start_t
+
+        if isinstance(operator, str) and ("Traceback" in operator or "Error" in operator or "Exception" in operator):
+            result_queue.put(("error", operator, elapsed))
+        elif operator is None or isinstance(operator, BaseOperator):
+            op_str = str(operator) if operator is not None else "None"
+            result_queue.put(("ok", op_str, elapsed))
+        else:
+            result_queue.put(("error", str(operator), elapsed))
+    except Exception:
+        trace = traceback.format_exc()[:4096]
+        result_queue.put(("error", trace, 0.0))
+
+
+def _run_smoke_step_with_timeout(
+    problem: str,
+    smoke_data: str,
+    previous_operations: list[str],
+    heuristic_code: str,
+    function_name: str,
+    timeout_seconds: float = DEFAULT_SMOKE_TIMEOUT_SECONDS,
+    warn_seconds: float = DEFAULT_SMOKE_WARN_SECONDS,
+    worker_func=None,
+) -> tuple[str, str | None, float]:
+    target_func = worker_func or _run_smoke_worker
+    result_queue = _MP_CONTEXT.Queue()
+    process = _MP_CONTEXT.Process(
+        target=target_func,
+        args=(problem, smoke_data, previous_operations, heuristic_code, function_name, result_queue),
+    )
+    start_t = time.perf_counter()
+    process.start()
+
+    try:
+        status, payload, worker_elapsed = result_queue.get(timeout=timeout_seconds)
+        process.join(2.0)
+    except queue_module.Empty:
+        if process.is_alive():
+            process.terminate()
+            process.join(2.0)
+            if process.is_alive():
+                process.kill()
+                process.join(2.0)
+        elapsed = time.perf_counter() - start_t
+        _LOGGER.warning(
+            "[GEN] smoke test step timeout after %.2fs (limit: %.2fs) | function=%s",
+            elapsed,
+            timeout_seconds,
+            function_name,
+        )
+        return "timeout", f"Execution exceeded timeout of {timeout_seconds}s", elapsed
+    finally:
+        try:
+            result_queue.close()
+            result_queue.join_thread()
+        except Exception:
+            pass
+
+    if status == "ok" and worker_elapsed > warn_seconds:
+        _LOGGER.warning(
+            "[GEN] smoke test step slow execution: %.3fs (warn threshold: %.2fs) | function=%s",
+            worker_elapsed,
+            warn_seconds,
+            function_name,
+        )
+    return status, payload, worker_elapsed
 
 
 
@@ -197,15 +293,29 @@ class HeuristicGenerator:
         return heuristic_files
 
     def generate(self, heuristic_name: str, description: str, env_summarize: str="All data are possible", smoke_test: bool=False, more_prompt_dict=None, reminder=True) -> str:
+        # Global complexity remind
+        global_complexity_file = os.path.join("src", "problems", "base", "prompt", "global_complexity_remind.txt")
+        global_complexity_remind = ""
+        if os.path.exists(global_complexity_file):
+            global_complexity_remind = open(global_complexity_file, encoding="utf-8").read()
+
         # Special remind
         special_remind_file = os.path.join("src", "problems", self.problem, "prompt", "special_remind.txt")
         special_remind = "None"
         if os.path.exists(special_remind_file):
-            special_remind = open(special_remind_file).read()
+            special_remind = open(special_remind_file, encoding="utf-8").read()
 
         # Generate function name
         function_name = sanitize_function_name(heuristic_name, description)
-        prompt_dict = {"problem": self.problem, "heuristic_name": heuristic_name, "description": description, "function_name": function_name, "special_remind": special_remind, "env_summarize": env_summarize}
+        prompt_dict = {
+            "problem": self.problem,
+            "heuristic_name": heuristic_name,
+            "description": description,
+            "function_name": function_name,
+            "global_complexity_remind": global_complexity_remind,
+            "special_remind": special_remind,
+            "env_summarize": env_summarize,
+        }
         if more_prompt_dict:
             prompt_dict.update(more_prompt_dict)
 
@@ -242,53 +352,81 @@ class HeuristicGenerator:
             fp.write(code)
         return output_heuristic_file
 
-
     def smoke_test(self, heuristic_code: str, function_name: str, max_try_times: int=5) -> str:
         prompt_dict = {}
         if os.path.exists(os.path.join("src", "problems", self.problem, "components.py")):
             prompt_dict["components_file"] = f"src.problems.{self.problem}.components"
         else:
             prompt_dict["components_file"] = f"src.problems.base.mdp_components"
-        # Load smoke data
+
         smoke_data_dir = search_file("smoke_data", problem=self.problem)
-        previous_operations = open(os.path.join(smoke_data_dir, "previous_operations.txt")).readlines()
-        smoke_data = [file for file in os.listdir(smoke_data_dir) if file != "previous_operations.txt"][0]
-        smoke_data = os.path.join(smoke_data_dir, smoke_data)
+        previous_operations = []
+        if os.path.exists(os.path.join(smoke_data_dir, "previous_operations.txt")):
+            previous_operations = open(os.path.join(smoke_data_dir, "previous_operations.txt")).readlines()
+
+        smoke_data_files = [f for f in os.listdir(smoke_data_dir) if f != "previous_operations.txt" and not f.startswith(".")]
+        if not smoke_data_files:
+            _LOGGER.warning("[GEN] no smoke data file found in %s", smoke_data_dir)
+            return heuristic_code
+
+        primary_smoke_data = os.path.join(smoke_data_dir, smoke_data_files[0])
         prompt_dict["function_name"] = function_name
         prompt_dict["previous_operations"] = "".join(previous_operations)
 
-        # Prepare env
-        module = importlib.import_module(f"src.problems.{self.problem}.env")
-        globals()["Env"] = getattr(module, "Env")
-        if os.path.exists(os.path.join("src", "problems", self.problem, "components.py")):
-            module = importlib.import_module(f"src.problems.{self.problem}.components")
-        else:
-            module = importlib.import_module(f"src.problems.base.mdp_components")
-        names_to_import = (name for name in dir(module) if not name.startswith('_'))
-        for name in names_to_import:
-            globals()[name] = getattr(module, name)
-        env = Env(data_name=smoke_data)
+        # Prepare env for prompt building
+        from cmhh.evaluation.problem_adapter import ProblemRegistry
+
+        adapter = ProblemRegistry.get(self.problem)
+        env = adapter.load_env(primary_smoke_data)
+
         for _ in range(max_try_times):
             env.reset()
             prompt_dict["smoke_instance_problem_state"] = filter_dict_to_str(env.get_instance_problem_state(env.instance_data))
             for previous_operation in previous_operations:
-                env.run_operator(eval(previous_operation.strip()))
+                if previous_operation.strip():
+                    env.run_operator(eval(previous_operation.strip()))
             prompt_dict["smoke_solution"] = env.current_solution
             prompt_dict["smoke_solution_problem_state"] = filter_dict_to_str(env.get_solution_problem_state(env.instance_data, env.current_solution))
-            try:
-                # Load heuristic and run once
-                heuristic = load_function(heuristic_code, function_name=function_name)
-                operator = env.run_heuristic(heuristic)
-            except Exception as e:
-                operator = traceback.format_exc()
-            if operator is None or isinstance(operator, BaseOperator):
+
+            # Run in isolated spawn subprocess with timeout
+            status, operator_payload, elapsed = _run_smoke_step_with_timeout(
+                problem=self.problem,
+                smoke_data=primary_smoke_data,
+                previous_operations=previous_operations,
+                heuristic_code=heuristic_code,
+                function_name=function_name,
+            )
+
+            # Check multi-scale probe if multiple smoke data files available
+            if status == "ok" and len(smoke_data_files) > 1:
+                secondary_smoke_data = os.path.join(smoke_data_dir, smoke_data_files[1])
+                sec_status, _, elapsed_secondary = _run_smoke_step_with_timeout(
+                    problem=self.problem,
+                    smoke_data=secondary_smoke_data,
+                    previous_operations=previous_operations,
+                    heuristic_code=heuristic_code,
+                    function_name=function_name,
+                )
+                if sec_status == "ok":
+                    ratio = elapsed_secondary / max(elapsed, 1e-6)
+                    if ratio > DEFAULT_SMOKE_SCALING_RATIO_WARN:
+                        _LOGGER.warning(
+                            "[GEN] [SUSPICIOUS_SCALING] smoke scaling ratio: %.1fx (small=%.3fs, large=%.3fs, warn=%.1fx) | function=%s",
+                            ratio,
+                            elapsed,
+                            elapsed_secondary,
+                            DEFAULT_SMOKE_SCALING_RATIO_WARN,
+                            function_name,
+                        )
+
+            if status == "ok":
                 # Expected result
                 self.llm_client.load("smoke_test_expected_result.txt", prompt_dict)
                 response = self.llm_client.chat()
                 expected_result = extract(response, "expected_result")
 
                 # Actual result
-                prompt_dict["output_result"] = str(operator)
+                prompt_dict["output_result"] = str(operator_payload)
                 prompt_dict["updated_smoke_solution"] = env.current_solution
                 prompt_dict["updated_smoke_solution_problem_state"] = filter_dict_to_str(env.get_solution_problem_state(env.instance_data, env.current_solution))
 
@@ -296,22 +434,20 @@ class HeuristicGenerator:
                 prompt_dict["expected_result"] = expected_result
                 self.llm_client.load("smoke_test_compare.txt", prompt_dict)
                 response = self.llm_client.chat()
-                response = extract(response, "python_code")
-                # Actual result
-                if response is None:
+                response_code = extract(response, "python_code")
+
+                if response_code is None:
                     # Give up
                     self.llm_client.load("We can not implement and give up.")
                     return None
-                elif "correct" in response:
-                    # Correct
+                elif "correct" in response_code:
                     self.llm_client.load(f"To ensure the stable of heuristics, we adjust the code to:\n{heuristic_code}")
                     return heuristic_code
                 else:
-                    # Update code
-                    heuristic_code = response
+                    heuristic_code = response_code
             else:
-                # Crashed during running the heuristic
-                prompt_dict["error_message"] = operator
+                # Crashed or Timed out during running the heuristic
+                prompt_dict["error_message"] = operator_payload
                 self.llm_client.load("smoke_test_crashed.txt", prompt_dict)
                 response = self.llm_client.chat()
                 heuristic_code = extract(response, "python_code")
@@ -319,6 +455,7 @@ class HeuristicGenerator:
                     # Give up
                     self.llm_client.load("We can not implement and give up.")
                     return None
+
         # Give up due to the try limitation
         self.llm_client.load("We can not implement and give up.")
         return None

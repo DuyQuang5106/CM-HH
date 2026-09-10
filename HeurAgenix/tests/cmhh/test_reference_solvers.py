@@ -20,7 +20,9 @@ from cmhh.references.pipeline import generate_task_references
 from cmhh.references.pyvrp_solver import PyVRPSolverAdapter
 from cmhh.references.registry import ReferenceSolverRegistry
 from cmhh.references.tsp_solver import TSPSolverAdapter
+from cmhh.references.verification import verify_task_references
 from cmhh.tasks import TaskMetric, TaskReference, TaskSpec, TaskSplits
+from src.problems.cvrp.variant import OVRP_PROFILE, VRPTW_PROFILE
 
 
 class ReferenceSolversSmokeTests(unittest.TestCase):
@@ -40,12 +42,18 @@ class ReferenceSolversSmokeTests(unittest.TestCase):
         cvrp_solver = ReferenceSolverRegistry.get_solver("cvrp")
         jssp_solver = ReferenceSolverRegistry.get_solver("jssp")
         pyvrp_solver = ReferenceSolverRegistry.get_solver("pyvrp")
+        ovrp_solver = ReferenceSolverRegistry.get_solver("ovrp")
+        ovrptw_solver = ReferenceSolverRegistry.get_solver("ovrptw")
+        vrptw_solver = ReferenceSolverRegistry.get_solver("vrptw")
         cpsat_solver = ReferenceSolverRegistry.get_solver("ortools_cpsat")
 
         self.assertIsInstance(tsp_solver, TSPSolverAdapter)
         self.assertIsInstance(cvrp_solver, (CVRPSolverAdapter, PyVRPSolverAdapter))
         self.assertIsInstance(jssp_solver, (JSSPSolverAdapter, ORToolsCPSATSolverAdapter))
         self.assertIsInstance(pyvrp_solver, PyVRPSolverAdapter)
+        self.assertIsInstance(ovrp_solver, PyVRPSolverAdapter)
+        self.assertIsInstance(ovrptw_solver, PyVRPSolverAdapter)
+        self.assertIsInstance(vrptw_solver, PyVRPSolverAdapter)
         self.assertIsInstance(cpsat_solver, ORToolsCPSATSolverAdapter)
 
 
@@ -82,6 +90,53 @@ class CVRPSolverTests(unittest.TestCase):
             self.assertGreater(res.objective, 0.0)
             self.assertEqual("best_known", res.status)
             self.assertFalse(res.proven_optimal)
+
+    def test_pyvrp_ovrp_reference_solver_uses_open_route_objective(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            coords = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            demands = [0, 1, 1, 1]
+            instance_path = write_cvrplib(Path(temp_dir) / "test_ovrp.vrp", "test_ovrp", coords, demands, 10, 1)
+            instance_path.with_suffix(".meta.json").write_text(
+                json.dumps({"variant": "ovrp", "constraints": OVRP_PROFILE.to_dict()}),
+                encoding="utf-8",
+            )
+
+            res = PyVRPSolverAdapter().solve(instance_path, SolverConfig(timeout_seconds=5.0, seed=42))
+
+            self.assertEqual("best_known", res.status)
+            self.assertEqual("ovrp", res.metadata["variant"])
+            self.assertAlmostEqual(3.0, res.objective)
+            self.assertAlmostEqual(res.objective, res.metadata["internal_objective"])
+            self.assertTrue(res.metadata["internal_validation_feasible"])
+
+    def test_pyvrp_vrptw_reference_solver_validates_internally(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            coords = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            demands = [0, 1, 1, 1]
+            instance_path = write_cvrplib(Path(temp_dir) / "test_vrptw.vrp", "test_vrptw", coords, demands, 10, 1)
+            instance_path.with_suffix(".meta.json").write_text(
+                json.dumps({
+                    "variant": "vrptw",
+                    "constraints": VRPTW_PROFILE.to_dict(),
+                    "time_windows": {
+                        "depot": [0, 100],
+                        "customers": {
+                            "1": [0, 100],
+                            "2": [0, 100],
+                            "3": [0, 100],
+                        },
+                    },
+                    "service_times": {"default": 0},
+                }),
+                encoding="utf-8",
+            )
+
+            res = PyVRPSolverAdapter().solve(instance_path, SolverConfig(timeout_seconds=5.0, seed=42))
+
+            self.assertEqual("best_known", res.status)
+            self.assertEqual("vrptw", res.metadata["variant"])
+            self.assertTrue(res.metadata["constraints"]["time_windows"])
+            self.assertTrue(res.metadata["internal_validation_feasible"])
 
 
 class JSSPSolverTests(unittest.TestCase):
@@ -263,6 +318,172 @@ class ReferenceSchemaAndContractTests(unittest.TestCase):
             self.assertEqual(1, len(records))
             self.assertEqual("pyvrp", records[0].solver)
             self.assertNotEqual(999999.0, records[0].objective)
+
+    def test_reference_cache_invalidates_stale_vrp_semantics(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            split_dir = root / "validation"
+            ref_path = root / "references" / "reference.json"
+            split_dir.mkdir(parents=True)
+            ref_path.parent.mkdir(parents=True)
+
+            coords = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            demands = [0, 1, 1, 1]
+            instance_path = write_cvrplib(split_dir / "ovrp_case.vrp", "ovrp_case", coords, demands, 10, 1)
+            instance_path.with_suffix(".meta.json").write_text(
+                json.dumps({"variant": "ovrp", "constraints": OVRP_PROFILE.to_dict()}),
+                encoding="utf-8",
+            )
+            stale_record = ReferenceRecord(
+                instance_id=instance_path.stem,
+                objective=6.0,
+                status="best_known",
+                solver="pyvrp",
+                instance_sha256=sha256_file(instance_path),
+                runtime_seconds=0.01,
+                metadata={
+                    "variant": "cvrp",
+                    "constraints": {
+                        "capacitated": True,
+                        "open_route": False,
+                        "time_windows": False,
+                    },
+                    "internal_objective": 6.0,
+                    "internal_validation_feasible": True,
+                },
+            )
+            write_reference_set(ref_path, "ovrp_task", [stale_record])
+            task = _vrp_task(split_dir, ref_path, "ovrp_task", "ovrp")
+            replacement = ReferenceResult(
+                instance_id=instance_path.stem,
+                objective=3.0,
+                status="best_known",
+                solver="pyvrp",
+                instance_sha256=sha256_file(instance_path),
+                runtime_seconds=0.01,
+                metadata={
+                    "variant": "ovrp",
+                    "constraints": OVRP_PROFILE.to_dict(),
+                    "internal_objective": 3.0,
+                    "internal_validation_feasible": True,
+                },
+            )
+
+            with patch("cmhh.references.pyvrp_solver.PyVRPSolverAdapter.solve", return_value=replacement) as solve:
+                records, failures = generate_task_references(
+                    task,
+                    "validation",
+                    config={"name": "pyvrp", "time_limit_seconds": 5, "seed": 42, "max_workers": 1},
+                )
+
+            self.assertEqual([], failures)
+            solve.assert_called_once()
+            self.assertEqual(1, len(records))
+            self.assertEqual(3.0, records[0].objective)
+            self.assertEqual("ovrp", records[0].metadata["variant"])
+
+
+class ReferenceVerificationTests(unittest.TestCase):
+    def test_vrp_reference_verification_requires_variant_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            split_dir = root / "validation"
+            ref_path = root / "references" / "reference.json"
+            split_dir.mkdir(parents=True)
+            ref_path.parent.mkdir(parents=True)
+
+            coords = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            demands = [0, 1, 1, 1]
+            instance_path = write_cvrplib(split_dir / "ovrp_case.vrp", "ovrp_case", coords, demands, 10, 1)
+            instance_path.with_suffix(".meta.json").write_text(
+                json.dumps({"variant": "ovrp", "constraints": OVRP_PROFILE.to_dict()}),
+                encoding="utf-8",
+            )
+            write_reference_set(ref_path, "ovrp_task", [
+                ReferenceRecord(
+                    instance_id=instance_path.stem,
+                    objective=3.0,
+                    status="best_known",
+                    solver="pyvrp",
+                    instance_sha256=sha256_file(instance_path),
+                    runtime_seconds=0.01,
+                    metadata={
+                        "variant": "ovrp",
+                        "constraints": OVRP_PROFILE.to_dict(),
+                        "internal_objective": 3.0,
+                        "internal_validation_feasible": True,
+                    },
+                )
+            ])
+            task = _vrp_task(split_dir, ref_path, "ovrp_task", "ovrp")
+
+            report = verify_task_references(task, "validation")
+
+            self.assertTrue(report.valid, report.errors)
+            self.assertEqual(1, report.best_known)
+
+    def test_vrp_reference_verification_rejects_stale_semantics(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            split_dir = root / "validation"
+            ref_path = root / "references" / "reference.json"
+            split_dir.mkdir(parents=True)
+            ref_path.parent.mkdir(parents=True)
+
+            coords = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            demands = [0, 1, 1, 1]
+            instance_path = write_cvrplib(split_dir / "ovrp_case.vrp", "ovrp_case", coords, demands, 10, 1)
+            instance_path.with_suffix(".meta.json").write_text(
+                json.dumps({"variant": "ovrp", "constraints": OVRP_PROFILE.to_dict()}),
+                encoding="utf-8",
+            )
+            write_reference_set(ref_path, "ovrp_task", [
+                ReferenceRecord(
+                    instance_id=instance_path.stem,
+                    objective=6.0,
+                    status="best_known",
+                    solver="pyvrp",
+                    instance_sha256=sha256_file(instance_path),
+                    runtime_seconds=0.01,
+                    metadata={
+                        "variant": "cvrp",
+                        "constraints": {
+                            "capacitated": True,
+                            "open_route": False,
+                            "time_windows": False,
+                        },
+                        "internal_objective": 6.0,
+                        "internal_validation_feasible": True,
+                    },
+                )
+            ])
+            task = _vrp_task(split_dir, ref_path, "ovrp_task", "ovrp")
+
+            report = verify_task_references(task, "validation")
+
+            self.assertFalse(report.valid)
+            self.assertEqual(0, report.best_known)
+            self.assertTrue(any("variant mismatch" in error for error in report.errors))
+            self.assertTrue(any("constraints mismatch" in error for error in report.errors))
+
+
+def _vrp_task(split_dir: Path, ref_path: Path, task_id: str, variant: str) -> TaskSpec:
+    return TaskSpec(
+        task_id=task_id,
+        problem="cvrp",
+        size_tier="n20",
+        distribution="euclidean_uniform",
+        splits=TaskSplits(split_dir, split_dir, split_dir, split_dir),
+        reference=TaskReference("best_known", ref_path),
+        metric=TaskMetric("relative_gap", "minimize"),
+        implemented_in_heuragenix=True,
+        metadata={
+            "constraint_family": "vrp",
+            "vrp_variant": variant,
+            "base_dataset_id": "vrp_test_base",
+            "dataset_seed": 42,
+        },
+    )
 
 
 if __name__ == "__main__":

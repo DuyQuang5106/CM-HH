@@ -1,0 +1,4 @@
+1. Do not use exhaustive combinatorial search, brute-force permutation enumeration, or power set generation.
+2. Do not introduce uncontrolled recursive search or unbounded while loops.
+3. Avoid deeply nested lookahead loops across multiple decision stages.
+4. Keep the computational runtime of each decision step scalable with problem size N. Heuristic execution per step must terminate quickly.

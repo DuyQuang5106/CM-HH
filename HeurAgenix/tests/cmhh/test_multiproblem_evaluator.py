@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -106,6 +107,78 @@ class MultiProblemEvaluatorTests(unittest.TestCase):
             self.assertEqual("ok", result.instances[0].status)
             self.assertIsNotNone(result.instances[0].objective)
             self.assertGreater(result.instances[0].objective, 0)
+
+    def test_vrp_evaluation_rejects_stale_reference_semantics(self) -> None:
+        from cmhh.data.cvrp_generator import write_cvrplib
+        from cmhh.data.manifest import sha256_file
+        from cmhh.data.references import ReferenceRecord, write_reference_set
+        from src.problems.cvrp.variant import OVRP_PROFILE
+
+        repo_root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            split_dir = root / "validation"
+            ref_path = root / "references" / "reference.json"
+            split_dir.mkdir(parents=True)
+            ref_path.parent.mkdir(parents=True)
+            coords = [(0, 0), (1, 0), (2, 0), (3, 0)]
+            demands = [0, 1, 1, 1]
+            inst_path = write_cvrplib(split_dir / "ovrp_eval.vrp", "ovrp_eval", coords, demands, 10, 1)
+            inst_path.with_suffix(".meta.json").write_text(
+                json.dumps({"variant": "ovrp", "constraints": OVRP_PROFILE.to_dict()}),
+                encoding="utf-8",
+            )
+            write_reference_set(ref_path, "ovrp_eval_task", [
+                ReferenceRecord(
+                    instance_id=inst_path.stem,
+                    objective=6.0,
+                    status="best_known",
+                    solver="pyvrp",
+                    instance_sha256=sha256_file(inst_path),
+                    runtime_seconds=0.01,
+                    metadata={
+                        "variant": "cvrp",
+                        "constraints": {
+                            "capacitated": True,
+                            "open_route": False,
+                            "time_windows": False,
+                        },
+                        "internal_objective": 6.0,
+                        "internal_validation_feasible": True,
+                    },
+                )
+            ])
+
+            task = TaskSpec(
+                task_id="ovrp_eval_task",
+                problem="cvrp",
+                size_tier="n4",
+                distribution="euclidean_uniform",
+                splits=TaskSplits(split_dir, split_dir, split_dir, split_dir),
+                reference=TaskReference("best_known", ref_path),
+                metric=TaskMetric("relative_gap", "minimize"),
+                implemented_in_heuragenix=True,
+                metadata={
+                    "constraint_family": "vrp",
+                    "vrp_variant": "ovrp",
+                },
+            )
+            artifact = HeuristicArtifact(
+                heuristic_id="nearest_neighbor_99ba",
+                problem="cvrp",
+                code_path=repo_root / "src/problems/cvrp/heuristics/basic_heuristics/nearest_neighbor_99ba.py",
+                code_hash="dummy",
+                task_id=task.task_id,
+            )
+
+            evaluator = Evaluator(
+                repo_root=repo_root,
+                budget=EvaluationBudget(instance_timeout_seconds=15, batch_timeout_seconds=60),
+            )
+            result = evaluator.evaluate(artifact, task, "validation")
+
+            self.assertEqual("reference_mismatch", result.instances[0].status)
+            self.assertIn("variant mismatch", result.instances[0].error)
 
     def test_jssp_environment_loading_and_evaluation(self) -> None:
         from cmhh.data.jssp_generator import generate_jssp_instance, write_jssp

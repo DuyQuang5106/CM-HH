@@ -6,6 +6,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+_HEURAGENIX_ROOT = Path(__file__).resolve().parents[2]
+if str(_HEURAGENIX_ROOT) not in sys.path:
+    sys.path.insert(0, str(_HEURAGENIX_ROOT))
+
 from cmhh.agents.eoh_generator import EOHGenerator
 from cmhh.agents.generator import BaselineGenerator
 from cmhh.agents.heuragenix_generator import HeurAgenixGenerator
@@ -175,14 +179,15 @@ def build_parser() -> argparse.ArgumentParser:
     references = subparsers.add_parser("generate-references")
     _add_config_arguments(references)
     references.add_argument("--solver-config", default=None, help="Path to solver config YAML (concorde.yaml, pyvrp.yaml, ortools_cpsat.yaml)")
-    references.add_argument("--split", action="append", choices=("validation", "test"), default=None)
+    references.add_argument("--split", action="append", choices=("validation", "test", "smoke"), default=None)
     references.add_argument("--task", action="append")
     references.add_argument("--pilot-count", type=int)
 
     verify = subparsers.add_parser("verify-references")
     _add_config_arguments(verify)
-    verify.add_argument("--split", action="append", choices=("validation", "test"), default=None)
+    verify.add_argument("--split", action="append", choices=("validation", "test", "smoke"), default=None)
     verify.add_argument("--task", action="append")
+
 
     suite = subparsers.add_parser("run-suite", help="Run one or more streams across standard CM-HH conditions")
     suite.add_argument("--suite", help="Suite name or path (e.g. pilot_small, pilot_small_smoke)")

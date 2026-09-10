@@ -1,1 +1,9 @@
-Capacitated Vehicle Routing Problem (CVRP) is an optimization challenge focused on determining the most efficient routes for a fleet of vehicles to deliver goods to various locations, considering vehicle capacity constraints.
+This module represents a configurable Vehicle Routing Problem (VRP) family.
+
+The active variant is specified by the problem state's constraint profile:
+- CVRP: capacitated closed routes without time windows.
+- OVRP: capacitated open routes without time windows.
+- OVRPTW: capacitated open routes with hard time windows.
+- VRPTW: capacitated closed routes with hard time windows.
+
+All V1 variants minimize total travel distance. Capacity remains active. Every route starts at the depot, every customer must be visited exactly once, and open-route variants do not include the final return-to-depot edge in the objective. If time windows are active, service must begin within each customer's [earliest, latest] window; early arrival is allowed and causes waiting, while late service is infeasible.

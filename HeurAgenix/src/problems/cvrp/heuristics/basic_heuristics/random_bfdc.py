@@ -1,4 +1,5 @@
 from src.problems.cvrp.components import AppendOperator
+from src.problems.cvrp.heuristics.basic_heuristics.variant_costs import insertion_route_is_feasible
 import random
 
 def random_bfdc(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[AppendOperator, dict]:
@@ -29,16 +30,20 @@ def random_bfdc(problem_state: dict, algorithm_data: dict, **kwargs) -> tuple[Ap
     if not unvisited_nodes:
         return None, {}
 
-    # Randomly select an unvisited node
-    node_to_append = random.choice(unvisited_nodes)
+    feasible_pairs = []
+    for node in unvisited_nodes:
+        for vehicle_id in range(vehicle_num):
+            route = current_solution.routes[vehicle_id]
+            position = len(route)
+            if (
+                vehicle_remaining_capacity[vehicle_id] >= demands[node]
+                and insertion_route_is_feasible(problem_state, route, vehicle_id, node, position)
+            ):
+                feasible_pairs.append((vehicle_id, node))
 
-    # Find a vehicle that can accommodate the node
-    for _ in range(vehicle_num):
-        vehicle_id = random.randrange(vehicle_num)
-        if vehicle_remaining_capacity[vehicle_id] >= demands[node_to_append]:
-            # Create and return the append operator
-            operator = AppendOperator(vehicle_id=vehicle_id, node=node_to_append)
-            return operator, {}
+    if feasible_pairs:
+        vehicle_id, node_to_append = random.choice(feasible_pairs)
+        return AppendOperator(vehicle_id=vehicle_id, node=node_to_append), {}
 
     # If we reach here, no vehicle can accommodate the node (should not happen if vehicles start empty and capacities are correct)
     return None, {}
