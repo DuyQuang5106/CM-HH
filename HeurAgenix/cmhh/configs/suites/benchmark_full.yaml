@@ -1,32 +1,26 @@
 version: 1
 suite_id: benchmark_full
-description: "CM-HH Master Full Benchmark Suite across all active benchmark streams"
+description: "CM-HH Canonical 5-Stream Benchmark Suite across 5 Conditions (S1-S5, LLM Budget 100)."
 streams:
-  - tsp_size_ascending
-  - tsp_size_descending
-  - cvrp_size_ascending
-  - cvrp_size_descending
-  - jssp_size_ascending
-  - jssp_size_descending
-  - cross_problem_tsp_cvrp_jssp
-  - tsp_revisit
-  - related_pair_tsp_cvrp_tsp
-  - unrelated_pair_tsp_jssp_tsp
+  - s1_tsp_scale
+  - s2_cvrp_constraint
+  - s3_related_cross_problem
+  - s4_unrelated_cross_problem
+  - s5_vrp_variant
 conditions:
   - isolated
   - population
   - naive-bounded
+  - naive-unbounded
   - managed
 seeds:
   - 1
   - 2
   - 3
-  - 4
-  - 5
 mode: full
-llm_budget_per_task: 500
+llm_budget_per_task: 100
 splits:
-  train: 20
+  train: 10
   validation: 10
-  test: 30
+  test: 20
   smoke: 2

@@ -122,16 +122,17 @@ class ConfigCompositionTestSuite(unittest.TestCase):
             self.assertIsNotNone(exp_cfg.archive)
 
     def test_benchmark_full_suite_yaml(self) -> None:
-        """benchmark_full.yaml must parse cleanly and contain all active benchmark streams."""
+        """benchmark_full.yaml must parse cleanly and contain all canonical benchmark streams."""
         suite_path = self.repo_root / "cmhh" / "configs" / "suites" / "benchmark_full.yaml"
         self.assertTrue(suite_path.exists())
         suite = load_suite_config(suite_path)
         self.assertEqual(suite.suite_id, "benchmark_full")
         self.assertEqual(suite.mode, "full")
-        self.assertEqual(suite.seeds, (1, 2, 3, 4, 5))
+        self.assertEqual(suite.seeds, (1, 2, 3))
         self.assertIn("isolated", suite.conditions)
         self.assertIn("managed", suite.conditions)
-        self.assertEqual(len(suite.streams), 10)
+        self.assertEqual(len(suite.streams), 5)
+        self.assertEqual(suite.llm_budget_per_task, 100)
 
 
 if __name__ == "__main__":
