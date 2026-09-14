@@ -1,0 +1,9 @@
+version: 1
+id: s5_vrp_variant
+shift_type: constraint_semantic_graycode
+description: "S5: VRP constraint-family variant shift (CVRP -> OVRP -> OVRPTW -> VRPTW)"
+tasks:
+  - cvrp_uniform_n50_medium
+  - ovrp_uniform_n50_medium
+  - ovrptw_uniform_n50_medium
+  - vrptw_uniform_n50_medium
