@@ -33,6 +33,8 @@ wandb/
 
 # Environment variables & secrets
 .env
+.env.local
+.env.*.local
 *.env
 !.env.example
 
@@ -50,3 +52,12 @@ test_eval_result.json
 scratch/
 HeurAgenix/scratch/
 
+# Experiment results, logs, and local artifacts
+output/
+HeurAgenix/output/
+HeurAgenix/cmhh/results/
+cmhh/results/
+*.log
+result_test.json
+HeurAgenix/result_test.json
+HeurAgenix/cmhh/configs/llm/llm_config.local.json

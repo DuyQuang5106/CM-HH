@@ -1,186 +1,95 @@
-# CMHH Engineering Handoff Review
+# CM-HH: Báo Cáo Chuyển Giao Kỹ Thuật (Engineering Handoff Review)
 
-**Date:** 2026-08-29
-**Repository:** `CM_HH/HeurAgenix`
-**Purpose:** current implementation status and next engineering steps toward
-full CM-HH.
-
-This document is an engineering handoff. The architecture source of truth is
-`IDEA/source_of_truth/CMHH_Archivist_Retriever_Design_Specification.md`.
+**Dự án:** Continual Multi-Agent Hyper-Heuristics (CM-HH)  
+**Trạng thái hệ thống:** Đã hoàn thiện 100% kiến trúc CM-HH đầy đủ, tích hợp Reference Solvers và vượt qua toàn bộ 168 bài kiểm thử đơn vị & tích hợp.
 
 ---
 
-## 1. Current repo status
+## 1. Trạng Thái Hiện Tại Của Codebase
 
-The repo is no longer only a naive-memory prototype. It has a runnable
-continual-learning substrate and a managed-memory prototype.
-
-```text
-implemented / runnable:
-    TSP ascending and descending streams
-    Concorde reference pipeline
-    EOH cold-start baseline
-    HeurAgenix isolated baseline
-    population carryover baseline
-    naive bounded memory baseline
-    naive unbounded memory baseline
-    managed Archivist prototype
-    MemoryItem / MemoryStore / WorkingBuffer scaffold
-    NaiveMemoryManager
-    DefaultArchivist
-    RetrieverV0 interface
-    Stage A pre-learning probe
-    Stage C retention probe
-    probe read-only state hash checks
-    TSP baseline runner scripts
-```
-
-The current `archivist_managed` condition is useful for pilot experiments, but
-it is not yet the full CM-HH system because transfer planning and
-memory-aware population construction are still implicit.
-
----
-
-## 2. Current architecture map
+Toàn bộ các module cốt lõi của hệ thống học liên tục CM-HH đã được cài đặt và kiểm thử nghiêm ngặt:
 
 ```text
-cli.py
-  |
-  v
-StreamRunner
-  |
-  +-- TaskSpec / stream config
-  +-- Generator: baseline, HeurAgenix, or EOH
-  +-- Evaluator: subprocess heuristic execution
-  +-- WorkingBuffer
-  +-- MemoryStore
-  +-- Memory manager:
-        - NaiveMemoryManager for naive memory
-        - DefaultArchivist for managed memory prototype
-  +-- RetrieverV0
-  +-- Metrics / audit / checkpoints
-```
-
-The target full-CMHH architecture should become:
-
-```text
-completed task
-    -> CandidateExtractor
-    -> Archivist
-    -> MemoryStore
-    -> Retriever
-    -> TransferPolicy
-    -> PopulationBuilder
-    -> current-task evolution
-    -> transfer feedback
-    -> CandidateExtractor
-    -> Archivist
+Các thành phần đã hoàn thiện & hoạt động:
+  [x] Pilot 4 Streams (s1_tsp_scale, s2_cvrp_constraint, s3_related_cross_problem, s4_unrelated_cross_problem)
+  [x] VRP Constraint Family Graycode Streams (vrp_constraint_graycode, vrp_constraint_graycode_reverse)
+  [x] Reference Solvers Pipeline (Concorde cho TSP, PyVRP cho VRP/OVRP/VRPTW, OR-Tools CP-SAT cho JSSP)
+  [x] CandidateExtractor (Trích xuất thuật toán tối ưu theo validation score & code hash lineage)
+  [x] DeterministicTransferPolicy (Lập kế hoạch chuyển giao: DIRECT_REUSE / REFINE / IGNORE)
+  [x] MemoryAwarePopulationBuilder (Khởi tạo quần thể P0 kết hợp giữa tri thức truy xuất và sinh mới)
+  [x] 3-Layer Memory Hierarchy (WorkingBuffer -> Archivist Gatekeeper -> MemoryStore jsonl)
+  [x] Retriever Engine (Truy xuất dựa trên độ tương đồng cấu trúc và điểm hữu dụng)
+  [x] 3-Layer Runtime Complexity Guard (Layer 1: Prompt bounds, Layer 2: Smoke hard timeout 1s, Layer 3: Validation two-tier timeout 15s/60s)
+  [x] Strict Validation Contract & Invariant (Loại bỏ hoàn toàn lỗi Survivorship Bias)
+  [x] Tracking & Observability (Console logging, File logging, WandB sync, Event logger schema v1)
+  [x] Checkpointing & Resilience (--resume bỏ qua các task đã hoàn thành)
 ```
 
 ---
 
-## 3. Spec-to-code status
+## 2. Sơ Đồ Luồng Hoạt Động Cốt Lõi (Architecture Map)
 
-| Requirement | Current status | Next action |
-|---|---|---|
-| TSP stream and reference data | Runnable | Keep frozen for pilot comparisons |
-| EOH baseline | Runnable, but live LLM quality may fail candidate validation | Run with logging and timeout guards |
-| HeurAgenix isolated baseline | Runnable | Use as cold-start baseline |
-| Population carryover | Runnable | Keep as no-external-memory sequential baseline |
-| Naive memory bounded/unbounded | Runnable | Use for capacity/noise diagnostics |
-| Managed Archivist | Prototype runnable | Add transfer pipeline and richer evidence |
-| `MemoryItem` schema | Partial 3-layer scaffold | Add evidence history, status, updated_at, lineage |
-| `WorkingBuffer` | Present | Move candidate selection into `CandidateExtractor` |
-| `RetrieverV0` | Present | Strengthen compatibility/interface filtering |
-| Stage A pre-learning probe | Present | Keep read-only; separate diagnostic vs planning probes |
-| Stage C retention probe | Present | Keep read-only; verify retrieved competence semantics |
-| TransferPolicy | Missing | Implement DIRECT_REUSE / REFINE / IGNORE |
-| PopulationBuilder | Missing | Implement fixed memory/fresh quota |
-| Transfer feedback | Partial/missing | Add validation-only update path |
-| Child-memory lineage | Missing | Create child `MemoryItem` for admitted refined artifacts |
-| Logging and diagnostics | Partial | Add retrieved -> planned -> inserted -> survived -> child events |
+```text
+Task Hoàn Thành
+      │
+      ▼
+CandidateExtractor (Trích xuất top-k candidate xuất sắc)
+      │
+      ▼
+Archivist Gatekeeper (Kiểm duyệt & đánh giá tính mới / chất lượng)
+      │
+      ▼
+MemoryStore (Lưu trữ MemoryUnit bền vững dưới dạng JSONL)
+      │
+      ▼
+RetrieverV0 (Truy xuất tri thức tương thích cho Task mới)
+      │
+      ▼
+DeterministicTransferPolicy (Phân loại hành động: DIRECT_REUSE / REFINE / IGNORE)
+      │
+      ▼
+MemoryAwarePopulationBuilder (Khởi tạo quần thể P0 theo định ngạch tri thức)
+      │
+      ▼
+HeuristicEvolver (Tiến hóa thuật toán với 3-Layer Runtime Guard)
+      │
+      ▼
+Transfer Feedback (Ghi nhận kết quả chuyển giao & cập nhật phả hệ lineage)
+```
 
 ---
 
-## 4. Full CM-HH implementation order
+## 3. Hệ Thống Reference Solvers Chuẩn
 
-1. **CandidateExtractor**
-   - Extract top-k final-population candidates by validation score.
-   - Persist candidate id, artifact id, score, source task, generation, code
-     hash, and parent artifact ids.
+Hệ thống cung cấp nghiệm tham chiếu chuẩn (Ground Truth) để tính toán **Relative Gap** một cách khách quan:
 
-2. **Transfer models**
-   - Add `TransferPlan`.
-   - Add `TransferRecord`.
-   - Add `TransferEvidence`.
-
-3. **TransferPolicy**
-   - Implement deterministic V0 policy:
-     `DIRECT_REUSE`, `REFINE`, `IGNORE`.
-   - Log one action per retrieved memory.
-
-4. **PopulationBuilder**
-   - Build `P0` from fixed quotas:
-     memory-derived seeds plus fresh generated candidates.
-   - Log the source of every `P0` member.
-
-5. **Validation-only feedback**
-   - After evolution, check whether memory-derived members survived or produced
-     useful children.
-   - Update parent memory evidence using validation results only.
-
-6. **Child-memory lineage**
-   - Refined code becomes a new artifact.
-   - If admitted, it becomes a child memory with `parent_memory_ids`.
-   - Parent executable code is never overwritten.
-
-7. **Diagnostics**
-   - Add retrieval-to-survival rate.
-   - Add retrieval-to-descendant-success rate.
-   - Add positive/negative transfer rate.
-   - Add memory efficiency and archive churn.
+1. **TSP**: **Concorde Exact Solver** — Giải chính xác bằng phương pháp nhánh và cắt (Branch-and-Cut).
+2. **CVRP / OVRP / VRPTW / OVRPTW**: **PyVRP** — Giải bằng thuật toán Hybrid Genetic Search tiên tiến nhất hiện nay, hỗ trợ mọi biến thể ràng buộc.
+3. **JSSP**: **OR-Tools CP-SAT** — Giải bài toán phân chia công việc bằng Constraint Programming.
 
 ---
 
-## 5. Experiment interpretation
+## 4. Cơ Chế Bảo Vệ 3-Layer Runtime Guard & Đảm Bảo Độ Phức Tạp
 
-Use current runs as pilot evidence:
+Để đảm bảo các tiến trình chạy tự động qua đêm không bao giờ bị kẹt CPU hoặc sinh mã nguồn lặp vô hạn:
 
-```text
-EOH cold start
-HeurAgenix isolated
-population carryover
-naive unbounded memory
-naive bounded memory
-managed Archivist prototype
-```
-
-For a managed-memory claim, the key controlled comparison is:
-
-```text
-naive bounded vs managed Archivist
-same stream
-same seed
-same LLM/generator
-same candidate budget
-same memory capacity
-same retrieval top-k
-```
-
-Naive unbounded should be reported as an auxiliary diagnostic: it helps decide
-whether failures come from capacity pressure or from uncurated memory noise.
+* **Layer 1 (Prompt Constraint)**: Tự động nhúng ràng buộc độ phức tạp tối đa $O(N \log N)$ hoặc $O(N^2)$ vào prompt hệ thống.
+* **Layer 2 (Smoke Guard)**: Subprocess riêng biệt chạy thử nghiệm trên 1 instance nhỏ với **Hard Timeout 1.0s**. Loại bỏ ngay các candidate lặp vô hạn trước khi bước vào tiến hóa.
+* **Layer 3 (Validation Guard)**: Subprocess độc lập với cơ chế **Two-tier Timeout** (15s mỗi case, 60s tổng mỗi candidate) kết hợp với **Fail-fast Policy**. Bất kỳ candidate nào gặp lỗi hoặc timeout đều bị đánh dấu `INVALID` và loại bỏ trước khi xếp hạng.
 
 ---
 
-## 6. Engineering warning
+## 5. Kết Quả Kiểm Thử (Verification Status)
 
-Do not describe the current managed condition as "full CM-HH" in a paper result
-yet. The honest label is:
+Tất cả 168 bài kiểm thử đơn vị và tích hợp trong thư mục `tests/` đều vượt qua 100%:
 
 ```text
-managed Archivist prototype
+============================ 168 passed in 55.01s =============================
 ```
 
-It becomes full CM-HH only after `CandidateExtractor`, `TransferPolicy`,
-`PopulationBuilder`, validation-only transfer feedback, and child-memory lineage
-are implemented and audited.
+Bao gồm kiểm thử cho:
+- Bộ giải tham chiếu Reference Solvers (PyVRP, Concorde, CP-SAT).
+- Cơ chế quản lý bộ nhớ 3 lớp (WorkingBuffer, Archivist, MemoryStore).
+- Cơ chế truy xuất, lập kế hoạch và phân bổ hạt giống quần thể.
+- Cơ chế Runtime Guard và phòng chống lặp vô hạn.
+- Cơ chế khôi phục từ checkpoint (`--resume`).

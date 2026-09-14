@@ -1,91 +1,67 @@
-# CM-HH handoff smoke checklist
+# CM-HH Handoff Smoke Checklist
 
-Use this checklist before launching full 500-call or 1000-call experiments on a
-GPU/server machine. The goal is to catch integration errors, not to produce
-report-quality results.
+Use this checklist to perform integration validation before launching long-running experiment suites.
 
-## 1. Check dependencies
+---
 
-From the `HeurAgenix` directory:
+## 1. Verify Environment & Reference Solvers
 
 ```powershell
-$env:PYTHONPATH="src"
-python scripts/check_reference_solvers.py
-python -m cmhh.cli --repo-root . validate-config --experiment cmhh/configs/experiments/h1_isolated.yaml --stream cmhh/configs/streams/tsp_size_ascending.yaml
+# 1. Check dependency and solver health
+uv run python scripts/check_reference_solvers.py
+
+# 2. Validate configuration loading
+uv run cmhh validate-config --experiment cmhh/configs/experiments/h1_isolated.yaml --stream cmhh/configs/streams/pilot/s1_tsp_scale.yaml
 ```
 
-Expected:
+**Expected:**
+- PyVRP, OR-Tools CP-SAT, and Concorde pass health checks.
+- Configuration validation exits with code 0.
 
-- Python imports work.
-- Concorde/PyVRP/OR-Tools are found.
-- `validate-config` exits with code 0.
+---
 
-## 2. Prepare data and references
+## 2. Pre-Flight Pilot Suite Audit
 
-For a data/reference-only check:
+Run the pre-flight validator to inspect all streams, conditions, paired manifests, and reference parity without calling LLM APIs:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 `
-  -HandoffSmoke `
-  -PrepareOnly
+uv run cmhh validate-pilot-suite
 ```
 
-This validates representative TSP/CVRP/JSSP/cross-problem/stationary streams,
-generates deterministic data, and verifies references.
+**Expected output:**
+```text
+Pilot Suite Validation
+────────────────────────────
+Streams                  4/4 PASS
+Conditions               5/5 PASS
+Seeds                    3/3 PASS
 
-## 3. Run a true LLM smoke
+S2 CVRP pairing           PASS
+S2 capacity ordering      PASS
+S2 reference coverage     PASS
 
-This uses real LLM calls but overrides the experiment configs only for this run.
-The full experiment YAML files remain unchanged.
+S3/S4 TSP-A parity        PASS
+S3/S4 TSP-B parity        PASS
+TSP-A != TSP-B            PASS
+
+Cross-domain exec guard   PASS
+Target contracts          PASS
+
+Manifest parity           PASS
+Reference parity          PASS
+
+READY FOR EXPERIMENT
+```
+
+---
+
+## 3. Quick Smoke Run (Optional Pre-Flight)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\run_all_streams_no_eoh.ps1 `
-  -HandoffSmoke `
-  -Seeds 1 `
-  -LlmConfig cmhh/configs/llm/llm_config.local.json
+uv run cmhh run-suite --suite cmhh/configs/suites/pilot_4streams.yaml --mode quick-smoke --seeds 1
 ```
 
-Default handoff-smoke budget:
-
-```yaml
-search:
-  generations: 20
-  candidates_per_generation: 3
-  max_llm_calls: 30
-```
-
-A successful smoke should produce:
-
-- `metrics.json`
-- `performance_matrix.csv`
-- `pre_learning_scores.json`
-- passing `audit-run` for stream conditions
-- no uncaught Python tracebacks in the driver log
-
-## 4. Monitor progress
-
-The runner prints a `RunPrefix`. Use it with:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\watch_phase1_tsp_run.ps1 -RunPrefix <RUN_PREFIX>
-```
-
-Or follow the transcript directly:
-
-```powershell
-Get-Content cmhh/results/<RUN_PREFIX>_driver.log -Wait
-```
-
-## 5. Launch full budget only after smoke passes
-
-For the current report budget:
-
-```yaml
-search:
-  generations: 100
-  candidates_per_generation: 5
-  max_llm_calls: 500
-```
-
-Use the same budget for every compared condition. Do not mix smoke, 500-call,
-and 1000-call results in one headline comparison.
+A successful smoke verifies:
+- `metrics.json` and run manifests are generated.
+- Audit run passes with zero tracebacks.
+- Observability logs contain properly redacted credentials.
